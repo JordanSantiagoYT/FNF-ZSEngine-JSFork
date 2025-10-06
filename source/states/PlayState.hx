@@ -5,7 +5,6 @@ import backend.StageData;
 import backend.WeekData;
 import backend.Song;
 import backend.Rating;
-import backend.MemoryUtil;
 
 import flixel.FlxBasic;
 import flixel.FlxObject;
@@ -1670,7 +1669,6 @@ class PlayState extends MusicBeatState
 	var canPause:Bool = true;
 	var freezeCamera:Bool = false;
 	var allowDebugKeys:Bool = true;
-	var frameCount:Int = 0;
 
 	override public function update(elapsed:Float)
 	{
@@ -1689,18 +1687,6 @@ class PlayState extends MusicBeatState
 		else FlxG.camera.followLerp = 0;
 		callOnScripts('onUpdate', [elapsed]);
 
-		frameCount++;
-		var gcRate:Int = ClientPrefs.data.gcRate;
-		var gcMain:Bool = ClientPrefs.data.gcMain;
-		if (gcRate != 0 && frameCount % gcRate == 0) {
-  			#if cpp
-  			if (ClientPrefs.data.disableGC) MemoryUtil.enable();
-  			MemoryUtil.collect(gcMain);
-  			if (gcMain) MemoryUtil.compact();
-  			if (ClientPrefs.data.disableGC) MemoryUtil.disable();
-  			#end
-		}
-		
 		super.update(elapsed);
 
 		setOnScripts('curDecStep', curDecStep);
@@ -2498,7 +2484,7 @@ class PlayState extends MusicBeatState
 					FlxTransitionableState.skipNextTransOut = true;
 					prevCamFollow = camFollow;
 
-					Song.loadFromJson(PlayState.storyPlaylist[0] + difficulty, false, PlayState.storyPlaylist[0]);
+					Song.loadFromJson(PlayState.storyPlaylist[0] + difficulty, PlayState.storyPlaylist[0]);
 					FlxG.sound.music.stop();
 
 					canResync = false;

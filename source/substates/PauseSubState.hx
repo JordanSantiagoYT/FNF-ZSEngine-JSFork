@@ -226,16 +226,9 @@ class PauseSubState extends MusicBeatSubstate
 				var poop:String = Highscore.formatSong(songLowercase, curSelected);
 				try
 				{
-					// Memory management for crash prevention
-					if (ClientPrefs.data.disableGC) {
-						MemoryUtil.enable();
-						MemoryUtil.collect(true);
-						MemoryUtil.disable();
-					}
-
 					if(menuItems.length - 1 != curSelected && difficultyChoices.contains(daSelected))
 					{
-						Song.loadFromJson(poop, true, songLowercase);
+						Song.loadFromJson(poop, songLowercase);
 						PlayState.storyDifficulty = curSelected;
 						MusicBeatState.resetState();
 						FlxG.sound.music.volume = 0;
@@ -246,14 +239,8 @@ class PauseSubState extends MusicBeatSubstate
 				}
 				catch(e:haxe.Exception)
 				{
-					// Memory management for crash prevention
-					if (ClientPrefs.data.disableGC) {
-						MemoryUtil.enable();
-						MemoryUtil.collect(true);
-					}
-
 					trace('ERROR! ${e.message}');
-
+	
 					var errorStr:String = e.message;
 					if(errorStr.startsWith('[lime.utils.Assets] ERROR:')) errorStr = 'Missing file: ' + errorStr.substring(errorStr.indexOf(songLowercase), errorStr.length-1); //Missing chart
 					else errorStr += '\n\n' + e.stack;
@@ -263,7 +250,6 @@ class PauseSubState extends MusicBeatSubstate
 					missingText.visible = true;
 					missingTextBG.visible = true;
 					FlxG.sound.play(Paths.sound('cancelMenu'));
-					trace('ERROR! ${missingText.text}');
 
 					super.update(elapsed);
 					return;
