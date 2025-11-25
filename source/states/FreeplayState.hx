@@ -421,19 +421,16 @@ class FreeplayState extends MusicBeatState
 				PlayState.SONG = Song.loadFromJson(poop, songLowercase);
 				PlayState.storyDifficulty = curDifficulty;
 
-				PlayState.isStoryMode = PlayState.wasOriginallyFreeplay = ClientPrefs.data.alwaysTriggerCutscene;
+				PlayState.isStoryMode = false;
 
 				trace('CURRENT WEEK: ' + WeekData.getWeekFileName());
-				if(colorTween != null) {
-					colorTween.cancel();
-				}
 
 				curPlaying = false;
 				
 				if (FlxG.keys.pressed.SHIFT) {
-					LoadingState.loadAndSwitchState(ChartingState.new);
+					LoadingState.loadAndSwitchState(new ChartingState());
 				}else{
-					LoadingState.loadAndSwitchState(PlayState.new);
+					LoadingState.loadAndSwitchState(new PlayState());
 				}
 
 				FlxG.sound.music.volume = 0;
@@ -446,12 +443,13 @@ class FreeplayState extends MusicBeatState
 				#end
 			} else {
 				#if MODS_ALLOWED
-				var diffName:String = Difficulty.list.length > 0 && Difficulty.list[curDifficulty] != null ? Difficulty.list[curDifficulty].toLowerCase() : Difficulty.getDefault().toLowerCase();
-				if(sys.FileSystem.exists(Paths.inst(songLowercase, diffName)) && !sys.FileSystem.exists(Paths.json(poop + '/' + poop))) {
+				var instSongName:String = Highscore.formatSong(songLowercase, curDifficulty);
+				var instPath:String = 'songs/${Paths.formatToSongPath(instSongName)}/Inst.ogg';
+				if((sys.FileSystem.exists(Paths.getSharedPath(instPath)) || sys.FileSystem.exists(Paths.modFolders(instPath))) && !sys.FileSystem.exists(Paths.json(poop + '/' + poop))) {
 					trace("The JSON's name does not match with  " + poop + "!\nTry making them match.");
-				} else if(sys.FileSystem.exists(Paths.json(poop + '/' + poop)) && !sys.FileSystem.exists(Paths.inst(songLowercase, diffName))) {
+				} else if(sys.FileSystem.exists(Paths.json(poop + '/' + poop)) && !sys.FileSystem.exists(Paths.getSharedPath(instPath)) && !sys.FileSystem.exists(Paths.modFolders(instPath))) {
 					trace("Your song seems to not have an Inst.ogg, check the folder name in 'songs'!");
-				} else if(!sys.FileSystem.exists(Paths.json(poop + '/' + poop)) && !sys.FileSystem.exists(Paths.inst(songLowercase, diffName))) {
+				} else if(!sys.FileSystem.exists(Paths.json(poop + '/' + poop)) && !sys.FileSystem.exists(Paths.getSharedPath(instPath)) && !sys.FileSystem.exists(Paths.modFolders(instPath))) {
 					trace("It appears that " + poop + " doesn't actually have a JSON, nor does it actually have voices/instrumental files!\nMaybe try fixing its name in weeks/" + WeekData.getWeekFileName() + "?");
 				}
 				#end
