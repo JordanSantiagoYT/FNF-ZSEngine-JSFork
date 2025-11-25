@@ -2574,7 +2574,7 @@ class PlayState extends MusicBeatState
 		note.rating = daRating.name;
 		score = daRating.score;
 
-		if(daRating.noteSplash && !note.noteSplashData.disabled)
+		if(daRating.noteSplash && !note.noteSplashData.disabled && (!ClientPrefs.data.lessBotLag || !cpuControlled))
 			spawnNoteSplashOnNote(note);
 
 		if(!cpuControlled) {
@@ -3089,8 +3089,17 @@ class PlayState extends MusicBeatState
 			if (!note.isSustainNote)
 			{
 				combo++;
-				if(combo > 9999) combo = 9999;
-				popUpScore(note);
+				if (!ClientPrefs.data.lessBotLag || !cpuControlled) {
+					popUpScore(note);
+				} else {
+					// Minimal judgeNote for botplay when lessBotLag is enabled
+					var noteDiff:Float = Math.abs(note.strumTime - Conductor.songPosition + ClientPrefs.data.ratingOffset);
+					var daRating:Rating = Conductor.judgeNote(ratingsData, noteDiff / playbackRate);
+					totalNotesHit += daRating.ratingMod;
+					note.ratingMod = daRating.ratingMod;
+					if(!note.ratingDisabled) daRating.hits++;
+					note.rating = daRating.name;
+				}
 			}
 			var gainHealth:Bool = true; // prevent health gain, *if* sustains are treated as a singular note
 			if (guitarHeroSustains && note.isSustainNote) gainHealth = false;

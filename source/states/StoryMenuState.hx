@@ -300,67 +300,31 @@ class StoryMenuState extends MusicBeatState
 	{
 		if (!weekIsLocked(loadedWeeks[curWeek].fileName))
 		{
-			// We can't use Dynamic Array .copy() because that crashes HTML5, here's a workaround.
-			var songArray:Array<String> = [];
-			var leWeek:Array<Dynamic> = loadedWeeks[curWeek].songs;
-			for (i in 0...leWeek.length) {
-				songArray.push(leWeek[i][0]);
-			}
+		// We can't use Dynamic Array .copy() because that crashes HTML5, here's a workaround.
+		var songArray:Array<String> = [];
+		var leWeek:Array<Dynamic> = loadedWeeks[curWeek].songs;
+		for (i in 0...leWeek.length) {
+			songArray.push(leWeek[i][0]);
+		}
 
-			// Nevermind that's stupid lmao
-			try
-			{
-				PlayState.storyPlaylist = songArray;
-				PlayState.isStoryMode = true;
-				selectedWeek = true;
-	
-				var diffic = Difficulty.getFilePath(curDifficulty);
-				if(diffic == null) diffic = '';
-	
-				PlayState.storyDifficulty = curDifficulty;
-	
-				Song.loadFromJson(PlayState.storyPlaylist[0].toLowerCase() + diffic, PlayState.storyPlaylist[0].toLowerCase());
-				PlayState.campaignScore = 0;
-				PlayState.campaignMisses = 0;
-			}
-			catch(e:Dynamic)
-			{
-				trace('ERROR! $e');
-				return;
-			}
-			
-			if (stopspamming == false)
-			{
-				FlxG.sound.play(Paths.sound('confirmMenu'));
+		// Nevermind that's stupid lmao
+		PlayState.storyPlaylist = songArray;
+		PlayState.isStoryMode = true;
+		selectedWeek = true;
 
-				grpWeekText.members[curWeek].isFlashing = true;
-				for (char in grpWeekCharacters.members)
-				{
-					if (char.character != '' && char.hasConfirmAnimation)
-					{
-						char.animation.play('confirm');
-					}
-				}
-				stopspamming = true;
-			}
+		var diffic = Difficulty.getFilePath(curDifficulty);
+		if(diffic == null) diffic = '';
 
-			var directory = StageData.forceNextDirectory;
-			LoadingState.loadNextDirectory();
-			StageData.forceNextDirectory = directory;
+		PlayState.storyDifficulty = curDifficulty;
 
-			@:privateAccess
-			if(PlayState._lastLoadedModDirectory != Mods.currentModDirectory)
-			{
-				trace('CHANGED MOD DIRECTORY, RELOADING STUFF');
-				Paths.freeGraphicsFromMemory();
-			}
-			LoadingState.prepareToSong();
-			new FlxTimer().start(1, function(tmr:FlxTimer)
-			{
-				#if !SHOW_LOADING_SCREEN FlxG.sound.music.stop(); #end
-				LoadingState.loadAndSwitchState(new PlayState(), true);
-				FreeplayState.destroyFreeplayVocals();
-			});
+		PlayState.SONG = Song.loadFromJson(PlayState.storyPlaylist[0].toLowerCase() + diffic, PlayState.storyPlaylist[0].toLowerCase());
+		PlayState.campaignScore = 0;
+		PlayState.campaignMisses = 0;
+		new FlxTimer().start(1, function(tmr:FlxTimer)
+		{
+			LoadingState.loadAndSwitchState(new PlayState(), true);
+			FreeplayState.destroyFreeplayVocals();
+		});
 			
 			#if (MODS_ALLOWED && DISCORD_ALLOWED)
 			DiscordClient.loadModRPC();

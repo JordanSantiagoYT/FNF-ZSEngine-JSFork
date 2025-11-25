@@ -1912,6 +1912,59 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		Conductor.bpm = PlayState.SONG.bpm;
 	}
 
+	function loadJson(song:String, ?diff:String = ''):Void
+	{
+		var songName:String = Paths.formatToSongPath(PlayState.SONG.song);
+		var jsonExists:Bool = false;
+		var diffJsonExists:Bool = false;
+		
+		#if MODS_ALLOWED
+		jsonExists = FileSystem.exists(Paths.json(songName + '/' + songName)) || FileSystem.exists(Paths.modsJson(songName + '/' + songName));
+		diffJsonExists = FileSystem.exists(Paths.json(songName + '/' + songName + '-$diff')) || FileSystem.exists(Paths.modsJson(songName + '/' + songName + '-$diff'));
+		#else
+		jsonExists = OpenFlAssets.exists(Paths.json(songName + '/' + songName));
+		diffJsonExists = OpenFlAssets.exists(Paths.json(songName + '/' + songName + '-$diff'));
+		#end
+		
+		if(jsonExists || diffJsonExists)
+		{
+			var loadedChart:SwagSong = null;
+			if (diff != null && diff.length > 0 && diff != CoolUtil.defaultDifficulty.toLowerCase()) {
+				#if MODS_ALLOWED
+				if(!diffJsonExists || (CoolUtil.difficulties != null && CoolUtil.difficulties[PlayState.storyDifficulty] == null)){
+					loadedChart = Song.loadFromJson(songName.toLowerCase(), songName.toLowerCase());
+				}else{
+					loadedChart = Song.loadFromJson(songName.toLowerCase() + "-" + diff, songName.toLowerCase());
+				}
+				#else
+				if(!diffJsonExists){
+					loadedChart = Song.loadFromJson(songName.toLowerCase(), songName.toLowerCase());
+				}else{
+					loadedChart = Song.loadFromJson(songName.toLowerCase() + "-" + diff, songName.toLowerCase());
+				}
+				#end
+			}else{
+				loadedChart = Song.loadFromJson(songName.toLowerCase(), songName.toLowerCase());
+			}
+			
+			if(loadedChart != null && Reflect.hasField(loadedChart, 'song'))
+			{
+				loadChart(loadedChart);
+				reloadNotesDropdowns();
+				prepareReload();
+				showOutput('Reloaded chart "${songName}" successfully!');
+			}
+			else
+			{
+				showOutput('Error: Failed to load chart "${songName}"', true);
+			}
+		}
+		else
+		{
+			showOutput('Error: Chart "${songName}" does not exist!', true);
+		}
+	}
+
 	function loadMusic(?killAudio:Bool = false)
 	{
 		setSongPlaying(false);
@@ -3348,38 +3401,20 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		});
 		var reloadAudioButton:PsychUIButton = new PsychUIButton(objX + 120, objY, 'Reload Audio', function() loadMusic(true), 80);
 
-		#if mac
 		var reloadJsonButton:PsychUIButton = new PsychUIButton(objX + 205, objY, 'Reload JSON', function()
 		{
 			var cur = Paths.formatToSongPath(songNameInputText.text);
 			var curdiff = Highscore.formatSong(cur, PlayState.storyDifficulty);
-			var diff = false;
-			var loadedChart:SwagSong = try {
-				diff = true;
-				Song.getChart(curdiff, cur);
-			} catch (e) {
-				diff = false;
-				Song.getChart(cur, cur);
-			}
-			if(loadedChart == null || !Reflect.hasField(loadedChart, 'song')) //Check if chart is ACTUALLY a chart and valid
-			{
-				showOutput('Error: File loaded is not a Psych Engine/FNF 0.2.x.x chart.', true);
-				return;
-			}
-
+			var diff:String = CoolUtil.difficulties != null && CoolUtil.difficulties[PlayState.storyDifficulty] != null ? CoolUtil.difficulties[PlayState.storyDifficulty].toLowerCase() : CoolUtil.defaultDifficulty.toLowerCase();
+			
 			var func:Void->Void = function()
 			{
-				loadChart(loadedChart);
-				Song.chartPath = diff ? curdiff : cur;
-				reloadNotesDropdowns();
-				prepareReload();
-				showOutput('Opened chart "${diff ? curdiff : cur}" successfully!');
+				loadJson(cur, diff);
 			}
 					
 			if(!ignoreProgressCheckBox.checked) openSubState(new Prompt('Warning: Any unsaved progress\nwill be lost.', func));
 			else func();
 		}, 80);
-		#end
 
 		objY += 65;
 		//(x:Float = 0, y:Float = 0, step:Float = 1, defValue:Float = 0, min:Float = -999, max:Float = 999, decimals:Int = 0, ?wid:Int = 60, ?isPercent:Bool = false)
@@ -3406,9 +3441,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		tab_group.add(songNameInputText);
 		tab_group.add(allowVocalsCheckBox);
 		tab_group.add(reloadAudioButton);
-		#if mac
 		tab_group.add(reloadJsonButton);
-		#end
 
 		// Find characters
 		var characters:Array<String> = [];
@@ -4802,6 +4835,16 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 	function saveChart(canQuickSave:Bool = true)
 	{
+		// Faster chart saving optimizations
+		System.gc();
+		var noteCount:Int = notes.length;
+		#if cpp
+		if (noteCount > 1000000)
+		{
+			cpp.vm.Gc.enable(false);
+		}
+		#end
+		
 		updateChartData();
 		var chartData:String = PsychJsonPrinter.print(PlayState.SONG, ['sectionNotes', 'events']);
 		if(canQuickSave && Song.chartPath != null)
@@ -4823,6 +4866,13 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 				}, null, function() showOutput('Error on saving chart!', true));
 		}
+		
+		#if cpp
+		if (noteCount > 1000000)
+		{
+			cpp.vm.Gc.enable(true);
+		}
+		#end
 	}
 	
 	inline function getCurChartSection()
