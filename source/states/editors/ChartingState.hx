@@ -1929,9 +1929,9 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		if(jsonExists || diffJsonExists)
 		{
 			var loadedChart:SwagSong = null;
-			if (diff != null && diff.length > 0 && diff != CoolUtil.defaultDifficulty.toLowerCase()) {
+			if (diff != null && diff.length > 0 && diff != Difficulty.getDefault().toLowerCase()) {
 				#if MODS_ALLOWED
-				if(!diffJsonExists || (CoolUtil.difficulties != null && CoolUtil.difficulties[PlayState.storyDifficulty] == null)){
+				if(!diffJsonExists || (Difficulty.list.length > 0 && Difficulty.list[PlayState.storyDifficulty] == null)){
 					loadedChart = Song.loadFromJson(songName.toLowerCase(), songName.toLowerCase());
 				}else{
 					loadedChart = Song.loadFromJson(songName.toLowerCase() + "-" + diff, songName.toLowerCase());
@@ -3405,7 +3405,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		{
 			var cur = Paths.formatToSongPath(songNameInputText.text);
 			var curdiff = Highscore.formatSong(cur, PlayState.storyDifficulty);
-			var diff:String = CoolUtil.difficulties != null && CoolUtil.difficulties[PlayState.storyDifficulty] != null ? CoolUtil.difficulties[PlayState.storyDifficulty].toLowerCase() : CoolUtil.defaultDifficulty.toLowerCase();
+			var diff:String = Difficulty.list.length > 0 && Difficulty.list[PlayState.storyDifficulty] != null ? Difficulty.list[PlayState.storyDifficulty].toLowerCase() : Difficulty.getDefault().toLowerCase();
 			
 			var func:Void->Void = function()
 			{
@@ -4836,7 +4836,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 	function saveChart(canQuickSave:Bool = true)
 	{
 		// Faster chart saving optimizations
-		System.gc();
+		openfl.system.System.gc();
 		var noteCount:Int = notes.length;
 		#if cpp
 		if (noteCount > 1000000)

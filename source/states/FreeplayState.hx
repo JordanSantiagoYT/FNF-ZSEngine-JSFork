@@ -3,6 +3,7 @@ package states;
 import backend.WeekData;
 import backend.Highscore;
 import backend.Song;
+import backend.Difficulty;
 
 import objects.HealthIcon;
 import objects.MusicPlayer;
@@ -412,12 +413,10 @@ class FreeplayState extends MusicBeatState
 
 			trace(poop);
 
-			CoolUtil.currentDifficulty = CoolUtil.difficultyString();
-
 			#if MODS_ALLOWED
-			if(sys.FileSystem.exists(Paths.modsJson(songLowercase + '/' + poop)) || sys.FileSystem.exists(Paths.json(songLowercase + '/' + poop)) || OpenFlAssets.exists(Paths.modsJson(songLowercase + '/' + poop)) || OpenFlAssets.exists(Paths.json(songLowercase + '/' + poop))) {
+			if(sys.FileSystem.exists(Paths.modsJson(songLowercase + '/' + poop)) || sys.FileSystem.exists(Paths.json(songLowercase + '/' + poop)) || Assets.exists(Paths.modsJson(songLowercase + '/' + poop)) || Assets.exists(Paths.json(songLowercase + '/' + poop))) {
 			#else
-			if(OpenFlAssets.exists(Paths.json(songLowercase + '/' + poop))) {
+			if(Assets.exists(Paths.json(songLowercase + '/' + poop))) {
 			#end
 				PlayState.SONG = Song.loadFromJson(poop, songLowercase);
 				PlayState.storyDifficulty = curDifficulty;
@@ -447,12 +446,13 @@ class FreeplayState extends MusicBeatState
 				#end
 			} else {
 				#if MODS_ALLOWED
-				if(sys.FileSystem.exists(Paths.inst(songLowercase, CoolUtil.difficulties[curDifficulty].toLowerCase())) && !sys.FileSystem.exists(Paths.json(poop + '/' + poop))) {
-					CoolUtil.coolError("The JSON's name does not match with  " + poop + "!\nTry making them match.", "ZS Engine Anti-Crash Tool");
-				} else if(sys.FileSystem.exists(Paths.json(poop + '/' + poop)) && !sys.FileSystem.exists(Paths.inst(songLowercase, CoolUtil.difficulties[curDifficulty].toLowerCase()))) {
-					CoolUtil.coolError("Your song seems to not have an Inst.ogg, check the folder name in 'songs'!", "ZS Engine Anti-Crash Tool");
-				} else if(!sys.FileSystem.exists(Paths.json(poop + '/' + poop)) && !sys.FileSystem.exists(Paths.inst(songLowercase, CoolUtil.difficulties[curDifficulty].toLowerCase()))) {
-					CoolUtil.coolError("It appears that " + poop + " doesn't actually have a JSON, nor does it actually have voices/instrumental files!\nMaybe try fixing its name in weeks/" + WeekData.getWeekFileName() + "?", "ZS Engine Anti-Crash Tool");
+				var diffName:String = Difficulty.list.length > 0 && Difficulty.list[curDifficulty] != null ? Difficulty.list[curDifficulty].toLowerCase() : Difficulty.getDefault().toLowerCase();
+				if(sys.FileSystem.exists(Paths.inst(songLowercase, diffName)) && !sys.FileSystem.exists(Paths.json(poop + '/' + poop))) {
+					trace("The JSON's name does not match with  " + poop + "!\nTry making them match.");
+				} else if(sys.FileSystem.exists(Paths.json(poop + '/' + poop)) && !sys.FileSystem.exists(Paths.inst(songLowercase, diffName))) {
+					trace("Your song seems to not have an Inst.ogg, check the folder name in 'songs'!");
+				} else if(!sys.FileSystem.exists(Paths.json(poop + '/' + poop)) && !sys.FileSystem.exists(Paths.inst(songLowercase, diffName))) {
+					trace("It appears that " + poop + " doesn't actually have a JSON, nor does it actually have voices/instrumental files!\nMaybe try fixing its name in weeks/" + WeekData.getWeekFileName() + "?");
 				}
 				#end
 			}
