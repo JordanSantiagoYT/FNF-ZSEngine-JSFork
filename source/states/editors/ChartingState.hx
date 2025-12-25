@@ -4900,7 +4900,8 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 					if(section.changeBPM && section.bpm != null)
 						bpm = section.bpm;
 
-					var secs:Float = section.sectionBeats != null ? section.sectionBeats : 4;
+					var secs:Float = section.sectionBeats;
+					if(Math.isNaN(secs) || secs <= 0) secs = 4;
 					var beat:Float = Conductor.calculateCrochet(bpm);
 					var rowRound:Int = Math.round(4 * secs);
 					time += beat * (rowRound / 4);
