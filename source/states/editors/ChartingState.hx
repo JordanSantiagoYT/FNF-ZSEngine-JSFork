@@ -1557,7 +1557,11 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 							  '\nBeat: $curBeat' +
 							  '\nStep: $curStep' +
 							  '\n\nBeat Snap: ${curQuant} / 16' +
-							  '\nSelected: ${selectedNotes.length}';
+							  '\nSelected: ${selectedNotes.length}' +
+							  '\n\n' + FlxStringUtil.formatMoney(CoolUtil.getNoteAmount(PlayState.SONG), false) + ' Notes';
+
+			var sec = getCurChartSection();
+			if(sec != null) str += '\n\nSection Notes: ' + FlxStringUtil.formatMoney(sec.sectionNotes.length, false);
 
 			if(str != infoText.text)
 			{
@@ -2361,18 +2365,53 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			return (note.strumTime >= minTime && note.strumTime < maxTime);
 		}
 
+		var sec = getCurChartSection();
+		var noteCount:Int = (sec != null) ? sec.sectionNotes.length : 0;
+		var skipFullRender:Bool = (noteCount > 10000); // Skip full rendering for sections with more than 10k notes to prevent lag
+
 		var firstNote:Bool = false;
 		var firstEvent:Bool = false;
 		sectionFirstNoteID = 0;
 		sectionFirstEventID = 0;
-		for (num => note in notes)
+
+		if(skipFullRender)
 		{
-			if(note != null && curSecFilter(note))
+			// For large sections, only render notes near the current song position to reduce lag
+			var visibleTimeRange:Float = 5000; // 5 seconds before and after current position
+			var minVisibleTime:Float = Conductor.songPosition - visibleTimeRange;
+			var maxVisibleTime:Float = Conductor.songPosition + visibleTimeRange;
+
+			for (num => note in notes)
 			{
-				if(!firstNote) sectionFirstNoteID = num;
-				curRenderedNotes.add(note);
-				note.alpha = (note.strumTime >= Conductor.songPosition) ? 1 : 0.6;
-				if(note.hasSustain) note.updateSustainToZoom(cachedSectionCrochets[curSec] / 4, curZoom);
+				if(note != null && curSecFilter(note))
+				{
+					if(note.strumTime >= minVisibleTime && note.strumTime <= maxVisibleTime)
+					{
+						if(!firstNote) sectionFirstNoteID = num;
+						curRenderedNotes.add(note);
+						note.alpha = (note.strumTime >= Conductor.songPosition) ? 1 : 0.6;
+						if(note.hasSustain) note.updateSustainToZoom(cachedSectionCrochets[curSec] / 4, curZoom);
+					}
+					else
+					{
+						// Hide notes outside visible range
+						note.alpha = 0;
+					}
+				}
+			}
+		}
+		else
+		{
+			// Normal rendering for smaller sections
+			for (num => note in notes)
+			{
+				if(note != null && curSecFilter(note))
+				{
+					if(!firstNote) sectionFirstNoteID = num;
+					curRenderedNotes.add(note);
+					note.alpha = (note.strumTime >= Conductor.songPosition) ? 1 : 0.6;
+					if(note.hasSustain) note.updateSustainToZoom(cachedSectionCrochets[curSec] / 4, curZoom);
+				}
 			}
 		}
 
@@ -2851,6 +2890,9 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 	var stepperStackNum:PsychUINumericStepper;
 	var stepperStackOffset:PsychUINumericStepper;
 	var stepperStackSideOffset:PsychUINumericStepper;
+	var stepperShrinkAmount:PsychUINumericStepper;
+	var stepperShiftSteps:PsychUINumericStepper;
+	var stepperDuplicateAmount:PsychUINumericStepper;
 	function addNoteTab()
 	{
 		var tab_group = mainBox.getTab('Note').menu;
@@ -3526,18 +3568,125 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		stepperStackSideOffset = new PsychUINumericStepper(objX, objY + 140, 1, 0, -9999, 9999);
 		stepperStackSideOffset.name = 'stack_sideways';
 
+		stepperShrinkAmount = new PsychUINumericStepper(objX, objY + 190, 1, 1, 0, 8192, 4);
+		stepperShrinkAmount.name = 'shrinker_amount';
+
+		var doubleShrinker:PsychUIButton = new PsychUIButton(stepperShrinkAmount.x, stepperShrinkAmount.y + 20, 'x2 SH', function()
+		{
+			stepperShrinkAmount.value *= 2;
+		});
+		doubleShrinker.normalStyle.bgColor = FlxColor.GREEN;
+		doubleShrinker.normalStyle.textColor = FlxColor.WHITE;
+
+		var halfShrinker:PsychUIButton = new PsychUIButton(doubleShrinker.x + doubleShrinker.width + 20, doubleShrinker.y, 'x0.5 SH', function()
+		{
+			stepperShrinkAmount.value /= 2;
+		});
+		halfShrinker.normalStyle.bgColor = FlxColor.RED;
+		halfShrinker.normalStyle.textColor = FlxColor.WHITE;
+
+		var shrinkNotesButton:PsychUIButton = new PsychUIButton(objX, doubleShrinker.y + 30, "Stretch Notes", function()
+		{
+			var sec = getCurChartSection();
+			if(sec == null) return;
+
+			var minimumTime:Float = cachedSectionTimes[curSec];
+			var sectionEndTime:Float = (curSec < cachedSectionTimes.length - 1) ? cachedSectionTimes[curSec + 1] : minimumTime + (Conductor.calculateCrochet(Conductor.bpm) * 4);
+
+			for (i in 0...sec.sectionNotes.length)
+			{
+				var note:Array<Dynamic> = sec.sectionNotes[i];
+				if (note.length > 2 && note[2] > 0) note[2] *= stepperShrinkAmount.value;
+
+				var originalStartTime:Float = note[0];
+				originalStartTime = originalStartTime - minimumTime;
+
+				var stretchedStartTime:Float = originalStartTime * stepperShrinkAmount.value;
+				var newStartTime:Float = minimumTime + stretchedStartTime;
+
+				note[0] = Math.max(newStartTime, minimumTime);
+				if (note[0] < minimumTime) note[0] = minimumTime;
+				if (note[0] >= sectionEndTime) note[0] = sectionEndTime - 0.000001;
+				sec.sectionNotes[i] = note;
+			}
+			_cacheSections();
+			softReloadNotes();
+		});
+
+		stepperShiftSteps = new PsychUINumericStepper(objX, shrinkNotesButton.y + 30, 1, 1, -8192, 8192, 4);
+		stepperShiftSteps.name = 'shifter_amount';
+
+		var shiftNotesButton:PsychUIButton = new PsychUIButton(objX, stepperShiftSteps.y + 20, "Shift Notes", function()
+		{
+			var sec = getCurChartSection();
+			if(sec == null) return;
+
+			for (i in 0...sec.sectionNotes.length)
+			{
+				sec.sectionNotes[i][0] += (stepperShiftSteps.value) * (15000/Conductor.bpm);
+			}
+			_cacheSections();
+			softReloadNotes();
+		});
+
+		stepperDuplicateAmount = new PsychUINumericStepper(objX, shiftNotesButton.y + 30, 1, 1, 0, 32, 4);
+		stepperDuplicateAmount.name = 'duplicater_amount';
+
+		var dupeNotesButton:PsychUIButton = new PsychUIButton(objX, stepperDuplicateAmount.y + 20, "Duplicate Notes", function()
+		{
+			var sec = getCurChartSection();
+			if(sec == null) return;
+
+			var copiedNotes:Array<Dynamic> = [];
+			for (i in 0...sec.sectionNotes.length)
+			{
+				var note:Array<Dynamic> = sec.sectionNotes[i];
+				copiedNotes.push(note);
+			}
+			for (_i in 1...Std.int(stepperDuplicateAmount.value)+1)
+			{
+				for (i in 0...copiedNotes.length)
+				{
+					final copiedNote:Array<Dynamic> = [copiedNotes[i][0], copiedNotes[i][1], copiedNotes[i][2]];
+					if(copiedNotes[i].length > 3) copiedNote.push(copiedNotes[i][3]);
+					copiedNote[0] += (stepperShiftSteps.value * _i) * (15000/Conductor.bpm);
+					sec.sectionNotes.push(copiedNote);
+				}
+			}
+			if(sec.sectionNotes.length <= 30000)
+			{
+				_cacheSections();
+				softReloadNotes();
+			}
+			else
+			{
+				loadSection(curSec + 1);
+			}
+		});
+
 		tab_group.add(check_stackActive);
 		tab_group.add(stepperStackNum);
 		tab_group.add(stepperStackOffset);
 		tab_group.add(stepperStackSideOffset);
+		tab_group.add(stepperShrinkAmount);
+		tab_group.add(stepperShiftSteps);
+		tab_group.add(stepperDuplicateAmount);
 		tab_group.add(doubleSpamNum);
 		tab_group.add(halfSpamNum);
 		tab_group.add(doubleSpamMult);
 		tab_group.add(halfSpamMult);
+		tab_group.add(doubleShrinker);
+		tab_group.add(halfShrinker);
+		tab_group.add(shrinkNotesButton);
+		tab_group.add(shiftNotesButton);
+		tab_group.add(dupeNotesButton);
 		
 		tab_group.add(new FlxText(100, stepperStackNum.y, 0, "Spam Count"));
 		tab_group.add(new FlxText(100, stepperStackOffset.y, 0, "Spam Multiplier"));
 		tab_group.add(new FlxText(100, stepperStackSideOffset.y, 0, "Spam Scroll Amount"));
+		tab_group.add(new FlxText(100, stepperShrinkAmount.y, 0, "Stretch Amount"));
+		tab_group.add(new FlxText(100, stepperShiftSteps.y, 0, "Steps to Shift By"));
+		tab_group.add(new FlxText(100, stepperDuplicateAmount.y, 0, "Amount of Duplicates"));
 	}
 
 	function addFileTab()
@@ -4835,7 +4984,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			cpp.vm.Gc.enable(false);
 		}
 		#end
-		
+
 		updateChartData();
 		var chartData:String = PsychJsonPrinter.print(PlayState.SONG, ['sectionNotes', 'events']);
 		if(canQuickSave && Song.chartPath != null)
@@ -4857,7 +5006,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 				}, null, function() showOutput('Error on saving chart!', true));
 		}
-		
+
 		#if cpp
 		if (noteCount > 1000000)
 		{
@@ -4957,7 +5106,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 		return oldChart;
 	}
-	
+
 	inline function getCurChartSection()
 	{
 		return PlayState.SONG.notes != null ? PlayState.SONG.notes[curSec] : null;

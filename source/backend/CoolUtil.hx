@@ -2,6 +2,7 @@ package backend;
 
 import openfl.utils.Assets;
 import lime.utils.Assets as LimeAssets;
+import backend.Song.SwagSong;
 
 class CoolUtil
 {
@@ -179,5 +180,26 @@ class CoolUtil
 			default:
 				text.borderStyle = NONE;
 		}
+	}
+
+	public static function getNoteAmount(song:SwagSong, ?bothSides:Bool = true, ?oppNotes:Bool = false):Int
+	{
+		var total:Int = 0;
+		for (section in song.notes)
+		{
+			if (bothSides)
+				total += section.sectionNotes.length;
+			else
+			{
+				for (songNotes in section.sectionNotes)
+				{
+					if (!oppNotes && (songNotes[1] < 4 ? section.mustHitSection : !section.mustHitSection))
+						total += 1;
+					if (oppNotes && (songNotes[1] < 4 ? !section.mustHitSection : section.mustHitSection))
+						total += 1;
+				}
+			}
+		}
+		return total;
 	}
 }
