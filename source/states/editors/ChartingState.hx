@@ -3399,22 +3399,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			PlayState.SONG.needsVoices = allowVocalsCheckBox.checked;
 			loadMusic();
 		});
-		var reloadAudioButton:PsychUIButton = new PsychUIButton(objX + 120, objY, 'Reload Audio', function() loadMusic(true), 80);
-
-		var reloadJsonButton:PsychUIButton = new PsychUIButton(objX + 205, objY, 'Reload JSON', function()
-		{
-			var cur = Paths.formatToSongPath(songNameInputText.text);
-			var curdiff = Highscore.formatSong(cur, PlayState.storyDifficulty);
-			var diff:String = Difficulty.list.length > 0 && Difficulty.list[PlayState.storyDifficulty] != null ? Difficulty.list[PlayState.storyDifficulty].toLowerCase() : Difficulty.getDefault().toLowerCase();
-			
-			var func:Void->Void = function()
-			{
-				loadJson(cur, diff);
-			}
-					
-			if(!ignoreProgressCheckBox.checked) openSubState(new Prompt('Warning: Any unsaved progress\nwill be lost.', func));
-			else func();
-		}, 80);
+		var reloadAudioButton:PsychUIButton = new PsychUIButton(objX + 205, objY, 'Reload Audio', function() loadMusic(true), 80);
 
 		objY += 65;
 		//(x:Float = 0, y:Float = 0, step:Float = 1, defValue:Float = 0, min:Float = -999, max:Float = 999, decimals:Int = 0, ?wid:Int = 60, ?isPercent:Bool = false)
@@ -3856,27 +3841,34 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 					return;
 				}
 	
-				if(FileSystem.exists(Song.chartPath))
-				{
-					try
-					{
-						var reloadedChart:SwagSong = Song.parseJSON(File.getContent(Song.chartPath));
-						loadChart(reloadedChart);
-						reloadNotesDropdowns();
-						prepareReload();
-						showOutput('Chart reloaded successfully!');
-					}
-					catch(e:Exception)
-					{
-						showOutput('Error: ${e.message}', true);
-						trace(e.stack);
-					}
-				}
-				else showOutput('You must save/load a Chart first to Reload it!', true);
+				var songName:String = Paths.formatToSongPath(PlayState.SONG.song);
+				var diff:String = Difficulty.list.length > 0 && Difficulty.list[PlayState.storyDifficulty] != null ? Difficulty.list[PlayState.storyDifficulty].toLowerCase() : Difficulty.getDefault().toLowerCase();
+				loadJson(songName, diff);
 			}
 
 			if(!ignoreProgressCheckBox.checked) openSubState(new Prompt('Warning: Any unsaved progress will be lost', func));
 			else func();
+		}, btnWid);
+		btn.text.alignment = LEFT;
+		tab_group.add(btn);
+		
+		btnY += 20;
+		var btn:PsychUIButton = new PsychUIButton(btnX, btnY, '  Save old chart...', function()
+		{
+			if(!fileDialog.completed) return;
+			upperBox.isMinimized = true;
+			upperBox.bg.visible = false;
+
+			updateChartData();
+			var oldChart:Dynamic = convertToOldFormat(PlayState.SONG);
+			var chartName:String = Paths.formatToSongPath(PlayState.SONG.song) + '.json';
+			if(Song.chartPath != null) chartName = Song.chartPath.substr(Song.chartPath.lastIndexOf('/')).trim();
+			
+			fileDialog.save(chartName, haxe.Json.stringify({song: oldChart}),
+				function()
+				{
+					showOutput('Old format chart saved successfully to: ${fileDialog.path}');
+				}, null, function() showOutput('Error on saving old format chart!', true));
 		}, btnWid);
 		btn.text.alignment = LEFT;
 		tab_group.add(btn);
@@ -4873,6 +4865,97 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			cpp.vm.Gc.enable(true);
 		}
 		#end
+	}
+
+	function convertToOldFormat(song:SwagSong):Dynamic
+	{
+		var oldChart:Dynamic = Reflect.copy(song);
+
+		if(Reflect.hasField(oldChart, 'gfVersion'))
+		{
+			Reflect.setField(oldChart, 'player3', Reflect.field(oldChart, 'gfVersion'));
+			Reflect.deleteField(oldChart, 'gfVersion');
+		}
+
+		if(Reflect.hasField(oldChart, 'format'))
+			Reflect.deleteField(oldChart, 'format');
+
+		if(Reflect.hasField(oldChart, 'events') && oldChart.events != null)
+		{
+			var events:Array<Dynamic> = oldChart.events;
+			var notes:Array<Dynamic> = oldChart.notes;
+
+			if(notes != null && events != null && events.length > 0)
+			{
+				var sectionTimes:Array<Float> = [];
+				var time:Float = 0;
+				var bpm:Float = oldChart.bpm != null ? oldChart.bpm : 100;
+
+				for (i in 0...notes.length)
+				{
+					var section:SwagSection = notes[i];
+					if(section == null) continue;
+
+					sectionTimes.push(time);
+
+					if(section.changeBPM && section.bpm != null)
+						bpm = section.bpm;
+
+					var secs:Float = section.sectionBeats != null ? section.sectionBeats : 4;
+					var beat:Float = Conductor.calculateCrochet(bpm);
+					var rowRound:Int = Math.round(4 * secs);
+					time += beat * (rowRound / 4);
+				}
+
+				for (event in events)
+				{
+					if(event == null || event.length < 2) continue;
+
+					var eventTime:Float = event[0];
+					var eventData:Array<Dynamic> = event[1];
+
+					if(eventData == null || eventData.length < 1) continue;
+
+					var targetSection:Int = 0;
+					for (i in 0...sectionTimes.length)
+					{
+						var sectionStart:Float = sectionTimes[i];
+						var sectionEnd:Float = (i < sectionTimes.length - 1) ? sectionTimes[i + 1] : eventTime + 1;
+
+						if(eventTime >= sectionStart && eventTime < sectionEnd)
+						{
+							targetSection = i;
+							break;
+						}
+					}
+
+					if(targetSection < notes.length && notes[targetSection] != null)
+					{
+						var section:SwagSection = notes[targetSection];
+						if(section.sectionNotes == null)
+							section.sectionNotes = [];
+
+						for (eventItem in eventData)
+						{
+							if(eventItem != null && eventItem.length >= 3)
+							{
+								section.sectionNotes.push([
+									eventTime,
+									-1,
+									eventItem[0],
+									eventItem[1],
+									eventItem[2]
+								]);
+							}
+						}
+					}
+				}
+			}
+
+			Reflect.deleteField(oldChart, 'events');
+		}
+
+		return oldChart;
 	}
 	
 	inline function getCurChartSection()

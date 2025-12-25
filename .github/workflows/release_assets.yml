@@ -1,29 +1,19 @@
-# This is a basic workflow to help you get started with Actions
+name: Release Assets
 
-name: Build
-
-
-# Controls when the action will run.
 on:
-  # Allows you to run this workflow manually from the Actions tab
-  workflow_dispatch:
+  release:
+    types: [created]
 
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "build"
   buildLinux:
-    # The type of runner that the job will run on
     runs-on: ubuntu-latest
 
-    # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v4.1.7
 
       - uses: krdlab/setup-haxe@master
         with:
           haxe-version: 4.3.4
-      # Runs a set of commands using the runners shell
       - name: Install Haxelib
         run: |
           sudo apt-get install libvlc-dev
@@ -39,23 +29,28 @@ jobs:
         run: echo "${{github.run_id}}" > VERSION
       - name: Compile
         run: haxelib run lime build Project.xml linux --app-version="4.0.0-${{ github.run_id}}" -D officialBuild
-      - name: Publish Artifact
-        uses: actions/upload-artifact@v4.3.4
+      - name: Package Linux Build
+        run: |
+          cd export/release/linux/bin
+          zip -r ${{ github.workspace }}/FNF-ZSEngine-linux.zip .
+          cd ${{ github.workspace }}
+      - name: Upload to Release
+        uses: softprops/action-gh-release@v1
         with:
-          name: linuxBuild
-          path: 'export/release/linux/bin'
+          files: FNF-ZSEngine-linux.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   buildWindows:
     runs-on: windows-latest
 
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v4.1.7
 
       - uses: krdlab/setup-haxe@master
         with:
           haxe-version: 4.3.0
           haxelib-version: 'latest'
-      # Runs a set of commands using the runners shell
       - name: Install Haxelib
         run: |
           haxelib setup C:/haxelib
@@ -71,22 +66,27 @@ jobs:
         run: echo "${{github.run_id}}" > VERSION
       - name: Compile
         run: haxelib run lime build windows --app-version="4.0.0-${{ github.run_id}}"  -D officialBuild
-      - name: Publish Artifact
-        uses: actions/upload-artifact@v4.3.4
+      - name: Package Windows Build
+        run: |
+          cd export/release/windows/bin
+          Compress-Archive -Path * -DestinationPath ..\..\..\..\FNF-ZSEngine-windows.zip -Force
+        shell: powershell
+      - name: Upload to Release
+        uses: softprops/action-gh-release@v1
         with:
-          name: windowsBuild
-          path: export/release/windows/bin
+          files: FNF-ZSEngine-windows.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   buildMac:
     runs-on: macos-15
 
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v4.1.7
 
       - uses: krdlab/setup-haxe@master
         with:
           haxe-version: 4.3.4
-      # Runs a set of commands using the runners shell
       - name: Install Haxelib
         run: |
           haxelib setup ~/haxelib
@@ -100,8 +100,14 @@ jobs:
         run: echo "${{github.run_id}}" > VERSION
       - name: Compile
         run: haxelib run lime build mac --app-version="4.0.0-${{ github.run_id}}"  -D officialBuild
-      - name: Publish Artifact
-        uses: actions/upload-artifact@v4.3.4
+      - name: Package Mac Build
+        run: |
+          cd export/release/macos/bin
+          zip -r ${{ github.workspace }}/FNF-ZSEngine-mac.zip .
+          cd ${{ github.workspace }}
+      - name: Upload to Release
+        uses: softprops/action-gh-release@v1
         with:
-          name: macBuild
-          path: export/release/macos/bin
+          files: FNF-ZSEngine-mac.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
