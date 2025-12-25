@@ -188,11 +188,21 @@ class CoolUtil
 		for (section in song.notes)
 		{
 			if (bothSides)
-				total += section.sectionNotes.length;
+			{
+				// Count only actual notes, exclude events (events have negative noteData)
+				for (songNotes in section.sectionNotes)
+				{
+					if(songNotes != null && songNotes.length > 1 && songNotes[1] >= 0)
+						total += 1;
+				}
+			}
 			else
 			{
 				for (songNotes in section.sectionNotes)
 				{
+					// Exclude events (negative noteData)
+					if(songNotes == null || songNotes.length < 2 || songNotes[1] < 0) continue;
+					
 					if (!oppNotes && (songNotes[1] < 4 ? section.mustHitSection : !section.mustHitSection))
 						total += 1;
 					if (oppNotes && (songNotes[1] < 4 ? !section.mustHitSection : section.mustHitSection))
