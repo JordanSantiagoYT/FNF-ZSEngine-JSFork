@@ -1562,17 +1562,25 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		if(PlayState.SONG != null && PlayState.SONG.notes != null)
 		{
 			try {
-				var noteCount:Int = CoolUtil.getNoteAmount(PlayState.SONG);
+				// Count notes from the notes array (always up-to-date) instead of sectionNotes
+				var noteCount:Int = 0;
+				for (note in notes)
+				{
+					if(note != null && !note.isEvent)
+						noteCount++;
+				}
 				str += '\n\n' + FlxStringUtil.formatMoney(noteCount, false) + ' Notes';
 				
+				// Count section notes from the notes array filtered by current section
 				var sec = getCurChartSection();
-				if(sec != null && sec.sectionNotes != null) 
+				if(sec != null) 
 				{
-					// Count only actual notes, exclude events (events have negative noteData)
+					var minTime:Float = cachedSectionTimes[curSec];
+					var maxTime:Float = (curSec < cachedSectionTimes.length - 1) ? cachedSectionTimes[curSec + 1] : minTime + (Conductor.calculateCrochet(Conductor.bpm) * 4);
 					var sectionNoteCount:Int = 0;
-					for (note in sec.sectionNotes)
+					for (note in notes)
 					{
-						if(note != null && note.length > 1 && note[1] >= 0)
+						if(note != null && !note.isEvent && note.strumTime >= minTime && note.strumTime < maxTime)
 							sectionNoteCount++;
 					}
 					str += '\n\nSection Notes: ' + FlxStringUtil.formatMoney(sectionNoteCount, false);
@@ -1582,6 +1590,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			}
 		}
 
+		// Always update display if note counts changed, even if time didn't change
 		if(str != infoText.text)
 		{
 			infoText.text = str;
@@ -3611,6 +3620,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 		var shrinkNotesButton:PsychUIButton = new PsychUIButton(objX, doubleShrinker.y + 30, "Stretch Notes", function()
 		{
+			updateChartData(); // Sync notes array to sectionNotes first
 			var sec = getCurChartSection();
 			if(sec == null || sec.sectionNotes == null) return;
 			
@@ -3645,6 +3655,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 		var shiftNotesButton:PsychUIButton = new PsychUIButton(objX, stepperShiftSteps.y + 20, "Shift Notes", function()
 		{
+			updateChartData(); // Sync notes array to sectionNotes first
 			var sec = getCurChartSection();
 			if(sec == null || sec.sectionNotes == null) return;
 			
@@ -3666,6 +3677,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 		var dupeNotesButton:PsychUIButton = new PsychUIButton(objX, stepperDuplicateAmount.y + 20, "Duplicate Notes", function()
 		{
+			updateChartData(); // Sync notes array to sectionNotes first
 			var sec = getCurChartSection();
 			if(sec == null || sec.sectionNotes == null) return;
 			
