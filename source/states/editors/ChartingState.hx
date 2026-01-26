@@ -2138,8 +2138,58 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		}
 	}
 
+	function updateCurrentSectionNotes()
+	{
+		// Lightweight update: only update notes for the current section from sectionNotes
+		// This is much faster than reloadNotes() for large note counts
+		var sec = getCurChartSection();
+		if(sec == null) return;
+		
+		var minTime:Float = getMinNoteTime(curSec);
+		var maxTime:Float = getMaxNoteTime(curSec);
+		
+		// Remove old notes from current section
+		var notesToRemove:Array<MetaNote> = [];
+		for (note in notes)
+		{
+			if(note != null && !note.isEvent && note.strumTime >= minTime && note.strumTime < maxTime)
+				notesToRemove.push(note);
+		}
+		for (note in notesToRemove)
+		{
+			notes.remove(note);
+			if(note != null) note.destroy();
+		}
+		
+		// Add new notes from sectionNotes for current section
+		for (noteData in sec.sectionNotes)
+		{
+			if(noteData != null && noteData.length >= 3 && noteData[1] >= 0) // Only actual notes, not events
+			{
+				var newNote = createNote(noteData, curSec);
+				notes.push(newNote);
+			}
+		}
+		
+		notes.sort(PlayState.sortByTime);
+		softReloadNotes();
+		forceDataUpdate = true;
+	}
+
 	function reloadNotes()
 	{
+		var totalNoteCount:Int = 0;
+		for (section in PlayState.SONG.notes)
+			totalNoteCount += section.sectionNotes.length;
+		
+		// Optimize GC for large note counts to reduce lag
+		#if cpp
+		if (totalNoteCount > 10000)
+		{
+			cpp.vm.Gc.enable(false);
+		}
+		#end
+		
 		selectedNotes = [];
 		for (note in notes) if(note != null) note.destroy();
 		for (event in events) if(event != null) event.destroy();
@@ -2159,8 +2209,19 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		notes.sort(PlayState.sortByTime);
 		events.sort(PlayState.sortByTime);
 
-		trace('Note count: ${notes.length}');
-		trace('Events count: ${events.length}');
+		#if cpp
+		if (totalNoteCount > 10000)
+		{
+			cpp.vm.Gc.enable(true);
+			openfl.system.System.gc();
+		}
+		#end
+		
+		if(totalNoteCount < 10000)
+		{
+			trace('Note count: ${notes.length}');
+			trace('Events count: ${events.length}');
+		}
 		loadSection();
 	}
 
@@ -2325,7 +2386,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 	}
 
 	var showPreviousSection:Bool = true;
-	var showNextSection:Bool = true;
+	var showNextSection:Bool = false;
 	var showNoteTypeLabels:Bool = true;
 	var forceDataUpdate:Bool = true;
 	function loadSection(?sec:Null<Int> = null)
@@ -2589,6 +2650,8 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 	var mouseSnapCheckBox:PsychUICheckBox;
 	var ignoreProgressCheckBox:PsychUICheckBox;
+	var hidePreviousSectionCheckBox:PsychUICheckBox;
+	var hideNextSectionCheckBox:PsychUICheckBox;
 	var hitsoundPlayerStepper:PsychUINumericStepper;
 	var hitsoundOpponentStepper:PsychUINumericStepper;
 	var metronomeStepper:PsychUINumericStepper;
@@ -2620,7 +2683,22 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		ignoreProgressCheckBox = new PsychUICheckBox(objX + 150, objY, 'Ignore Progress Warnings', 100, function() chartEditorSave.data.ignoreProgressWarns = ignoreProgressCheckBox.checked);
 		ignoreProgressCheckBox.checked = chartEditorSave.data.ignoreProgressWarns;
 
-		objY += 50;
+		objY += 30;
+		hidePreviousSectionCheckBox = new PsychUICheckBox(objX, objY, 'Hide Previous Section', 140, function()
+		{
+			showPreviousSection = !hidePreviousSectionCheckBox.checked;
+			loadSection();
+		});
+		hidePreviousSectionCheckBox.checked = !showPreviousSection;
+
+		hideNextSectionCheckBox = new PsychUICheckBox(objX + 150, objY, 'Hide Next Section', 140, function()
+		{
+			showNextSection = !hideNextSectionCheckBox.checked;
+			loadSection();
+		});
+		hideNextSectionCheckBox.checked = !showNextSection;
+
+		objY += 30;
 		hitsoundPlayerStepper = new PsychUINumericStepper(objX, objY, 0.2, 0, 0, 1, 1);
 		hitsoundOpponentStepper = new PsychUINumericStepper(objX + 100, objY, 0.2, 0, 0, 1, 1);
 		metronomeStepper = new PsychUINumericStepper(objX + 200, objY, 0.2, 0, 0, 1, 1);
@@ -2641,6 +2719,8 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		tab_group.add(playbackSlider);
 		tab_group.add(mouseSnapCheckBox);
 		tab_group.add(ignoreProgressCheckBox);
+		tab_group.add(hidePreviousSectionCheckBox);
+		tab_group.add(hideNextSectionCheckBox);
 
 		tab_group.add(new FlxText(hitsoundPlayerStepper.x, hitsoundPlayerStepper.y - 15, 100, 'Hitsound (Player):'));
 		tab_group.add(new FlxText(hitsoundOpponentStepper.x, hitsoundOpponentStepper.y - 15, 100, 'Hitsound (Opp.):'));
@@ -3645,9 +3725,10 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 				if (note[0] < minimumTime) note[0] = minimumTime;
 				sec.sectionNotes[i] = note;
 			}
+			
 			_cacheSections();
-			reloadNotes(); // Reload all notes from sectionNotes
-			forceDataUpdate = true;
+			// Use lightweight update for current section only to prevent lag
+			sec.sectionNotes.length <= 30000 ? updateCurrentSectionNotes() : loadSection(curSec + 1);
 		});
 
 		stepperShiftSteps = new PsychUINumericStepper(objX, shrinkNotesButton.y + 30, 1, 1, -8192, 8192, 4);
@@ -3668,8 +3749,8 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 				sec.sectionNotes[i][0] += (stepperShiftSteps.value) * (15000/Conductor.bpm);
 			}
 			_cacheSections();
-			reloadNotes(); // Reload all notes from sectionNotes
-			forceDataUpdate = true;
+			// Use lightweight update for current section only to prevent lag
+			sec.sectionNotes.length <= 30000 ? updateCurrentSectionNotes() : loadSection(curSec + 1);
 		});
 
 		stepperDuplicateAmount = new PsychUINumericStepper(objX, shiftNotesButton.y + 30, 1, 1, 0, 32, 4);
@@ -3699,16 +3780,9 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 					sec.sectionNotes.push(copiedNote);
 				}
 			}
-			if(sec.sectionNotes.length <= 30000)
-			{
-				reloadNotes(); // Reload all notes from sectionNotes
-				forceDataUpdate = true;
-			}
-			else
-			{
-				loadSection(curSec + 1);
-				forceDataUpdate = true;
-			}
+			_cacheSections();
+			// Use lightweight update for current section only to prevent lag, skip to next section if too many notes
+			sec.sectionNotes.length <= 30000 ? updateCurrentSectionNotes() : loadSection(curSec + 1);
 		});
 
 		tab_group.add(check_stackActive);
@@ -3728,7 +3802,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		tab_group.add(shiftNotesButton);
 		tab_group.add(dupeNotesButton);
 		
-		tab_group.add(new FlxText(100, stepperStackNum.y, 0, "Spam Count"));
+		tab_group.add(new FlxText(100, stepperStackNum.y, 0, "Spam Length"));
 		tab_group.add(new FlxText(100, stepperStackOffset.y, 0, "Spam Multiplier"));
 		tab_group.add(new FlxText(100, stepperStackSideOffset.y, 0, "Spam Scroll Amount"));
 		tab_group.add(new FlxText(100, stepperShrinkAmount.y, 0, "Stretch Amount"));
