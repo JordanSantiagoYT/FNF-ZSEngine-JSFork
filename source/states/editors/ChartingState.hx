@@ -2385,8 +2385,8 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		cachedSectionTimes.push(time);
 	}
 
-	var showPreviousSection:Bool = true;
-	var showNextSection:Bool = false;
+	var showPreviousSection:Bool = false;
+	var showNextSection:Bool = true;
 	var showNoteTypeLabels:Bool = true;
 	var forceDataUpdate:Bool = true;
 	function loadSection(?sec:Null<Int> = null)
@@ -3769,6 +3769,10 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 				if(note != null && note.length > 1 && note[1] >= 0) // Only copy actual notes, not events
 					copiedNotes.push(note);
 			}
+			
+			// Calculate final note count before duplicating
+			var finalNoteCount:Int = sec.sectionNotes.length + (copiedNotes.length * Std.int(stepperDuplicateAmount.value));
+			
 			for (_i in 1...Std.int(stepperDuplicateAmount.value)+1)
 			{
 				for (i in 0...copiedNotes.length)
@@ -3781,8 +3785,37 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 				}
 			}
 			_cacheSections();
-			// Use lightweight update for current section only to prevent lag, skip to next section if too many notes
-			sec.sectionNotes.length <= 30000 ? updateCurrentSectionNotes() : loadSection(curSec + 1);
+			
+			// If too many notes, jump to next section to avoid lag (matching JS-Engine-source behavior)
+			if(finalNoteCount > 30000)
+			{
+				// Ensure next section exists
+				if(curSec + 1 >= PlayState.SONG.notes.length)
+				{
+					// Create a new section if needed
+					var lastSection = PlayState.SONG.notes[PlayState.SONG.notes.length - 1];
+					var beat:Float = Conductor.calculateCrochet(Conductor.bpm);
+					var sectionBeats:Float = lastSection != null ? lastSection.sectionBeats : 4;
+					PlayState.SONG.notes.push({
+						sectionNotes: [],
+						sectionBeats: sectionBeats,
+						mustHitSection: lastSection != null ? lastSection.mustHitSection : true,
+						bpm: Conductor.bpm,
+						changeBPM: false,
+						altAnim: lastSection != null ? lastSection.altAnim : false,
+						gfSection: lastSection != null ? lastSection.gfSection : false
+					});
+					_cacheSections();
+				}
+				showOutput('Section has ${FlxStringUtil.formatMoney(finalNoteCount, false)} notes (>30,000). Jumped to next section to prevent lag.');
+				loadSection(curSec + 1);
+				forceDataUpdate = true;
+			}
+			else
+			{
+				// Use lightweight update for current section only to prevent lag
+				updateCurrentSectionNotes();
+			}
 		});
 
 		tab_group.add(check_stackActive);
