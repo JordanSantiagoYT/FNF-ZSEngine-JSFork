@@ -614,6 +614,22 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 	function prepareReload()
 	{
+		// Calculate total note count before loading for GC optimization
+		var totalNoteCount:Int = 0;
+		if(PlayState.SONG != null && PlayState.SONG.notes != null)
+		{
+			for (section in PlayState.SONG.notes)
+				totalNoteCount += section.sectionNotes.length;
+		}
+		
+		// Optimize GC for very large note counts (matching JS-Engine-source behavior)
+		#if cpp
+		if (totalNoteCount > 1000000)
+		{
+			cpp.vm.Gc.enable(false);
+		}
+		#end
+		
 		updateJsonData();
 		loadMusic();
 		reloadNotes();
@@ -626,6 +642,14 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		curSec = 0;
 		loadSection();
 		forceDataUpdate = true;
+		
+		#if cpp
+		if (totalNoteCount > 1000000)
+		{
+			cpp.vm.Gc.enable(true);
+			openfl.system.System.gc();
+		}
+		#end
 	}
 
 	function onChartLoaded()
@@ -2182,10 +2206,16 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		for (section in PlayState.SONG.notes)
 			totalNoteCount += section.sectionNotes.length;
 		
-		// Optimize GC for large note counts to reduce lag
+		// Optimize GC for large note counts to reduce lag (matching JS-Engine-source behavior)
+		// Use higher threshold for very large charts (1M+ notes)
 		#if cpp
-		if (totalNoteCount > 10000)
+		if (totalNoteCount > 1000000)
 		{
+			cpp.vm.Gc.enable(false);
+		}
+		else if (totalNoteCount > 100000)
+		{
+			// For moderately large charts, still disable GC but re-enable sooner
 			cpp.vm.Gc.enable(false);
 		}
 		#end
@@ -2210,17 +2240,25 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		events.sort(PlayState.sortByTime);
 
 		#if cpp
-		if (totalNoteCount > 10000)
+		if (totalNoteCount > 100000)
 		{
 			cpp.vm.Gc.enable(true);
 			openfl.system.System.gc();
 		}
 		#end
 		
-		if(totalNoteCount < 10000)
+		if(totalNoteCount < 100000)
 		{
 			trace('Note count: ${notes.length}');
 			trace('Events count: ${events.length}');
+		}
+		else if(totalNoteCount < 1000000)
+		{
+			trace('Loaded ${FlxStringUtil.formatMoney(totalNoteCount, false)} notes (GC optimized)');
+		}
+		else
+		{
+			trace('Loaded ${FlxStringUtil.formatMoney(totalNoteCount, false)} notes (high-performance mode)');
 		}
 		loadSection();
 	}
