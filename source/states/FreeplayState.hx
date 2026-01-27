@@ -3,14 +3,12 @@ package states;
 import backend.WeekData;
 import backend.Highscore;
 import backend.Song;
-import backend.Difficulty;
 
 import objects.HealthIcon;
 import objects.MusicPlayer;
 
 import options.GameplayChangersSubstate;
 import substates.ResetScoreSubState;
-import states.editors.ChartingState;
 
 import flixel.math.FlxMath;
 import flixel.util.FlxDestroyUtil;
@@ -411,49 +409,48 @@ class FreeplayState extends MusicBeatState
 			var songLowercase:String = Paths.formatToSongPath(songs[curSelected].songName);
 			var poop:String = Highscore.formatSong(songLowercase, curDifficulty);
 
-			trace(poop);
-
-			#if MODS_ALLOWED
-			if(sys.FileSystem.exists(Paths.modsJson(songLowercase + '/' + poop)) || sys.FileSystem.exists(Paths.json(songLowercase + '/' + poop)) || Assets.exists(Paths.modsJson(songLowercase + '/' + poop)) || Assets.exists(Paths.json(songLowercase + '/' + poop))) {
-			#else
-			if(Assets.exists(Paths.json(songLowercase + '/' + poop))) {
-			#end
-				PlayState.SONG = Song.loadFromJson(poop, songLowercase);
+			try
+			{
+				Song.loadFromJson(poop, songLowercase);
+				PlayState.isStoryMode = false;
 				PlayState.storyDifficulty = curDifficulty;
 
-				PlayState.isStoryMode = false;
-
 				trace('CURRENT WEEK: ' + WeekData.getWeekFileName());
-
-				curPlaying = false;
-				
-				if (FlxG.keys.pressed.SHIFT) {
-					LoadingState.loadAndSwitchState(new ChartingState());
-				}else{
-					LoadingState.loadAndSwitchState(new PlayState());
-				}
-
-				FlxG.sound.music.volume = 0;
-				FlxG.mouse.visible = false;
-						
-				destroyFreeplayVocals();
-
-				#if (MODS_ALLOWED && DISCORD_ALLOWED)
-				DiscordClient.loadModRPC();
-				#end
-			} else {
-				#if MODS_ALLOWED
-				var instSongName:String = Highscore.formatSong(songLowercase, curDifficulty);
-				var instPath:String = 'songs/${Paths.formatToSongPath(instSongName)}/Inst.ogg';
-				if((sys.FileSystem.exists(Paths.getSharedPath(instPath)) || sys.FileSystem.exists(Paths.modFolders(instPath))) && !sys.FileSystem.exists(Paths.json(poop + '/' + poop))) {
-					trace("The JSON's name does not match with  " + poop + "!\nTry making them match.");
-				} else if(sys.FileSystem.exists(Paths.json(poop + '/' + poop)) && !sys.FileSystem.exists(Paths.getSharedPath(instPath)) && !sys.FileSystem.exists(Paths.modFolders(instPath))) {
-					trace("Your song seems to not have an Inst.ogg, check the folder name in 'songs'!");
-				} else if(!sys.FileSystem.exists(Paths.json(poop + '/' + poop)) && !sys.FileSystem.exists(Paths.getSharedPath(instPath)) && !sys.FileSystem.exists(Paths.modFolders(instPath))) {
-					trace("It appears that " + poop + " doesn't actually have a JSON, nor does it actually have voices/instrumental files!\nMaybe try fixing its name in weeks/" + WeekData.getWeekFileName() + "?");
-				}
-				#end
 			}
+			catch(e:haxe.Exception)
+			{
+				trace('ERROR! ${e.message}');
+
+				var errorStr:String = e.message;
+				if(errorStr.contains('There is no TEXT asset with an ID of')) errorStr = 'Missing file: ' + errorStr.substring(errorStr.indexOf(songLowercase), errorStr.length-1); //Missing chart
+				else errorStr += '\n\n' + e.stack;
+
+				missingText.text = 'ERROR WHILE LOADING CHART:\n$errorStr';
+				missingText.screenCenter(Y);
+				missingText.visible = true;
+				missingTextBG.visible = true;
+				FlxG.sound.play(Paths.sound('cancelMenu'));
+
+				updateTexts(elapsed);
+				super.update(elapsed);
+				return;
+			}
+
+			@:privateAccess
+			if(PlayState._lastLoadedModDirectory != Mods.currentModDirectory)
+			{
+				trace('CHANGED MOD DIRECTORY, RELOADING STUFF');
+				Paths.freeGraphicsFromMemory();
+			}
+			LoadingState.prepareToSong();
+			LoadingState.loadAndSwitchState(new PlayState());
+			#if !SHOW_LOADING_SCREEN FlxG.sound.music.stop(); #end
+			stopMusicPlay = true;
+
+			destroyFreeplayVocals();
+			#if (MODS_ALLOWED && DISCORD_ALLOWED)
+			DiscordClient.loadModRPC();
+			#end
 		}
 		else if(controls.RESET && !player.playingMusic)
 		{
