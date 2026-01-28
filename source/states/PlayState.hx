@@ -166,7 +166,6 @@ class PlayState extends MusicBeatState
 	public var opponentStrums:FlxTypedGroup<StrumNote> = new FlxTypedGroup<StrumNote>();
 	public var playerStrums:FlxTypedGroup<StrumNote> = new FlxTypedGroup<StrumNote>();
 	public var grpNoteSplashes:FlxTypedGroup<NoteSplash> = new FlxTypedGroup<NoteSplash>();
-	public var splashesPerFrame:Array<Int> = [0, 0, 0, 0]; // [opponent, player, opponentHold, playerHold]
 
 	public var camZooming:Bool = false;
 	public var camZoomingMult:Float = 1;
@@ -1688,10 +1687,6 @@ class PlayState extends MusicBeatState
 		else FlxG.camera.followLerp = 0;
 		callOnScripts('onUpdate', [elapsed]);
 
-		// Reset splash counters each frame (prevents too many splashes from causing lag)
-		for (i in 0...splashesPerFrame.length)
-			if (splashesPerFrame[i] > 0) splashesPerFrame[i] = 0;
-
 		super.update(elapsed);
 
 		setOnScripts('curDecStep', curDecStep);
@@ -2579,7 +2574,7 @@ class PlayState extends MusicBeatState
 		note.rating = daRating.name;
 		score = daRating.score;
 
-		if(daRating.noteSplash && !note.noteSplashData.disabled && (!ClientPrefs.data.lessBotLag || !cpuControlled) && splashesPerFrame[1] <= 4)
+		if(daRating.noteSplash && !note.noteSplashData.disabled)
 			spawnNoteSplashOnNote(note);
 
 		if(!cpuControlled) {
@@ -3018,10 +3013,6 @@ class PlayState extends MusicBeatState
 		strumPlayAnim(true, Std.int(Math.abs(note.noteData)), Conductor.stepCrochet * 1.25 / 1000 / playbackRate);
 		note.hitByOpponent = true;
 		
-		// Spawn opponent note splash (with lessBotLag check and splash limit)
-		if(!note.noteSplashData.disabled && !note.isSustainNote && (!ClientPrefs.data.lessBotLag || !cpuControlled) && splashesPerFrame[0] <= 4)
-			spawnNoteSplashOnNote(note);
-		
 		stagesFunc(function(stage:BaseStage) stage.opponentNoteHit(note));
 		var result:Dynamic = callOnLuas('opponentNoteHit', [notes.members.indexOf(note), Math.abs(note.noteData), note.noteType, note.isSustainNote]);
 		if(result != LuaUtils.Function_Stop && result != LuaUtils.Function_StopHScript && result != LuaUtils.Function_StopAll) callOnHScript('opponentNoteHit', [note]);
@@ -3098,17 +3089,8 @@ class PlayState extends MusicBeatState
 			if (!note.isSustainNote)
 			{
 				combo++;
-				if (!ClientPrefs.data.lessBotLag || !cpuControlled) {
-					popUpScore(note);
-				} else {
-					// Minimal judgeNote for botplay when lessBotLag is enabled
-					var noteDiff:Float = Math.abs(note.strumTime - Conductor.songPosition + ClientPrefs.data.ratingOffset);
-					var daRating:Rating = Conductor.judgeNote(ratingsData, noteDiff / playbackRate);
-					totalNotesHit += daRating.ratingMod;
-					note.ratingMod = daRating.ratingMod;
-					if(!note.ratingDisabled) daRating.hits++;
-					note.rating = daRating.name;
-				}
+				if(combo > 9999) combo = 9999;
+				popUpScore(note);
 			}
 			var gainHealth:Bool = true; // prevent health gain, *if* sustains are treated as a singular note
 			if (guitarHeroSustains && note.isSustainNote) gainHealth = false;
@@ -3131,8 +3113,7 @@ class PlayState extends MusicBeatState
 			}
 
 			noteMiss(note);
-			if(!note.noteSplashData.disabled && !note.isSustainNote && (!ClientPrefs.data.lessBotLag || !cpuControlled) && splashesPerFrame[1] <= 4)
-				spawnNoteSplashOnNote(note);
+			if(!note.noteSplashData.disabled && !note.isSustainNote) spawnNoteSplashOnNote(note);
 		}
 
 		stagesFunc(function(stage:BaseStage) stage.goodNoteHit(note));
@@ -3149,15 +3130,9 @@ class PlayState extends MusicBeatState
 
 	public function spawnNoteSplashOnNote(note:Note) {
 		if(note != null) {
-			// Use correct strum group based on whether it's player or opponent note
-			var strum:StrumNote = (note.mustPress ? playerStrums : opponentStrums).members[note.noteData];
-			if(strum != null) {
+			var strum:StrumNote = playerStrums.members[note.noteData];
+			if(strum != null)
 				spawnNoteSplash(strum.x, strum.y, note.noteData, note, strum);
-				// Track splash count (1 = player, 0 = opponent)
-				var splashIndex:Int = (note.mustPress ? 1 : 0);
-				if(note.isSustainNote) splashIndex += 2; // 2 = opponentHold, 3 = playerHold
-				splashesPerFrame[splashIndex]++;
-			}
 		}
 	}
 
