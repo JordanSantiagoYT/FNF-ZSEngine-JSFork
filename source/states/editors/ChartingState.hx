@@ -162,7 +162,16 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		8,
 		12,
 		16,
-		24
+		24,
+		32,
+		36,
+		48,
+		64,
+		72,
+		96,
+		128,
+		192,
+		256
 	];
 	var curZoom:Float = 1;
 
@@ -2724,17 +2733,17 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		objY += 30;
 		hidePreviousSectionCheckBox = new PsychUICheckBox(objX, objY, 'Hide Previous Section', 140, function()
 		{
-			showPreviousSection = !hidePreviousSectionCheckBox.checked;
+			chartEditorSave.data.showPreviousSection = !hidePreviousSectionCheckBox.checked;
 			loadSection();
 		});
-		hidePreviousSectionCheckBox.checked = !showPreviousSection;
+		hidePreviousSectionCheckBox.checked = !chartEditorSave.data.showPreviousSection;
 
 		hideNextSectionCheckBox = new PsychUICheckBox(objX + 150, objY, 'Hide Next Section', 140, function()
 		{
-			showNextSection = !hideNextSectionCheckBox.checked;
+			chartEditorSave.data.showNextSection = !hideNextSectionCheckBox.checked;
 			loadSection();
 		});
-		hideNextSectionCheckBox.checked = !showNextSection;
+		hideNextSectionCheckBox.checked = !chartEditorSave.data.showNextSection;
 
 		objY += 30;
 		hitsoundPlayerStepper = new PsychUINumericStepper(objX, objY, 0.2, 0, 0, 1, 1);
