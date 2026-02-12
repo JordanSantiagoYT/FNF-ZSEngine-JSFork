@@ -2697,8 +2697,9 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 	var mouseSnapCheckBox:PsychUICheckBox;
 	var ignoreProgressCheckBox:PsychUICheckBox;
-	var hidePreviousSectionCheckBox:PsychUICheckBox;
-	var hideNextSectionCheckBox:PsychUICheckBox;
+	// Old Checkboxes
+	// var hidePreviousSectionCheckBox:PsychUICheckBox;
+	// var hideNextSectionCheckBox:PsychUICheckBox;
 	var hitsoundPlayerStepper:PsychUINumericStepper;
 	var hitsoundOpponentStepper:PsychUINumericStepper;
 	var metronomeStepper:PsychUINumericStepper;
@@ -2730,22 +2731,27 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		ignoreProgressCheckBox = new PsychUICheckBox(objX + 150, objY, 'Ignore Progress Warnings', 100, function() chartEditorSave.data.ignoreProgressWarns = ignoreProgressCheckBox.checked);
 		ignoreProgressCheckBox.checked = chartEditorSave.data.ignoreProgressWarns;
 
-		objY += 30;
+		objY += 50;
+
+		// Old Checkboxes
+		/*
 		hidePreviousSectionCheckBox = new PsychUICheckBox(objX, objY, 'Hide Previous Section', 140, function()
 		{
-			chartEditorSave.data.showPreviousSection = !hidePreviousSectionCheckBox.checked;
+			showPreviousSection = !hidePreviousSectionCheckBox.checked;
 			loadSection();
 		});
-		hidePreviousSectionCheckBox.checked = !chartEditorSave.data.showPreviousSection;
+		hidePreviousSectionCheckBox.checked = !showPreviousSection;
 
 		hideNextSectionCheckBox = new PsychUICheckBox(objX + 150, objY, 'Hide Next Section', 140, function()
 		{
-			chartEditorSave.data.showNextSection = !hideNextSectionCheckBox.checked;
+			showNextSection = !hideNextSectionCheckBox.checked;
 			loadSection();
 		});
-		hideNextSectionCheckBox.checked = !chartEditorSave.data.showNextSection;
+		hideNextSectionCheckBox.checked = !showNextSection;
 
 		objY += 30;
+		*/
+
 		hitsoundPlayerStepper = new PsychUINumericStepper(objX, objY, 0.2, 0, 0, 1, 1);
 		hitsoundOpponentStepper = new PsychUINumericStepper(objX + 100, objY, 0.2, 0, 0, 1, 1);
 		metronomeStepper = new PsychUINumericStepper(objX + 200, objY, 0.2, 0, 0, 1, 1);
@@ -3601,7 +3607,40 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			PlayState.SONG.needsVoices = allowVocalsCheckBox.checked;
 			loadMusic();
 		});
-		var reloadAudioButton:PsychUIButton = new PsychUIButton(objX + 205, objY, 'Reload Audio', function() loadMusic(true), 80);
+		var reloadAudioButton:PsychUIButton = new PsychUIButton(objX + 120, objY, 'Reload Audio', function() loadMusic(true), 80);
+
+		#if mac
+		var reloadJsonButton:PsychUIButton = new PsychUIButton(objX + 205, objY, 'Reload JSON', function()
+		{
+			var cur = Paths.formatToSongPath(songNameInputText.text);
+			var curdiff = Highscore.formatSong(cur, PlayState.storyDifficulty);
+			var diff = false;
+			var loadedChart:SwagSong = try {
+				diff = true;
+				Song.getChart(curdiff, cur);
+			} catch (e) {
+				diff = false;
+				Song.getChart(cur, cur);
+			}
+			if(loadedChart == null || !Reflect.hasField(loadedChart, 'song')) //Check if chart is ACTUALLY a chart and valid
+			{
+				showOutput('Error: File loaded is not a Psych Engine/FNF 0.2.x.x chart.', true);
+				return;
+			}
+
+			var func:Void->Void = function()
+			{
+				loadChart(loadedChart);
+				Song.chartPath = diff ? curdiff : cur;
+				reloadNotesDropdowns();
+				prepareReload();
+				showOutput('Opened chart "${diff ? curdiff : cur}" successfully!');
+			}
+					
+			if(!ignoreProgressCheckBox.checked) openSubState(new Prompt('Warning: Any unsaved progress\nwill be lost.', func));
+			else func();
+		}, 80);
+		#end
 
 		objY += 65;
 		//(x:Float = 0, y:Float = 0, step:Float = 1, defValue:Float = 0, min:Float = -999, max:Float = 999, decimals:Int = 0, ?wid:Int = 60, ?isPercent:Bool = false)
