@@ -2772,8 +2772,9 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		tab_group.add(playbackSlider);
 		tab_group.add(mouseSnapCheckBox);
 		tab_group.add(ignoreProgressCheckBox);
-		tab_group.add(hidePreviousSectionCheckBox);
-		tab_group.add(hideNextSectionCheckBox);
+		// Old Checkboxes
+		// tab_group.add(hidePreviousSectionCheckBox);
+		// tab_group.add(hideNextSectionCheckBox);
 
 		tab_group.add(new FlxText(hitsoundPlayerStepper.x, hitsoundPlayerStepper.y - 15, 100, 'Hitsound (Player):'));
 		tab_group.add(new FlxText(hitsoundOpponentStepper.x, hitsoundOpponentStepper.y - 15, 100, 'Hitsound (Opp.):'));
