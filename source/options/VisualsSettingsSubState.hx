@@ -124,31 +124,34 @@ class VisualsSettingsSubState extends BaseOptionsMenu
 		var option:Option = new Option('Hit Health',
 			'Change default of the note hit amount (0.02 is default)',
 			'hitHealth',
-			FLOAT);
+			PERCENT);
 		option.scrollSpeed = 10;
 		option.minValue = 0.02;
 		option.maxValue = 1;
 		option.changeValue = 0.0001;
+		option.decimals = 1;
 		addOption(option);
 
 		var option:Option = new Option('Miss health',
 			'Change default of the note miss amount (0.1 is default)',
 			'missHealth',
-			FLOAT);
+			PERCENT);
 		option.scrollSpeed = 10;
 		option.minValue = 0.1;
 		option.maxValue = 1;
 		option.changeValue = 0.0001;
+		option.decimals = 1;
 		addOption(option);
 
 		var option:Option = new Option('Health Limit',
 			'Change default limit of health bar',
 			'maxHealth',
-			FLOAT);
+			PERCENT);
 		option.scrollSpeed = 10;
 		option.minValue = 2;
 		option.maxValue = 4;
 		option.changeValue = 0.1;
+		option.decimals = 1;
 		addOption(option);
 
 		#if !mobile
