@@ -130,6 +130,7 @@ class VisualsSettingsSubState extends BaseOptionsMenu
 		option.minValue = 0.02;
 		option.maxValue = 1;
 		option.changeValue = 0.01;
+		option.decimals = 2;
 		addOption(option);
 
 		var option:Option = new Option('Miss health',
@@ -140,6 +141,7 @@ class VisualsSettingsSubState extends BaseOptionsMenu
 		option.minValue = 0.1;
 		option.maxValue = 1;
 		option.changeValue = 0.01;
+		option.decimals = 2;
 		addOption(option);
 
 		var option:Option = new Option('Health Limit',
