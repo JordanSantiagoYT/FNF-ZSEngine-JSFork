@@ -4,7 +4,7 @@ import objects.Note;
 import objects.StrumNote;
 import objects.NoteSplash;
 import objects.Alphabet;
-import objects.PlayState;
+import states.PlayState;
 
 class VisualsSettingsSubState extends BaseOptionsMenu
 {
