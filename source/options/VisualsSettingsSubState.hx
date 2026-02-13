@@ -127,10 +127,10 @@ class VisualsSettingsSubState extends BaseOptionsMenu
 			'hitHealth',
 			FLOAT);
 		option.scrollSpeed = 10;
-		option.minValue = 0.02;
+		option.minValue = 0.0001;
 		option.maxValue = 1;
-		option.changeValue = 0.01;
-		option.decimals = 2;
+		option.changeValue = 0.0001;
+		option.decimals = 4;
 		addOption(option);
 
 		var option:Option = new Option('Miss health',
@@ -138,10 +138,10 @@ class VisualsSettingsSubState extends BaseOptionsMenu
 			'missHealth',
 			FLOAT);
 		option.scrollSpeed = 10;
-		option.minValue = 0.1;
+		option.minValue = 0.0001;
 		option.maxValue = 1;
-		option.changeValue = 0.01;
-		option.decimals = 2;
+		option.changeValue = 0.0001;
+		option.decimals = 4;
 		addOption(option);
 
 		var option:Option = new Option('Health Limit',
