@@ -3666,7 +3666,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		tab_group.add(songNameInputText);
 		tab_group.add(allowVocalsCheckBox);
 		tab_group.add(reloadAudioButton);
-		tab_group.add(reloadJsonButton);
+		tab_group.add(reloadJsonButton); // Keep this if you prefer old loading chart system
 
 		// Find characters
 		var characters:Array<String> = [];
