@@ -174,8 +174,8 @@ class PlayState extends MusicBeatState
 
 	public var gfSpeed:Int = 1;
 	public var health(default, set):Float = 1;
-	public var hitHealth = ClientPrefs.data.hitHealth;
-	public var missHealth = Note.missHealth;
+	public var hitHealth:Float = ClientPrefs.data.hitHealth;
+	public var missHealth:Float = ClientPrefs.data.missHealth;
 	public var maxHealth:Float = 2;
 	public var combo:Int = 0;
 
