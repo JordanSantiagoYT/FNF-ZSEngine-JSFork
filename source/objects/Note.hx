@@ -214,6 +214,7 @@ class Note extends FlxSprite
 
 					// gameplay data
 					lowPriority = true;
+					missHealth = ClientPrefs.data.missHealth;
 					missHealth = isSustainNote ? 0.25 : 0.1;
 					hitCausesMiss = true;
 					hitsound = 'cancelMenu';

@@ -527,6 +527,7 @@ class PlayState extends MusicBeatState
 		FlxG.worldBounds.set(0, 0, FlxG.width, FlxG.height);
 		moveCameraSection();
 
+		maxHealth = ClientPrefs.data.maxHealth;
 		healthBar = new Bar(0, FlxG.height * (!ClientPrefs.data.downScroll ? 0.89 : 0.11), 'healthBar', function() return health, 0, maxHealth);
 		healthBar.screenCenter(X);
 		healthBar.leftToRight = false;
@@ -3092,6 +3093,7 @@ class PlayState extends MusicBeatState
 				combo++;
 				popUpScore(note);
 			}
+			note.hitHealth = ClientPrefs.data.hitHealth;
 			var gainHealth:Bool = true; // prevent health gain, *if* sustains are treated as a singular note
 			if (guitarHeroSustains && note.isSustainNote) gainHealth = false;
 			if (gainHealth) health += note.hitHealth * healthGain;
