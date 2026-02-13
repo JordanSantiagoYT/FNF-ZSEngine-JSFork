@@ -3093,10 +3093,10 @@ class PlayState extends MusicBeatState
 				combo++;
 				popUpScore(note);
 			}
-			note.hitHealth = ClientPrefs.data.hitHealth;
+			hitHealth = ClientPrefs.data.hitHealth;
 			var gainHealth:Bool = true; // prevent health gain, *if* sustains are treated as a singular note
 			if (guitarHeroSustains && note.isSustainNote) gainHealth = false;
-			if (gainHealth) health += note.hitHealth * healthGain;
+			if (gainHealth) health += hitHealth * healthGain;
 
 		}
 		else //Notes that count as a miss if you hit them (Hurt notes for example)
