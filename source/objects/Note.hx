@@ -121,7 +121,7 @@ class Note extends FlxSprite
 	public var copyAngle:Bool = true;
 	public var copyAlpha:Bool = true;
 
-	public var missHealth:Float = 0.1;
+	public var missHealth:Float = ClientPrefs.data.missHealth;
 	public var rating:String = 'unknown';
 	public var ratingMod:Float = 0; //9 = unknown, 0.25 = shit, 0.5 = bad, 0.75 = good, 1 = sick
 	public var ratingDisabled:Bool = false;
@@ -213,7 +213,6 @@ class Note extends FlxSprite
 
 					// gameplay data
 					lowPriority = true;
-					missHealth = ClientPrefs.data.missHealth;
 					missHealth = isSustainNote ? 0.25 : 0.1;
 					hitCausesMiss = true;
 					hitsound = 'cancelMenu';

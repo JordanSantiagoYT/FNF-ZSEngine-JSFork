@@ -37,7 +37,6 @@ import shaders.ErrorHandledShader;
 
 import objects.VideoSprite;
 import objects.Note.EventNote;
-import objects.Note;
 import objects.*;
 import states.stages.*;
 import states.stages.objects.*;
@@ -176,7 +175,7 @@ class PlayState extends MusicBeatState
 	public var gfSpeed:Int = 1;
 	public var health(default, set):Float = 1;
 	public var hitHealth = ClientPrefs.data.hitHealth;
-	public var missHealth = note.missHealth;
+	public var missHealth = Note.missHealth;
 	public var maxHealth:Float = 2;
 	public var combo:Int = 0;
 
