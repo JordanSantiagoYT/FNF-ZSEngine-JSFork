@@ -174,6 +174,8 @@ class PlayState extends MusicBeatState
 
 	public var gfSpeed:Int = 1;
 	public var health(default, set):Float = 1;
+	public var hitHealth = ClientPrefs.data.hitHealth;
+	public var missHealth = note.missHealth;
 	public var maxHealth:Float = 2;
 	public var combo:Int = 0;
 
@@ -528,6 +530,7 @@ class PlayState extends MusicBeatState
 		moveCameraSection();
 
 		maxHealth = ClientPrefs.data.maxHealth;
+		if (maxHealth > 2) health = maxHealth / 2;
 		healthBar = new Bar(0, FlxG.height * (!ClientPrefs.data.downScroll ? 0.89 : 0.11), 'healthBar', function() return health, 0, maxHealth);
 		healthBar.screenCenter(X);
 		healthBar.leftToRight = false;
@@ -562,8 +565,7 @@ class PlayState extends MusicBeatState
 		botplayTxt.borderSize = 1.25;
 		botplayTxt.visible = cpuControlled;
 		uiGroup.add(botplayTxt);
-		if(ClientPrefs.data.downScroll)
-			botplayTxt.y = healthBar.y + 70;
+		if (ClientPrefs.data.downScroll) botplayTxt.y = healthBar.y + 70;
 
 		uiGroup.cameras = [camHUD];
 		noteGroup.cameras = [camHUD];
@@ -2897,7 +2899,7 @@ class PlayState extends MusicBeatState
 	{
 		// score and data
 		var subtract:Float = pressMissDamage;
-		if(note != null) subtract = note.missHealth;
+		if(note != null) subtract = missHealth;
 
 		// GUITAR HERO SUSTAIN CHECK LOL!!!!
 		if (note != null && guitarHeroSustains && note.parent == null) {
@@ -3093,7 +3095,6 @@ class PlayState extends MusicBeatState
 				combo++;
 				popUpScore(note);
 			}
-			hitHealth = ClientPrefs.data.hitHealth;
 			var gainHealth:Bool = true; // prevent health gain, *if* sustains are treated as a singular note
 			if (guitarHeroSustains && note.isSustainNote) gainHealth = false;
 			if (gainHealth) health += hitHealth * healthGain;
