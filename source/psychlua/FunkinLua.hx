@@ -208,7 +208,7 @@ class FunkinLua {
 		// Health Settings
 		set('hitHealth', ClientPrefs.data.hitHealth);
 		set('missHealth', ClientPrefs.data.missHealth);
-		set('maxHealth', Closing.data.maxHealth);
+		set('maxHealth', ClientPrefs.data.maxHealth);
 
 		// build target (windows, mac, linux, etc.)
 		set('buildTarget', LuaUtils.getBuildTarget());
