@@ -252,7 +252,16 @@ class PlayState extends MusicBeatState
 
 	// Lua shit
 	public static var instance:PlayState;
-	#if LUA_ALLOWED public var luaArray:Array<FunkinLua> = []; #end
+
+	#if LUA_ALLOWED
+	public var luaArray:Array<FunkinLua> = [];
+	public var wiggleMap:Map<String, WiggleEffect> = new Map<String, WiggleEffect>();
+	#end
+
+	public var shaderEnabled = ClientPrefs.data.shaders;
+	public static var masterPulse:PulseEffect;
+	var allowDisable:Bool = false;
+	var allowDisableAt:Int = 0;
 
 	#if (LUA_ALLOWED || HSCRIPT_ALLOWED)
 	private var luaDebugGroup:FlxTypedGroup<psychlua.DebugLuaText>;
@@ -1781,6 +1790,21 @@ class PlayState extends MusicBeatState
 			trace("RESET = True");
 		}
 		doDeathCheck();
+
+		if (shaderEnabled) {
+			for(wig in wiggleMap) {
+				wig.update(globalElapsed);
+			}
+
+			if (allowDisableAt == curStep || isDead)
+				allowDisable = true;
+
+			if (allowDisable)
+				masterPulse.shader.uampmul.value[0] -= (globalElapsed / 2);
+
+			if (masterPulse.shader.uampmul.value[0] > 0)
+				masterPulse.update(globalElapsed);
+		}
 
 		if (unspawnNotes[0] != null)
 		{
