@@ -126,7 +126,7 @@ class VisualsSettingsSubState extends BaseOptionsMenu
 			'Change default of the note hit amount (0.02 is default)',
 			'hitHealth',
 			FLOAT);
-		option.scrollSpeed = 10;
+		option.scrollSpeed = 0.5;
 		option.minValue = 0.0001;
 		option.maxValue = 1;
 		option.changeValue = 0.0001;
@@ -137,7 +137,7 @@ class VisualsSettingsSubState extends BaseOptionsMenu
 			'Change default of the note miss amount (0.1 is default)',
 			'missHealth',
 			FLOAT);
-		option.scrollSpeed = 10;
+		option.scrollSpeed = 0.5;
 		option.minValue = 0.0001;
 		option.maxValue = 1;
 		option.changeValue = 0.0001;
@@ -148,7 +148,7 @@ class VisualsSettingsSubState extends BaseOptionsMenu
 			'Change default limit of health bar',
 			'maxHealth',
 			FLOAT);
-		option.scrollSpeed = 10;
+		option.scrollSpeed = 0.5;
 		option.minValue = 2;
 		option.maxValue = 4;
 		option.changeValue = 0.1;
