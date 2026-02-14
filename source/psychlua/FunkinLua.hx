@@ -43,6 +43,8 @@ import flixel.input.gamepad.FlxGamepadInputID;
 
 import haxe.Json;
 
+import shaders.WiggleEffect;
+
 class FunkinLua {
 	public var lua:State = null;
 	public var camTarget:FlxCamera;

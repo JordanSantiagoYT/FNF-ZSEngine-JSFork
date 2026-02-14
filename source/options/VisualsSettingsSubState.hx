@@ -193,6 +193,12 @@ class VisualsSettingsSubState extends BaseOptionsMenu
 			BOOL);
 		addOption(option);
 
+		var option:Option = new Option('Botplay Text Location: ',
+			'Change the Botplay Text Location.',
+			'vsliceBotPlayPlace',
+			STRING, ["Near the Time Bar", "Near the Health Bar",]);
+		addOption(option);
+
 		super();
 		add(notes);
 		add(splashes);
