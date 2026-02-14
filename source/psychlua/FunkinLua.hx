@@ -205,10 +205,14 @@ class FunkinLua {
 		set('splashSkinPostfix', NoteSplash.getSplashSkinPostfix());
 		set('splashAlpha', ClientPrefs.data.splashAlpha);
 
+		// Health Settings
+		set('hitHealth', ClientPrefs.data.hitHealth);
+		set('missHealth', ClientPrefs.data.missHealth);
+		set('maxHealth', Closing.data.maxHealth);
+
 		// build target (windows, mac, linux, etc.)
 		set('buildTarget', LuaUtils.getBuildTarget());
 
-		//
 		Lua_helper.add_callback(lua, "getRunningScripts", function() {
 			var runningScripts:Array<String> = [];
 			for (script in game.luaArray)
@@ -598,6 +602,25 @@ class FunkinLua {
 			}
 			else luaTrace('doTweenColor: Couldnt find object: ' + vars, false, false, FlxColor.RED);
 			return null;
+		});
+
+		Lua_helper.add_callback(lua, "addGlitchEffect", function(tag:String, ?spd:Float = 2.25, ?freq:Float = 5, ?amp:Float = 0.1, ?type:String = 'FLAG') {
+			if(MusicBeatState.getVariables().exists(tag)) {
+				var shit:ModchartSprite = MusicBeatState.getVariables().get(tag);
+				var neoWiggle:WiggleEffect = new WiggleEffect();
+				neoWiggle.effectType = if(type == 'WAVY') WAVY
+					else if(type == 'DREAMY') DREAMY
+					else if(type == 'HORIZONTAL') HEAT_WAVE_HORIZONTAL
+					else if(type == 'VERTICAL') HEAT_WAVE_VERTICAL
+					else FLAG;
+				neoWiggle.waveSpeed = spd;
+				neoWiggle.waveFrequency = freq;
+				neoWiggle.waveAmplitude = amp;
+				shit.shader = neoWiggle.shader;
+				PlayState.instance.wiggleMap.set(tag, neoWiggle);
+				return true;
+			}
+			return false;
 		});
 
 		//Tween shit, but for strums
