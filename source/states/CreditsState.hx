@@ -39,10 +39,11 @@ class CreditsState extends MusicBeatState
 
 		var defaultList:Array<Array<String>> = [ // Name - Icon name - Description - Link - BG Color
 			["ZS Engine Team"],
-			["SuperHero2010",       "superhero2010",    "Independent Author, Programmer and Head of ZS Engine",                      "https://youtube.com/@SuperHero20102",                 "008000"],
+			["SuperHero2010",       "superhero2010",    "Independent Author, Main Programmer and Head of ZS Engine",                 "https://youtube.com/@SuperHero20102",                 "008000"],
+			["Tools Scripts",       "toolsscripts",     "Coder of ZS Engine",                                                        "https://www.youtube.com/@ToolsScripts",               "008000"],
 			[""],
 			["Credits for these new features"],
-			["HRK-EXEX",            "hrk",              "Original of faster chart loading and some important features",              "https://x.com/Hrek_Hexex",                            "0080FF"],
+			["HRK-EXEX",            "hrk",              "Original author of faster chart loading and some important features",       "https://x.com/Hrek_Hexex",                            "0080FF"],
 			["Jordan Santiago",     "jor",              "Original author of faster chart loading/saving and note spamming features", "https://youtube.com/@JordanSantiago",                 "00FF00"],
 			[""],
 			["Psych Engine Team"],

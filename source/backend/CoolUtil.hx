@@ -10,15 +10,15 @@ class CoolUtil
 		if (url == null || url.length == 0)
 			url = "https://raw.githubusercontent.com/SuperHero2010/FNF-ZSEngine/main/gitVersion.txt";
 		var version:String = states.MainMenuState.zsEngineVersion.trim();
-		if(ClientPrefs.data.checkForUpdates) {
+		if (ClientPrefs.data.checkForUpdates) {
 			trace('checking for updates...');
 			var http = new haxe.Http(url);
 			http.onData = function (data:String)
 			{
 				var newVersion:String = data.split('\n')[0].trim();
 				trace('version online: $newVersion, your version: $version');
-				if(newVersion != version) {
-					trace('versions arent matching! please update');
+				if (newVersion != version) {
+					trace('versions aren\'t matching! please update');
 					version = newVersion;
 					http.onData = null;
 					http.onError = null;

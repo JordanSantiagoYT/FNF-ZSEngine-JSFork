@@ -140,7 +140,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 	var mainBox:PsychUIBox;
 	var mainBoxPosition:FlxPoint = FlxPoint.get(920, 40);
 	var infoBox:PsychUIBox;
-	var infoBoxPosition:FlxPoint = FlxPoint.get(1000, 520);
+	var infoBoxPosition:FlxPoint = FlxPoint.get(-1000, 700);
 	var upperBox:PsychUIBox;
 	
 	var camUI:FlxCamera;
@@ -485,7 +485,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		stageDropDown.list = loadFileList('stages/', 'data/stageList.txt');
 		onChartLoaded();
 
-		var tipText:FlxText = new FlxText(FlxG.width + 100, FlxG.height - 30, 200, 'Press F1 for Help', 20);
+		var tipText:FlxText = new FlxText(FlxG.width - 100, FlxG.height - 30, 200, 'Press F1 for Help', 20);
 		tipText.cameras = [camUI];
 		tipText.setFormat(null, 16, FlxColor.WHITE, RIGHT);
 		tipText.borderColor = FlxColor.BLACK;
