@@ -62,14 +62,18 @@ class OptionsState extends MusicBeatState
 		for (num => option in options)
 		{
 			var optionText:Alphabet = new Alphabet(0, 0, Language.getPhrase('options_$option', option), true);
+			optionText.setScale(0.75);
 			optionText.screenCenter();
-			optionText.y += (92 * (num - (options.length / 2))) + 45;
+			optionText.y += (60 * (num - (options.length / 2))) + 30;
 			grpOptions.add(optionText);
 		}
 
-		selectorLeft = new Alphabet(0, 0, '>', true);
+		selectorLeft = new Alphabet(0, 0, '>>>', true);
+		selectorLeft.alignment = RIGHT;
+		selectorLeft.setScale(2/3);
 		add(selectorLeft);
-		selectorRight = new Alphabet(0, 0, '<', true);
+		selectorRight = new Alphabet(0, 0, '<<<', true);
+		selectorRight.setScale(2/3);
 		add(selectorRight);
 
 		changeSelection();
@@ -120,10 +124,10 @@ class OptionsState extends MusicBeatState
 			if (item.targetY == 0)
 			{
 				item.alpha = 1;
-				selectorLeft.x = item.x - 63;
-				selectorLeft.y = item.y;
-				selectorRight.x = item.x + item.width + 15;
-				selectorRight.y = item.y;
+				selectorLeft.x = item.x - 140;
+				selectorLeft.y = item.y + 7;
+				selectorRight.x = item.x + item.width + 35;
+				selectorRight.y = item.y + 7;
 			}
 		}
 		FlxG.sound.play(Paths.sound('scrollMenu'));

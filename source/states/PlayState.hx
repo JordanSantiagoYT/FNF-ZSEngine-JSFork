@@ -35,6 +35,7 @@ import openfl.filters.ShaderFilter;
 
 import shaders.ErrorHandledShader;
 import shaders.WiggleEffect;
+import shaders.PulseEffect;
 
 import objects.VideoSprite;
 import objects.Note.EventNote;

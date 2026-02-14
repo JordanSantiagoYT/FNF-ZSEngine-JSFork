@@ -67,6 +67,7 @@ class BaseOptionsMenu extends MusicBeatSubstate
 		descText.setFormat(Paths.font("vcr.ttf"), 32, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 		descText.scrollFactor.set();
 		descText.borderSize = 2.4;
+		descText.antialiasing = ClientPrefs.data.antialiasing;
 		add(descText);
 
 		for (i in 0...optionsArray.length)
@@ -241,6 +242,9 @@ class BaseOptionsMenu extends MusicBeatSubstate
 								{
 									case INT:
 										curOption.setValue(Math.round(holdValue));
+
+									case FLOAT:
+										curOption.setValue(FlxMath.roundDecimal(holdValue, curOption.decimals));
 									
 									case PERCENT:
 										curOption.setValue(FlxMath.roundDecimal(holdValue, curOption.decimals));
