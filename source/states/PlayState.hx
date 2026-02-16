@@ -3565,25 +3565,28 @@ class PlayState extends MusicBeatState
 		}
 	}
 
-	#if ZS_ALLOWED
-	function loadZSScript(path:String) {
-		try {
-			var zsContent = File.getContent(path);
-			var luaContent = ZSTranspiler.transpile(zsContent);
+    #if ZS_ALLOWED
+    function loadZSScript(path:String) {
+        try {
+            var zsContent = File.getContent(path);
+            var luaContent = ZSTranspiler.transpile(zsContent);
 
-			if (luaContent != null) {
-				var luaScript = new FunkinLua(path.replace(".zs", "_temp.lua"));
-				luaScript.executeString(luaContent);
-			} else {
-				for (err in ZSTranspiler.errors) {
-					trace('ZS Error in $path: $err');
-				}
-			}
-		} catch(e:Dynamic) {
-			trace('Failed to load ZS script $path: $e');
-		}
-	}
-	#end
+            if (luaContent != null) {
+                var luaScript = new FunkinLua(path + "_generated");
+                luaScript.script.doString(luaContent);
+            
+                // Optional: track it
+                // zsScripts.push(luaScript);
+            } else {
+                for (err in ZSTranspiler.errors) {
+                    trace('ZS Error in $path: $err');
+                }
+            }
+        } catch(e:Dynamic) {
+            trace('Failed to load ZS script $path: $e');
+        }
+    }
+    #end
 
 	public var ratingName:String = '?';
 	public var ratingPercent:Float;
