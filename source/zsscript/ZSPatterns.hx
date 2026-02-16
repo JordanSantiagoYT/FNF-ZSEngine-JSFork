@@ -472,6 +472,18 @@ class ZSPatterns {
             category: "events"
         },
         {
+            zs: "goodNoteHitPre<{0}, {1}, {2}>:",
+            lua: "function goodNoteHitPre({0}, {1}, {2})",
+            description: "Called before player hits a note",
+            category: "events"
+        },
+        {
+            zs: "opponentNoteHitPre<{0}, {1}, {2}>:",
+            lua: "function opponentNoteHitPre({0}, {1}, {2})",
+            description: "Called before opponent hits a note",
+            category: "events"
+        },
+        {
             zs: "goodNoteHit<{0}, {1}, {2}>:",
             lua: "function goodNoteHit({0}, {1}, {2})",
             description: "Called when player hits a note",
