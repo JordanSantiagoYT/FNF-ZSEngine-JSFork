@@ -1,3 +1,5 @@
+! ZS-LUA
+
 -/ Lua stuff
 onCreate:
 	-/ Triggered when the lua file is started, some variables weren't created yet
