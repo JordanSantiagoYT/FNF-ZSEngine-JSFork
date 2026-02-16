@@ -34,8 +34,8 @@ import openfl.filters.ShaderFilter;
 #end
 
 import shaders.ErrorHandledShader;
-import shaders.WiggleEffect;
-import shaders.PulseEffect;
+// import shaders.WiggleEffect;
+// import shaders.PulseEffect;
 
 import objects.VideoSprite;
 import objects.Note.EventNote;
@@ -257,13 +257,13 @@ class PlayState extends MusicBeatState
 
 	#if LUA_ALLOWED
 	public var luaArray:Array<FunkinLua> = [];
-	public var wiggleMap:Map<String, WiggleEffect> = new Map<String, WiggleEffect>();
+	// public var wiggleMap:Map<String, WiggleEffect> = new Map<String, WiggleEffect>();
 	#end
 
-	public var shaderEnabled = ClientPrefs.data.shaders;
-	public static var masterPulse:PulseEffect;
-	var allowDisable:Bool = false;
-	var allowDisableAt:Int = 0;
+	// public var shaderEnabled:Bool = ClientPrefs.data.shaders;
+	// public static var masterPulse:PulseEffect;
+	// var allowDisable:Bool = false;
+	// var allowDisableAt:Int = 0;
 
 	#if (LUA_ALLOWED || HSCRIPT_ALLOWED)
 	private var luaDebugGroup:FlxTypedGroup<psychlua.DebugLuaText>;
@@ -281,7 +281,7 @@ class PlayState extends MusicBeatState
 	private static var _lastLoadedModDirectory:String = '';
 	public static var nextReloadAll:Bool = false;
 
-	private var globalElapsed:Float = 0;
+	// private var globalElapsed:Float = 0;
 
 	override public function create()
 	{
@@ -1796,6 +1796,7 @@ class PlayState extends MusicBeatState
 		}
 		doDeathCheck();
 
+		/* Comment to use soon
 		if (shaderEnabled) {
 			for(wig in wiggleMap) {
 				wig.update(globalElapsed);
@@ -1810,6 +1811,7 @@ class PlayState extends MusicBeatState
 			if (masterPulse.shader.uampmul.value[0] > 0)
 				masterPulse.update(globalElapsed);
 		}
+		*/
 
 		if (unspawnNotes[0] != null)
 		{

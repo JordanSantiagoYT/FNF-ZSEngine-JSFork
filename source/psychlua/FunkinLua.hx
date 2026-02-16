@@ -43,7 +43,7 @@ import flixel.input.gamepad.FlxGamepadInputID;
 
 import haxe.Json;
 
-import shaders.WiggleEffect;
+// import shaders.WiggleEffect;
 
 class FunkinLua {
 	public var lua:State = null;
@@ -606,6 +606,7 @@ class FunkinLua {
 			return null;
 		});
 
+		/* Comment to use soon
 		Lua_helper.add_callback(lua, "addGlitchEffect", function(tag:String, ?spd:Float = 2.25, ?freq:Float = 5, ?amp:Float = 0.1, ?type:String = 'FLAG') {
 			if(MusicBeatState.getVariables().exists(tag)) {
 				var shit:ModchartSprite = MusicBeatState.getVariables().get(tag);
@@ -624,6 +625,7 @@ class FunkinLua {
 			}
 			return false;
 		});
+		*/
 
 		//Tween shit, but for strums
 		Lua_helper.add_callback(lua, "noteTweenX", function(tag:String, note:Int, value:Dynamic, duration:Float, ?ease:String = 'linear') {
