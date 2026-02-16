@@ -594,15 +594,33 @@ class ZSPatterns {
             category: "control"
         },
         {
-            zs: "return {0}",
-            lua: "return {0}",
-            description: "Return value",
+            zs: "proceed",
+            lua: "return Function_Continue",
+            description: "Continue script execution",
             category: "control"
         },
         {
-            zs: "return",
-            lua: "return",
-            description: "Return",
+            zs: "halt",
+            lua: "return Function_Stop",
+            description: "Stop this script only",
+            category: "control"
+        },
+        {
+            zs: "haltLua",
+            lua: "return Function_StopLua",
+            description: "Stop Lua scripts",
+            category: "control"
+        },
+        {
+            zs: "haltScript",
+            lua: "return Function_StopHScript", 
+            description: "Stop HScripts",
+            category: "control"
+        },
+        {
+            zs: "haltAll",
+            lua: "return Function_StopAll",
+            description: "Stop all scripts",
             category: "control"
         }
     ];
