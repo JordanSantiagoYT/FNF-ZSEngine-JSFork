@@ -172,9 +172,39 @@ class ZSPatterns {
         
         // ===== EVENT OPERATIONS =====
         {
+            zs: "onEvent<{0}, {1}, {2}>:",
+            lua: "function onEvent({0}, {1}, {2})",
+            description: "Event handler with parameters",
+            category: "events"
+        },
+        {
+            zs: "onEvent<{0}>:",
+            lua: "function onEvent({0})",
+            description: "Event handler with one parameter",
+            category: "events"
+        },
+        {
+            zs: "onEvent:",
+            lua: "function onEvent()",
+            description: "Event handler with no parameters",
+            category: "events"
+        },
+        {
             zs: "trigger event: {0}, {1}, {2}",
             lua: "triggerEvent({0}, {1}, {2})",
-            description: "Trigger an event",
+            description: "Trigger an event with parameters",
+            category: "events"
+        },
+        {
+            zs: "trigger event: {0}, {1}",
+            lua: "triggerEvent({0}, {1})",
+            description: "Trigger an event with two parameters",
+            category: "events"
+        },
+        {
+            zs: "trigger event: {0}",
+            lua: "triggerEvent({0})",
+            description: "Trigger an event with one parameter",
             category: "events"
         },
         {
@@ -183,7 +213,191 @@ class ZSPatterns {
             description: "Call a custom function",
             category: "events"
         },
-        
+
+        // ===== SONG EVENT FUNCTIONS (from Lua callbacks) =====
+        {
+            zs: "onSongStart:",
+            lua: "function onSongStart()",
+            description: "Called when song starts",
+            category: "events"
+        },
+        {
+            zs: "onBeatHit:",
+            lua: "function onBeatHit()",
+            description: "Called on beat hit",
+            category: "events"
+        },
+        {
+            zs: "onStepHit:",
+            lua: "function onStepHit()",
+            description: "Called on step hit",
+            category: "events"
+        },
+        {
+            zs: "onCountdownTick<{0}>:",
+            lua: "function onCountdownTick({0})",
+            description: "Called on countdown tick",
+            category: "events"
+        },
+        {
+            zs: "onTimerCompleted<{0}, {1}, {2}>:",
+            lua: "function onTimerCompleted({0}, {1}, {2})",
+            description: "Called when timer completes",
+            category: "events"
+        },
+        {
+            zs: "onTweenCompleted<{0}, {1}>:",
+            lua: "function onTweenCompleted({0}, {1})",
+            description: "Called when tween completes",
+            category: "events"
+        },
+        {
+            zs: "onSoundFinished<{0}>:",
+            lua: "function onSoundFinished({0})",
+            description: "Called when sound finishes",
+            category: "events"
+        },
+        {
+            zs: "onNextDialogue:",
+            lua: "function onNextDialogue()",
+            description: "Called on next dialogue",
+            category: "events"
+        },
+        {
+            zs: "onSkipDialogue:",
+            lua: "function onSkipDialogue()",
+            description: "Called on skip dialogue",
+            category: "events"
+        },
+        {
+            zs: "onPause:",
+            lua: "function onPause()",
+            description: "Called when game pauses",
+            category: "events"
+        },
+        {
+            zs: "onResume:",
+            lua: "function onResume()",
+            description: "Called when game resumes",
+            category: "events"
+        },
+        {
+            zs: "onEndSong:",
+            lua: "function onEndSong()",
+            description: "Called when song ends",
+            category: "events"
+        },
+        {
+            zs: "onGameOver:",
+            lua: "function onGameOver()",
+            description: "Called on game over",
+            category: "events"
+        },
+        {
+            zs: "onGameOverStart:",
+            lua: "function onGameOverStart()",
+            description: "Called when game over starts",
+            category: "events"
+        },
+        {
+            zs: "onNoteHit<{0}, {1}, {2}, {3}>:",
+            lua: "function onNoteHit({0}, {1}, {2}, {3})",
+            description: "Called when note is hit",
+            category: "events"
+        },
+        {
+            zs: "onNoteMiss<{0}, {1}, {2}, {3}>:",
+            lua: "function onNoteMiss({0}, {1}, {2}, {3})",
+            description: "Called when note is missed",
+            category: "events"
+        },
+        {
+            zs: "onGhostTap<{0}>:",
+            lua: "function onGhostTap({0})",
+            description: "Called on ghost tap",
+            category: "events"
+        },
+        {
+            zs: "onPlayerHit<{0}>:",
+            lua: "function onPlayerHit({0})",
+            description: "Called when player hits note",
+            category: "events"
+        },
+        {
+            zs: "onDadHit<{0}>:",
+            lua: "function onDadHit({0})",
+            description: "Called when dad hits note",
+            category: "events"
+        },
+
+        // ===== CORE GAME EVENTS =====
+        {
+            zs: "onCreate:",
+            lua: "function onCreate()",
+            description: "Called when script is created",
+            category: "events"
+        },
+        {
+            zs: "onCreatePost:",
+            lua: "function onCreatePost()",
+            description: "Called after onCreate",
+            category: "events"
+        },
+        {
+            zs: "onUpdate<{0}>:",
+            lua: "function onUpdate({0})",
+            description: "Called every frame",
+            category: "events"
+        },
+        {
+            zs: "onUpdatePost<{0}>:",
+            lua: "function onUpdatePost({0})",
+            description: "Called after onUpdate",
+            category: "events"
+        },
+        {
+            zs: "onDestroy:",
+            lua: "function onDestroy()",
+            description: "Called when script is destroyed",
+            category: "events"
+        },
+        {
+            zs: "onFocus:",
+            lua: "function onFocus()",
+            description: "Called when game gains focus",
+            category: "events"
+        },
+        {
+            zs: "onFocusLost:",
+            lua: "function onFocusLost()",
+            description: "Called when game loses focus",
+            category: "events"
+        },
+        {
+            zs: "onResize<{0}, {1}>:",
+            lua: "function onResize({0}, {1})",
+            description: "Called when window resizes",
+            category: "events"
+        },
+        {
+            zs: "onSectionHit:",
+            lua: "function onSectionHit()",
+            description: "Called on section hit",
+            category: "events"
+        },
+        {
+            zs: "onSubstateOpen<{0}>:",
+            lua: "function onSubstateOpen({0})",
+            description: "Called when substate opens",
+            category: "events"
+        },
+        {
+            zs: "onSubstateClose:",
+            lua: "function onSubstateClose()",
+            description: "Called when substate closes",
+            category: "events"
+        },
+
         // ===== VISUAL OPERATIONS =====
         {
             zs: "set <{0}> color to {1}",
