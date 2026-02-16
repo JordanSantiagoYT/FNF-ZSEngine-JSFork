@@ -3389,28 +3389,25 @@ class PlayState extends MusicBeatState
 		return false;
 	}
 
-	#if ZS_ALLOWED
-	public function startZSScriptsNamed(zsFile:String) {
-		#if MODS_ALLOWED
-		var zsToLoad:String = Paths.modFolders(zsFile);
-		if(!FileSystem.exists(zsToLoad))
-			zsToLoad = Paths.getSharedPath(zsFile);
+    #if ZS_ALLOWED
+    public function startZSScriptsNamed(zsFile:String) {
+        #if MODS_ALLOWED
+        var zsToLoad:String = Paths.modFolders(zsFile);
+        if(!FileSystem.exists(zsToLoad))
+            zsToLoad = Paths.getSharedPath(zsFile);
 
-		if(FileSystem.exists(zsToLoad))
-		#elseif sys
-		var zsToLoad:String = Paths.getSharedPath(zsFile);
-		if(OpenFlAssets.exists(zsToLoad))
-		#end
-		{
-			for (script in zsArray)
-				if (script.scriptName == zsToLoad) return false;
-
-			loadZSScript(zsToLoad);
-			return true;
-		}
-		return false;
-	}
-	#end
+        if(FileSystem.exists(zsToLoad))
+        #elseif sys
+        var zsToLoad:String = Paths.getSharedPath(zsFile);
+        if(OpenFlAssets.exists(zsToLoad))
+        #end
+        {
+            loadZSScript(zsToLoad);
+            return true;
+        }
+        return false;
+    }
+    #end
 
 	public function initHScript(file:String)
 	{
@@ -3570,13 +3567,19 @@ class PlayState extends MusicBeatState
         try {
             var zsContent = File.getContent(path);
             var luaContent = ZSTranspiler.transpile(zsContent);
-
+        
             if (luaContent != null) {
-                var luaScript = new FunkinLua(path + "_generated");
-                luaScript.script.doString(luaContent);
-            
-                // Optional: track it
-                // zsScripts.push(luaScript);
+                var luaScript = new FunkinLua(path);
+
+                var result = LuaL.dostring(luaScript.lua, luaContent);
+
+                if (result != 0) {
+                    var errorStr = Lua.tostring(luaScript.lua, -1);
+                    Lua.pop(luaScript.lua, 1);
+                    trace('ZS Error in $path: $errorStr');
+                }
+
+                // The script will automatically call onCreate() in its constructor
             } else {
                 for (err in ZSTranspiler.errors) {
                     trace('ZS Error in $path: $err');
