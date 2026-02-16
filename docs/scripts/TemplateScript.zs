@@ -30,8 +30,8 @@ onUpdatePost<elapsed>:
 
 onStartCountdown:
 	-/ Countdown started, duh
-	-/ return Function_Stop if you want to stop the countdown from happening (Can be used to trigger dialogues and stuff! You can trigger the countdown with startCountdown:)
-	return Function_Continue;
+	-/ `halt` if you want to stop the countdown from happening (Can be used to trigger dialogues and stuff! You can trigger the countdown with startCountdown:)
+	proceed;
 
 onCountdownStarted:
 	-/ Called AFTER countdown started, if you want to stop it from starting, refer to the previous (onStartCountdown)
@@ -52,23 +52,23 @@ onSongStart:
 
 onSong:
 	-/ Song ed/starting transition (Will be delayed if you're unlocking an achievement)
-	-/ return Function_Stop to stop the song from ing for playing a cutscene or something.
-	return Function_Continue;
+	-/ `halt` to stop the song from ing for playing a cutscene or something.
+	proceed;
 
 
 -/ Substate interactions
 onPause:
 	-/ Called when you press Pause while not on a cutscene/etc
-	-/ return Function_Stop if you want to stop the player from pausing the game
-	return Function_Continue;
+	-/ `halt` if you want to stop the player from pausing the game
+	proceed;
 
 onResume:
 	-/ Called after the game has been resumed from a pause (WARNING: Not necessarily from the pause screen, but most likely is!!!)
 
 onGameOver:
 	-/ You died! Called every single frame your health is lower (or equal to) zero
-	-/ return Function_Stop if you want to stop the player from going into the game over screen
-	return Function_Continue;
+	-/ `halt` if you want to stop the player from going into the game over screen
+	proceed;
 
 onGameOverStart:
 	-/ Called when you have entered the game over screen and "onGameOver" wasn't stopped
@@ -150,18 +150,18 @@ noteMiss<id, direction, noteType, isSustainNote>:
 preUpdateScore<miss>:
 	-/ Called before the score text updates
 	-/ "miss" will be true if you missed
-	-/ return Function_Stop if you want to stop the score text from updating
-	return Function_Continue
+	-/ `halt` if you want to stop the score text from updating
+	proceed;
 
 onUpdateScore<miss>:
 	-/ Called after the score text updates
 	-/ "miss" will be true if you missed
 
 onRecalculateRating:
-	-/ return Function_Stop if you want to do your own rating calculation,
+	-/ `halt` if you want to do your own rating calculation,
 	-/ use setRatingPercent: to set the number on the calculation and setRatingString: to set the funny rating name
 	-/ NOTE: THIS IS CALLED BEFORE THE CALCULATION!!!
-	return Function_Continue;
+	proceed;
 
 onMoveCamera<focus>:
 	-/Called when the camera focuses to a character
