@@ -57,6 +57,10 @@ import crowplexus.hscript.Expr.Error as IrisError;
 import crowplexus.hscript.Printer;
 #end
 
+#if ZS_ALLOWED
+import zsscript.ZSTranspiler;
+#end
+
 /**
  * This is where all the Gameplay stuff happens and is managed
  *
@@ -283,6 +287,8 @@ class PlayState extends MusicBeatState
 
 	// private var globalElapsed:Float = 0;
 
+	public var zsScript:Bool = ClientPrefs.data.zsScript;
+
 	override public function create()
 	{
 		//trace('Playback Rate: ' + playbackRate);
@@ -445,24 +451,27 @@ class PlayState extends MusicBeatState
 			add(dadGroup);
 			add(boyfriendGroup);
 		}
-		
-		#if (LUA_ALLOWED || HSCRIPT_ALLOWED)
+
 		// "SCRIPTS FOLDER" SCRIPTS
+		#if (LUA_ALLOWED || HSCRIPT_ALLOWED || ZS_ALLOWED)
 		for (folder in Mods.directoriesWithFile(Paths.getSharedPath(), 'scripts/'))
 			for (file in FileSystem.readDirectory(folder))
 			{
 				#if LUA_ALLOWED
-				if(file.toLowerCase().endsWith('.lua'))
+				if (file.toLowerCase().endsWith('.lua'))
 					new FunkinLua(folder + file);
 				#end
-
 				#if HSCRIPT_ALLOWED
-				if(file.toLowerCase().endsWith('.hx'))
+				if (file.toLowerCase().endsWith('.hx'))
 					initHScript(folder + file);
+				#end
+				#if ZS_ALLOWED
+				if (file.toLowerCase().endsWith('.zs') && zsScript) 
+					loadZSScript(folder + file);
 				#end
 			}
 		#end
-			
+
 		var camPos:FlxPoint = FlxPoint.get(girlfriendCameraOffset[0], girlfriendCameraOffset[1]);
 		if(gf != null)
 		{
@@ -607,24 +616,34 @@ class PlayState extends MusicBeatState
 		for (event in eventsPushed)
 			startHScriptsNamed('custom_events/' + event + '.hx');
 		#end
+
+		#if ZS_ALLOWED
+		if (zsScript)
+			for (event in eventsPushed)
+				startZSScriptsNamed('custom_events/' + event + '.zs');
+		#end
+
 		noteTypes = null;
 		eventsPushed = null;
 
 		// SONG SPECIFIC SCRIPTS
-		#if (LUA_ALLOWED || HSCRIPT_ALLOWED)
+		#if (LUA_ALLOWED || HSCRIPT_ALLOWED || ZS_ALLOWED)
 		for (folder in Mods.directoriesWithFile(Paths.getSharedPath(), 'data/$songName/'))
 			for (file in FileSystem.readDirectory(folder))
 			{
 				#if LUA_ALLOWED
-				if(file.toLowerCase().endsWith('.lua'))
+				if (file.toLowerCase().endsWith('.lua'))
 					new FunkinLua(folder + file);
 				#end
-
 				#if HSCRIPT_ALLOWED
-				if(file.toLowerCase().endsWith('.hx'))
+				if (file.toLowerCase().endsWith('.hx'))
 					initHScript(folder + file);
 				#end
-			}
+				#if ZS_ALLOWED
+				if (file.toLowerCase().endsWith('.zs') && zsScript) 
+					loadZSScript(folder + file);
+				#end
+			} 
 		#end
 
 		if(eventNotes.length > 0)
@@ -3370,6 +3389,29 @@ class PlayState extends MusicBeatState
 		return false;
 	}
 
+	#if ZS_ALLOWED
+	public function startZSScriptsNamed(zsFile:String) {
+		#if MODS_ALLOWED
+		var zsToLoad:String = Paths.modFolders(zsFile);
+		if(!FileSystem.exists(zsToLoad))
+			zsToLoad = Paths.getSharedPath(zsFile);
+
+		if(FileSystem.exists(zsToLoad))
+		#elseif sys
+		var zsToLoad:String = Paths.getSharedPath(zsFile);
+		if(OpenFlAssets.exists(zsToLoad))
+		#end
+		{
+			for (script in zsArray)
+				if (script.scriptName == zsToLoad) return false;
+
+			loadZSScript(zsToLoad);
+			return true;
+		}
+		return false;
+	}
+	#end
+
 	public function initHScript(file:String)
 	{
 		var newScript:HScript = null;
@@ -3522,6 +3564,26 @@ class PlayState extends MusicBeatState
 			spr.resetAnim = time;
 		}
 	}
+
+	#if ZS_ALLOWED
+	function loadZSScript(path:String) {
+		try {
+			var zsContent = File.getContent(path);
+			var luaContent = ZSTranspiler.transpile(zsContent);
+
+			if (luaContent != null) {
+				var luaScript = new FunkinLua(path.replace(".zs", "_temp.lua"));
+				luaScript.executeString(luaContent);
+			} else {
+				for (err in ZSTranspiler.errors) {
+					trace('ZS Error in $path: $err');
+				}
+			}
+		} catch(e:Dynamic) {
+			trace('Failed to load ZS script $path: $e');
+		}
+	}
+	#end
 
 	public var ratingName:String = '?';
 	public var ratingPercent:Float;

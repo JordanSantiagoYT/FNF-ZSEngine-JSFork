@@ -110,6 +110,12 @@ class GameplaySettingsSubState extends BaseOptionsMenu
 		option.changeValue = 0.1;
 		addOption(option);
 
+		var option:Option = new Option('Use ZS Scripts',
+			'If checked, use `.zs` script. Otherwise it won\'t work',
+			'zsScript',
+			BOOL);
+		addOption(option);
+
 		super();
 	}
 

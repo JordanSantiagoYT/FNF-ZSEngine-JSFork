@@ -81,7 +81,8 @@ import states.TitleState;
 	public var discordRPC:Bool = true;
 	public var loadingScreen:Bool = true;
 	public var language:String = 'en-US';
-	public var lessBotLag:Bool = false;
+	public var zsScript:Bool = true;
+	// public var lessBotLag:Bool = false;
 }
 
 class ClientPrefs {
