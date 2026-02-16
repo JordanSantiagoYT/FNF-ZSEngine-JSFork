@@ -47,13 +47,23 @@ class ZSTranspiler {
                 continue;
             }
 
+            if (trimmedLine.indexOf("return") == 0 || trimmedLine.indexOf(" return ") > -1) {
+                errors.push('Error at line $currentLine: "return" keyword is not allowed in ZS. Use "proceed" or "halt" instead');
+                errors.push('  → $trimmedLine');
+                return null;
+            }
+
             var match = ZSPatterns.matchPattern(trimmedLine);
             if (match != null) {
                 try {
                     var luaLine = ZSPatterns.applyPattern(match.pattern, match.args);
 
-                    if (luaLine.indexOf(" then") > -1 || luaLine.indexOf(" do") > -1 || luaLine == "repeat") {
-                        indentationStack.push(indent);
+                    var isReturnFreeKeyword = (match.pattern.category == "control" && (match.pattern.zs == "proceed" || match.pattern.zs == "halt" || match.pattern.zs == "haltLua" || match.pattern.zs == "haltScript" || match.pattern.zs == "haltAll"));
+
+                    if (!isReturnFreeKeyword) {
+                        if (luaLine.indexOf(" then") > -1 || luaLine.indexOf(" do") > -1 || luaLine == "repeat") {
+                            indentationStack.push(indent);
+                        }
                     }
 
                     luaCode.add(luaLine + "\n");
