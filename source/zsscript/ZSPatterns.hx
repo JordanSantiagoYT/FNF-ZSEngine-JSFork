@@ -464,6 +464,50 @@ class ZSPatterns {
             category: "notes"
         },
 
+        // ===== NOTE EVENTS =====
+        {
+            zs: "onEventPushed<{0}, {1}, {2}>:",
+            lua: "function onEventPushed({0}, {1}, {2})",
+            description: "Called when event is pushed",
+            category: "events"
+        },
+        {
+            zs: "goodNoteHit<{0}, {1}, {2}>:",
+            lua: "function goodNoteHit({0}, {1}, {2})",
+            description: "Called when player hits a note",
+            category: "events"
+        },
+        {
+            zs: "opponentNoteHit<{0}, {1}, {2}>:",
+            lua: "function opponentNoteHit({0}, {1}, {2})",
+            description: "Called when opponent hits a note",
+            category: "events"
+        },
+        {
+            zs: "noteMiss<{0}, {1}, {2}>:",
+            lua: "function noteMiss({0}, {1}, {2})",
+            description: "Called when note is missed",
+            category: "events"
+        },
+        {
+            zs: "noteMissPress<{0}>:",
+            lua: "function noteMissPress({0})",
+            description: "Called when key is pressed without a note",
+            category: "events"
+        },
+        {
+            zs: "noteEarlyPress<{0}>:",
+            lua: "function noteEarlyPress({0})",
+            description: "Called when note is pressed too early",
+            category: "events"
+        },
+        {
+            zs: "onSpawnNote<{0}, {1}, {2}, {3}>:",
+            lua: "function onSpawnNote({0}, {1}, {2}, {3})",
+            description: "Called when note spawns",
+            category: "events"
+        },
+
         // ===== CONTROL STRUCTURES =====
         {
             zs: "if {0} then",
