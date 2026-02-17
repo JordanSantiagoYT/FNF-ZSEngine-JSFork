@@ -8,27 +8,24 @@ class ZSTranspiler {
         errors = [];
         var luaCode = new StringBuf();
         var lines = zsSource.split("\n");
-        var foundDirective = false;
-        var startLine = 0;
-
-        for (i in startLine...lines.length) {
+        var startLine = -1;
+        for (i in 0...lines.length) {
             var line = StringTools.trim(lines[i]);
-            if (line == "" || line.startsWith("-/")) {
-                continue;
-            }
+            if (line == "") continue;
+            if (line.startsWith("-/")) continue;
+            
             if (line == "! ZS-LUA") {
-                foundDirective = true;
                 startLine = i + 1;
                 break;
             } else {
-                errors.push("Error: File must start with \"! ZS-LUA\"");
+                errors.push('Error: File must start with "! ZS-LUA"');
                 errors.push('  Found: "$line"');
                 return null;
             }
         }
 
-        if (!foundDirective) {
-            errors.push("Error: File must start with \"! ZS-LUA\"");
+        if (startLine == -1) {
+            errors.push('Error: File must start with "! ZS-LUA"');
             return null;
         }
 
