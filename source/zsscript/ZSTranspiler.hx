@@ -8,41 +8,33 @@ class ZSTranspiler {
         errors = [];
         var luaCode = new StringBuf();
         var lines = zsSource.split("\n");
-        var directiveFound = false;
-        var processedLines = [];
 
+        var firstRealLine = -1;
         for (i in 0...lines.length) {
-            var line = lines[i];
-            var trimmed = StringTools.trim(line);
-
-            if (!directiveFound) {
-                if (trimmed == "" || trimmed.startsWith("-/")) {
-                    continue;
-                }
-                if (trimmed == "! ZS-LUA") {
-                    directiveFound = true;
-                    continue;
-                } else {
-                    errors.push('Error: File must start with "! ZS-LUA"');
-                    errors.push('  Found: "$trimmed"');
-                    return null;
-                }
-            } else {
-                processedLines.push(line);
-            }
+            var trimmed = StringTools.trim(lines[i]);
+            if (trimmed == "" || trimmed.startsWith("-/")) continue;
+            firstRealLine = i;
+            break;
         }
 
-        if (!directiveFound) {
+        if (firstRealLine == -1) {
+            errors.push("Error: File is empty");
+            return null;
+        }
+
+        var firstLine = StringTools.trim(lines[firstRealLine]);
+        if (firstLine != "! ZS-LUA") {
             errors.push('Error: File must start with "! ZS-LUA"');
+            errors.push('  Found: "$firstLine"');
             return null;
         }
 
         var indentationStack:Array<Int> = [0];
         var lastIndent = 0;
 
-        for (i in 0...processedLines.length) {
+        for (i in (firstRealLine + 1)...lines.length) {
             currentLine = i + 1;
-            var rawLine = processedLines[i];
+            var rawLine = lines[i];
             var indent = getIndentLevel(rawLine);
             var trimmedLine = StringTools.trim(rawLine);
 
