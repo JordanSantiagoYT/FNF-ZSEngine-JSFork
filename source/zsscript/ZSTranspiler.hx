@@ -139,7 +139,7 @@ class ZSTranspiler {
                 result += '"';
             }
             else if (char == "‘" || char == "’") {
-                result += "'"
+                result += "'";
             }
             else {
                 result += char;
