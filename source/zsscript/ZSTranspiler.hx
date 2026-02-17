@@ -8,8 +8,26 @@ class ZSTranspiler {
         errors = [];
         var luaCode = new StringBuf();
         var lines = zsSource.split("\n");
+        var foundDirective = false;
+        var startLine = 0;
 
-        if (lines.length == 0 || StringTools.trim(lines[0]) != "! ZS-LUA") {
+        for (i in 0...lines.length) {
+            var line = StringTools.trim(lines[i]);
+            if (line == "" || line.startsWith("-/")) {
+                continue;
+            }
+            if (line == "! ZS-LUA") {
+                foundDirective = true;
+                startLine = i + 1;
+                break;
+            } else {
+                errors.push("Error: File must start with \"! ZS-LUA\"");
+                errors.push('  Found: "$line"');
+                return null;
+            }
+        }
+
+        if (!foundDirective) {
             errors.push("Error: File must start with \"! ZS-LUA\"");
             return null;
         }
@@ -24,6 +42,7 @@ class ZSTranspiler {
             var indent = getIndentLevel(rawLine);
             var trimmedLine = StringTools.trim(rawLine);
 
+            trimmedLine = convertQuotes(trimmedLine);
             trimmedLine = fixMinusSigns(trimmedLine);
 
             if (indent < lastIndent) {
@@ -107,5 +126,26 @@ class ZSTranspiler {
         line = negativeRegex.replace(line, "$1 -$2");
 
         return line;
+    }
+
+    static function convertQuotes(line:String):String {
+        var result = "";
+        var inString = false;
+
+        for (i in 0...line.length) {
+            var char = line.charAt(i);
+
+            if (char == "“" || char == "”") {
+                result += '"';
+            }
+            else if (char == "‘" || char == "’") {
+                result += "'"
+            }
+            else {
+                result += char;
+            }
+        }
+
+        return result;
     }
 }

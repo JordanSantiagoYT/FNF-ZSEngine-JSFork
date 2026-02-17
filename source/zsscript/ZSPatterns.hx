@@ -12,6 +12,26 @@ typedef Pattern = {
 
 class ZSPatterns {
     public static var patterns:Array<Pattern> = [
+        // ===== VARIABLE DECLARATIONS =====
+        {
+            zs: "local <{0}> = {1}",
+            lua: "local {0} = {1}",
+            description: "Local variable declaration",
+            category: "variables"
+        },
+        {
+            zs: "global <{0}> = {1}",
+            lua: "{0} = {1}",
+            description: "Global variable declaration", 
+            category: "variables"
+        },
+        {
+            zs: "local <{0}>",
+            lua: "local {0}",
+            description: "Local variable declaration without value",
+            category: "variables"
+        },
+
         // ===== PROPERTY OPERATIONS =====
         {
             zs: "setProperty: <{0}> = {1}",
@@ -31,18 +51,42 @@ class ZSPatterns {
             description: "Short form set property",
             category: "properties"
         },
-        
+
         // ===== GROUP OPERATIONS =====
         {
-            zs: "setPropertyFromGroup: {0}, {1}, <{2}> = {3}",
-            lua: "setPropertyFromGroup({0}, {1}, \"{2}\", {3})",
+            zs: "setPropertyFromGroup: <{0}>, {1}, <{2}> = {3}",
+            lua: "setPropertyFromGroup(\"{0}\", {1}, \"{2}\", {3})",
             description: "Set property on group member",
             category: "groups"
         },
         {
-            zs: "getPropertyFromGroup({0}, {1}, <{2}>)",
-            lua: "getPropertyFromGroup({0}, {1}, \"{2}\")",
+            zs: "getPropertyFromGroup(<{0}>, {1}, <{2}>)",
+            lua: "getPropertyFromGroup(\"{0}\", {1}, \"{2}\")",
             description: "Get property from group member",
+            category: "groups"
+        },
+        {
+            zs: "setPropertyFromGroup: {0}, {1}, {2} = {3}",
+            lua: "setPropertyFromGroup({0}, {1}, {2}, {3})",
+            description: "Set property on group member (with dynamic values)",
+            category: "groups"
+        },
+        {
+            zs: "getPropertyFromGroup({0}, {1}, {2})",
+            lua: "getPropertyFromGroup({0}, {1}, {2})",
+            description: "Get property from group member (with dynamic values)",
+            category: "groups"
+        },
+        {
+            zs: "setPropertyFromGroup: <{0}>, <{1}>, <{2}> = {3}",
+            lua: "setPropertyFromGroup(\"{0}\", {1}, \"{2}\", {3})",
+            description: "Set property on group member (with noun symbol)",
+            category: "groups"
+        },
+        {
+            zs: "getPropertyFromGroup(<{0}>, <{1}>, <{2}>)",
+            lua: "getPropertyFromGroup(\"{0}\", {1}, \"{2}\")",
+            description: "Get property from group member (with noun symbol)",
             category: "groups"
         },
         {
@@ -57,7 +101,7 @@ class ZSPatterns {
             description: "Remove object from group",
             category: "groups"
         },
-        
+
         // ===== SHADER OPERATIONS =====
         {
             zs: "register shader: <{0}>",
@@ -77,7 +121,7 @@ class ZSPatterns {
             description: "Set shader uniform",
             category: "shaders"
         },
-        
+
         // ===== ANIMATION OPERATIONS =====
         {
             zs: "play animation: <{0}>, {1}, {2}, {3}",
@@ -103,7 +147,7 @@ class ZSPatterns {
             description: "Set current animation",
             category: "animations"
         },
-        
+
         // ===== CAMERA OPERATIONS =====
         {
             zs: "set camera follow: <{0}>, {1}",
@@ -129,7 +173,7 @@ class ZSPatterns {
             description: "Shake the camera",
             category: "camera"
         },
-        
+
         // ===== CHARACTER OPERATIONS =====
         {
             zs: "set character <{0}> to {1}",
@@ -149,7 +193,7 @@ class ZSPatterns {
             description: "Set character position",
             category: "characters"
         },
-        
+
         // ===== SOUND OPERATIONS =====
         {
             zs: "play sound: {0}, {1}",
@@ -169,7 +213,7 @@ class ZSPatterns {
             description: "Stop a sound",
             category: "sounds"
         },
-        
+
         // ===== EVENT OPERATIONS =====
         {
             zs: "onEvent<{0}, {1}, {2}>:",
@@ -423,7 +467,7 @@ class ZSPatterns {
             description: "Show/hide object",
             category: "visuals"
         },
-        
+
         // ===== TWEEN OPERATIONS =====
         {
             zs: "tween <{0}> to {1} over {2} with {3}",
@@ -443,7 +487,7 @@ class ZSPatterns {
             description: "Tween transparency",
             category: "tweens"
         },
-        
+
         // ===== NOTE OPERATIONS =====
         {
             zs: "set note {0} to {1}",
