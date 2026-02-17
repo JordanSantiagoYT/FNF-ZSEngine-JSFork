@@ -3567,10 +3567,15 @@ class PlayState extends MusicBeatState
         try {
             var zsContent = File.getContent(path);
             var luaContent = ZSTranspiler.transpile(zsContent);
-        
-            if (luaContent != null) {
-                var luaScript = new FunkinLua(path);
 
+            if (luaContent != null) {
+				#if DEBUG
+				var debugPath = path.replace(".zs", "_debug.lua");
+				File.saveContent(debugPath, luaContent);
+				trace('Transpiled Lua saved to: $debugPath');
+				#end
+
+                var luaScript = new FunkinLua(path);
                 var result = LuaL.dostring(luaScript.lua, luaContent);
 
                 if (result != 0) {

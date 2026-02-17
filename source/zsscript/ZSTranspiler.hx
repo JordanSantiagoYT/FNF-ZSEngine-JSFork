@@ -8,31 +8,35 @@ class ZSTranspiler {
         errors = [];
         var luaCode = new StringBuf();
         var lines = zsSource.split("\n");
+        var directiveFound = false;
+        var directiveLineIndex = -1;
 
-        var firstRealLine = -1;
         for (i in 0...lines.length) {
-            var trimmed = StringTools.trim(lines[i]);
-            if (trimmed == "" || trimmed.startsWith("-/")) continue;
-            firstRealLine = i;
-            break;
+            var line = StringTools.trim(lines[i]);
+            if (line == "" || line.startsWith("-/")) continue;
+
+            if (line == "! ZS-LUA") {
+                directiveFound = true;
+                directiveLineIndex = i;
+                break;
+            } else {
+                errors.push('Error: File must start with "! ZS-LUA"');
+                errors.push('  Found: "$line"');
+                return null;
+            }
         }
 
-        if (firstRealLine == -1) {
-            errors.push("Error: File is empty");
-            return null;
-        }
-
-        var firstLine = StringTools.trim(lines[firstRealLine]);
-        if (firstLine != "! ZS-LUA") {
+        if (!directiveFound) {
             errors.push('Error: File must start with "! ZS-LUA"');
-            errors.push('  Found: "$firstLine"');
             return null;
         }
+
+        lines[directiveLineIndex] = "";
 
         var indentationStack:Array<Int> = [0];
         var lastIndent = 0;
 
-        for (i in (firstRealLine + 1)...lines.length) {
+        for (i in 0...lines.length) {
             currentLine = i + 1;
             var rawLine = lines[i];
             var indent = getIndentLevel(rawLine);
