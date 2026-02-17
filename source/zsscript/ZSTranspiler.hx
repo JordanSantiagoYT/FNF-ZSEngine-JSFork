@@ -11,7 +11,7 @@ class ZSTranspiler {
         var foundDirective = false;
         var startLine = 0;
 
-        for (i in 0...lines.length) {
+        for (i in startLine...lines.length) {
             var line = StringTools.trim(lines[i]);
             if (line == "" || line.startsWith("-/")) {
                 continue;
