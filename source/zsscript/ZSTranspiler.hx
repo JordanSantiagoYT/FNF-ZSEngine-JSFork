@@ -8,37 +8,41 @@ class ZSTranspiler {
         errors = [];
         var luaCode = new StringBuf();
         var lines = zsSource.split("\n");
-        var foundDirective = false;
-        var startLine = 0;
+        var directiveFound = false;
+        var processedLines = [];
 
         for (i in 0...lines.length) {
-            var line = StringTools.trim(lines[i]);
-            if (line == "" || line.startsWith("-/")) {
-                continue;
-            }
-            if (line == "! ZS-LUA") {
-                foundDirective = true;
-                startLine = i + 1;
-                break;
+            var line = lines[i];
+            var trimmed = StringTools.trim(line);
+
+            if (!directiveFound) {
+                if (trimmed == "" || trimmed.startsWith("-/")) {
+                    continue;
+                }
+                if (trimmed == "! ZS-LUA") {
+                    directiveFound = true;
+                    continue;
+                } else {
+                    errors.push('Error: File must start with "! ZS-LUA"');
+                    errors.push('  Found: "$trimmed"');
+                    return null;
+                }
             } else {
-                errors.push("Error: File must start with \"! ZS-LUA\"");
-                errors.push('  Found: "$line"');
-                return null;
+                processedLines.push(line);
             }
         }
 
-        if (!foundDirective) {
-            errors.push("Error: File must start with \"! ZS-LUA\"");
+        if (!directiveFound) {
+            errors.push('Error: File must start with "! ZS-LUA"');
             return null;
         }
 
         var indentationStack:Array<Int> = [0];
         var lastIndent = 0;
 
-        for (i in startLine...lines.length) {
+        for (i in 0...processedLines.length) {
             currentLine = i + 1;
-            var rawLine = lines[i];
-
+            var rawLine = processedLines[i];
             var indent = getIndentLevel(rawLine);
             var trimmedLine = StringTools.trim(rawLine);
 
