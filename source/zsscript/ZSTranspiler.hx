@@ -8,31 +8,34 @@ class ZSTranspiler {
         errors = [];
         var luaCode = new StringBuf();
         var lines = zsSource.split("\n");
-        var startLine = -1;
+        var foundDirective = false;
+        var startLine = 0;
+
         for (i in 0...lines.length) {
             var line = StringTools.trim(lines[i]);
-            if (line == "") continue;
-            if (line.startsWith("-/")) continue;
-            
+            if (line == "" || line.startsWith("-/")) {
+                continue;
+            }
             if (line == "! ZS-LUA") {
+                foundDirective = true;
                 startLine = i + 1;
                 break;
             } else {
-                errors.push('Error: File must start with "! ZS-LUA"');
+                errors.push("Error: File must start with \"! ZS-LUA\"");
                 errors.push('  Found: "$line"');
                 return null;
             }
         }
 
-        if (startLine == -1) {
-            errors.push('Error: File must start with "! ZS-LUA"');
+        if (!foundDirective) {
+            errors.push("Error: File must start with \"! ZS-LUA\"");
             return null;
         }
 
         var indentationStack:Array<Int> = [0];
         var lastIndent = 0;
 
-        for (i in 1...lines.length) {
+        for (i in startLine...lines.length) {
             currentLine = i + 1;
             var rawLine = lines[i];
 
@@ -136,7 +139,7 @@ class ZSTranspiler {
                 result += '"';
             }
             else if (char == "‘" || char == "’") {
-                result += "'";
+                result += "'"
             }
             else {
                 result += char;
