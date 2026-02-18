@@ -3578,7 +3578,7 @@ class PlayState extends MusicBeatState
 				#end
 
 				var luaScript = new FunkinLua(path);
-				LuaL.dostring(luaContent);
+				LuaL.dostring(luaScript.lua, luaContent);
 			} else {
 				for (err in ZSTranspiler.errors) {
 					trace('ZS Error in $path: $err');
