@@ -60,6 +60,14 @@ class FunkinLua {
 	public static var customFunctions:Map<String, Dynamic> = new Map<String, Dynamic>();
 
 	public function new(scriptName:String) {
+		#if ZS_ALLOWED
+		if (script.toLowerCase().endsWith('.zs')) {
+			trace('Error: .zs file passed to FunkinLua constructor! This should not happen.');
+			closed = true;
+			return;
+		}
+		#end
+
 		lua = LuaL.newstate();
 		LuaL.openlibs(lua);
 

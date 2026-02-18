@@ -457,6 +457,10 @@ class PlayState extends MusicBeatState
 		for (folder in Mods.directoriesWithFile(Paths.getSharedPath(), 'scripts/'))
 			for (file in FileSystem.readDirectory(folder))
 			{
+				#if ZS_ALLOWED
+				if (file.toLowerCase().endsWith('.zs') && zsScript) 
+					loadZSScript(folder + file);
+				#end
 				#if LUA_ALLOWED
 				if (file.toLowerCase().endsWith('.lua'))
 					new FunkinLua(folder + file);
@@ -464,10 +468,6 @@ class PlayState extends MusicBeatState
 				#if HSCRIPT_ALLOWED
 				if (file.toLowerCase().endsWith('.hx'))
 					initHScript(folder + file);
-				#end
-				#if ZS_ALLOWED
-				if (file.toLowerCase().endsWith('.zs') && zsScript) 
-					loadZSScript(folder + file);
 				#end
 			}
 		#end
@@ -618,9 +618,11 @@ class PlayState extends MusicBeatState
 		#end
 
 		#if ZS_ALLOWED
-		if (zsScript)
-			for (event in eventsPushed)
+		if (zsScript) {
+			for (event in eventsPushed) {
 				startZSScriptsNamed('custom_events/' + event + '.zs');
+			}
+		}
 		#end
 
 		noteTypes = null;
@@ -631,6 +633,10 @@ class PlayState extends MusicBeatState
 		for (folder in Mods.directoriesWithFile(Paths.getSharedPath(), 'data/$songName/'))
 			for (file in FileSystem.readDirectory(folder))
 			{
+				#if ZS_ALLOWED
+				if (file.toLowerCase().endsWith('.zs') && zsScript) 
+					loadZSScript(folder + file);
+				#end
 				#if LUA_ALLOWED
 				if (file.toLowerCase().endsWith('.lua'))
 					new FunkinLua(folder + file);
@@ -638,10 +644,6 @@ class PlayState extends MusicBeatState
 				#if HSCRIPT_ALLOWED
 				if (file.toLowerCase().endsWith('.hx'))
 					initHScript(folder + file);
-				#end
-				#if ZS_ALLOWED
-				if (file.toLowerCase().endsWith('.zs') && zsScript) 
-					loadZSScript(folder + file);
 				#end
 			} 
 		#end
@@ -3562,39 +3564,33 @@ class PlayState extends MusicBeatState
 		}
 	}
 
-    #if ZS_ALLOWED
-    function loadZSScript(path:String) {
-        try {
-            var zsContent = File.getContent(path);
-            var luaContent = ZSTranspiler.transpile(zsContent);
+	#if ZS_ALLOWED
+	function loadZSScript(path:String) {
+		try {
+			var zsContent = File.getContent(path);
+			var luaContent = ZSTranspiler.transpile(zsContent);
 
-            if (luaContent != null) {
+			if (luaContent != null) {
 				#if DEBUG
 				var debugPath = path.replace(".zs", "_debug.lua");
 				File.saveContent(debugPath, luaContent);
-				trace('Transpiled Lua saved to: $debugPath');
 				#end
 
-                var luaScript = new FunkinLua(path);
-                var result = LuaL.dostring(luaScript.lua, luaContent);
+				var tempPath = path + ".tmp.lua";
 
-                if (result != 0) {
-                    var errorStr = Lua.tostring(luaScript.lua, -1);
-                    Lua.pop(luaScript.lua, 1);
-                    trace('ZS Error in $path: $errorStr');
-                }
+				File.saveContent(tempPath, luaContent);
 
-                // The script will automatically call onCreate() in its constructor
-            } else {
-                for (err in ZSTranspiler.errors) {
-                    trace('ZS Error in $path: $err');
-                }
-            }
-        } catch(e:Dynamic) {
-            trace('Failed to load ZS script $path: $e');
-        }
-    }
-    #end
+				var luaScript = new FunkinLua(tempPath);
+			} else {
+				for (err in ZSTranspiler.errors) {
+					trace('ZS Error in $path: $err');
+				}
+			}
+		} catch(e:Dynamic) {
+			trace('Failed to load ZS script $path: $e');
+		}
+	}
+	#end
 
 	public var ratingName:String = '?';
 	public var ratingPercent:Float;
