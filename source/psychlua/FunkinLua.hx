@@ -56,12 +56,14 @@ class FunkinLua {
 	public var hscript:HScript = null;
 	#end
 
+	public var zsScript:Bool = ClientPrefs.data.zsScript;
+
 	public var callbacks:Map<String, Dynamic> = new Map<String, Dynamic>();
 	public static var customFunctions:Map<String, Dynamic> = new Map<String, Dynamic>();
 
 	public function new(scriptName:String) {
 		#if ZS_ALLOWED
-		if (scriptName.toLowerCase().endsWith('.zs')) {
+		if (scriptName.toLowerCase().endsWith('.zs') && zsScript) {
 			trace('Error: .zs file passed to FunkinLua constructor! This should not happen.');
 			closed = true;
 			return;
