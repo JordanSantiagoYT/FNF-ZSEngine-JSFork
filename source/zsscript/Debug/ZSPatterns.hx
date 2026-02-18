@@ -1,4 +1,4 @@
-package zsscript;
+package;
 
 import haxe.Json;
 import haxe.ds.StringMap;
@@ -699,19 +699,28 @@ class ZSPatterns {
         regexStr = regexStr.split("{4}").join("(.*?)");
         regexStr = "^" + regexStr + "$";
 
+        trace('Pattern: $pattern');
+        trace('Regex: $regexStr');
+        trace('Line: "$line"');
+
         var regex = new EReg(regexStr, "");
         if (regex.match(line)) {
+            trace('✓ MATCHED!');
+            trace('Matched groups:');
             var args = [];
             for (i in 1...5) {
                 try {
                     var arg = regex.matched(i);
                     if (arg != null) args.push(StringTools.trim(arg));
+                    trace('  Group $i: "$arg"');
                 } catch(e:Dynamic) {
                     break;
                 }
             }
+            trace('Args: $args');
             return args;
         }
+        trace('✗ NOT MATCHED');
         return null;
     }
 

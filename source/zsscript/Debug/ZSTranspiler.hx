@@ -1,4 +1,4 @@
-package zsscript;
+package;
 
 class ZSTranspiler {
     public static var errors:Array<String> = [];
@@ -13,7 +13,7 @@ class ZSTranspiler {
 
         for (i in 0...lines.length) {
             var line = StringTools.trim(lines[i]);
-            if (line == "" || line.startsWith("-/")) continue;
+            if (line == "" || line.indexOf("-/") == 0) continue;
 
             if (line == "! ZS-LUA") {
                 directiveFound = true;
