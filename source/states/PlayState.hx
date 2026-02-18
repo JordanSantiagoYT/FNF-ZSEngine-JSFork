@@ -3572,13 +3572,12 @@ class PlayState extends MusicBeatState
 
 			if (luaContent != null) {
 				#if DEBUG
+				trace('Loading ZS script: $path');
 				var debugPath = path.replace(".zs", "_debug.lua");
 				File.saveContent(debugPath, luaContent);
-				#end
-
 				var tempPath = path + ".tmp.lua";
-
 				File.saveContent(tempPath, luaContent);
+				#end
 
 				var luaScript = new FunkinLua(tempPath);
 			} else {
