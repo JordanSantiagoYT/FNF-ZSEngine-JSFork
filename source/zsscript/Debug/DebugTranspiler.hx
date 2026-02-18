@@ -4,7 +4,10 @@ class DebugTranspiler {
 "! ZS-LUA
 
 onCreate:
-    setProperty: <hitHealth> = 0.5 -/ Change value of settings";
+    setProperty: <hitHealth> = 0.5 -/ Change value of settings
+    */- This will work 
+                    /-*
+    */- and change the hithealth property /-*";
         
         trace("=== ZS DEBUG TRANSPILER ===");
         trace("Original Script:");

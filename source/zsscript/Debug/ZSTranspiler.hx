@@ -35,13 +35,13 @@ class ZSTranspiler {
 
         var indentationStack:Array<Int> = [0];
         var lastIndent = 0;
+        var inBlockComment = false;
 
         for (i in 0...lines.length) {
             currentLine = i + 1;
             var rawLine = lines[i];
             var originalIndent = getIndentLevel(rawLine);
             var trimmedLine = StringTools.trim(rawLine);
-            var inBlockComment = false;
 
             trimmedLine = convertQuotes(trimmedLine);
             trimmedLine = fixMinusSigns(trimmedLine);
@@ -88,26 +88,42 @@ class ZSTranspiler {
                 continue;
             }
 
-            if (trimmedLine.indexOf("*/-") == 0) {
-                inBlockComment = true;
-                for (_ in 0...originalIndent) {
-                    luaCode.add(" ");
+            trace('Line $currentLine: raw="$rawLine", trimmed="$trimmedLine", indent=$originalIndent');
+
+            if (!inBlockComment && trimmedLine.indexOf("*/-") == 0) {
+                var closePos = trimmedLine.indexOf("/-*");
+                if (closePos > 0) {
+                    var content = trimmedLine.substring(3, closePos);
+                    var afterClose = trimmedLine.substring(closePos + 3);
+                    for (_ in 0...originalIndent) {
+                        luaCode.add(" ");
+                    }
+                    luaCode.add("--[[" + content + "]]" + afterClose + "\n");
+                } else {
+                    inBlockComment = true;
+                    for (_ in 0...originalIndent) {
+                        luaCode.add(" ");
+                    }
+                    luaCode.add("--[[" + trimmedLine.substr(3) + "\n");
                 }
-                luaCode.add("--[[" + trimmedLine.substr(3) + "\n");
                 lastIndent = originalIndent;
                 continue;
             }
 
             if (inBlockComment) {
-                if (trimmedLine.indexOf("/-*") >= 0) {
+                trace('In block comment, line: "$trimmedLine", looking for /-* at: ' + trimmedLine.indexOf("/-*"));
+                var closePos = trimmedLine.indexOf("/-*");
+                if (closePos >= 0) {
+                    trace('Found closing at position $closePos');
                     inBlockComment = false;
-                    var beforeClose = trimmedLine.substring(0, trimmedLine.indexOf("/-*"));
-                    var afterClose = trimmedLine.substring(trimmedLine.indexOf("/-*") + 3);
+                    var beforeClose = trimmedLine.substring(0, closePos);
+                    var afterClose = trimmedLine.substring(closePos + 3);
                     for (_ in 0...originalIndent) {
                         luaCode.add(" ");
                     }
                     luaCode.add(beforeClose + "]]" + afterClose + "\n");
                 } else {
+                    trace('No closing on this line');
                     for (_ in 0...originalIndent) {
                         luaCode.add(" ");
                     }
