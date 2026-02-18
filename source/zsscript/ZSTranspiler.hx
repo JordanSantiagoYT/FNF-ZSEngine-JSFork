@@ -39,15 +39,15 @@ class ZSTranspiler {
         for (i in 0...lines.length) {
             currentLine = i + 1;
             var rawLine = lines[i];
-            var indent = getIndentLevel(rawLine);
+            var originalIndent = getIndentLevel(rawLine);
             var trimmedLine = StringTools.trim(rawLine);
 
             trimmedLine = convertQuotes(trimmedLine);
             trimmedLine = fixMinusSigns(trimmedLine);
 
-            if (indent < lastIndent) {
+            if (originalIndent < lastIndent) {
                 var levelsToClose = 0;
-                while (indent < indentationStack[indentationStack.length - 1]) {
+                while (originalIndent < indentationStack[indentationStack.length - 1]) {
                     indentationStack.pop();
                     levelsToClose++;
                 }
@@ -62,7 +62,7 @@ class ZSTranspiler {
                 } else {
                     luaCode.add("\n");
                 }
-                lastIndent = indent;
+                lastIndent = originalIndent;
                 continue;
             }
 
@@ -77,11 +77,15 @@ class ZSTranspiler {
                 try {
                     var luaLine = ZSPatterns.applyPattern(match.pattern, match.args);
 
+                    for (_ in 0...originalIndent) {
+                        luaCode.add(" ");
+                    }
+
                     var isReturnFreeKeyword = (match.pattern.category == "control" && (match.pattern.zs == "proceed" || match.pattern.zs == "halt" || match.pattern.zs == "haltLua" || match.pattern.zs == "haltScript" || match.pattern.zs == "haltAll"));
 
                     if (!isReturnFreeKeyword) {
-                        if (luaLine.indexOf(" then") > -1 || luaLine.indexOf(" do") > -1 || luaLine == "repeat") {
-                            indentationStack.push(indent);
+                        if (luaLine.indexOf("function ") == 0 || luaLine.indexOf(" then") > -1 || luaLine.indexOf(" do") > -1 || luaLine == "repeat" || luaLine.indexOf("else") == 0) {
+                            indentationStack.push(originalIndent);
                         }
                     }
 
@@ -92,10 +96,13 @@ class ZSTranspiler {
                     return null;
                 }
             } else {
+                for (_ in 0...originalIndent) {
+                    luaCode.add(" ");
+                }
                 luaCode.add(trimmedLine + "\n");
             }
 
-            lastIndent = indent;
+            lastIndent = originalIndent;
         }
 
         while (indentationStack.length > 1) {
