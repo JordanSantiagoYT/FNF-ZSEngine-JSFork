@@ -61,7 +61,7 @@ class FunkinLua {
 
 	public function new(scriptName:String) {
 		#if ZS_ALLOWED
-		if (script.toLowerCase().endsWith('.zs')) {
+		if (scriptName.toLowerCase().endsWith('.zs')) {
 			trace('Error: .zs file passed to FunkinLua constructor! This should not happen.');
 			closed = true;
 			return;
