@@ -3588,10 +3588,18 @@ class PlayState extends MusicBeatState
 				trace('Debug file saved to: $debugPath');
 				#end
 
-				var luaScript = new FunkinLua(path + ".lua");
-				LuaL.dostring(luaScript.lua, luaContent);
-				PlayState.instance.luaArray.push(luaScript);
+				var L = LuaL.newstate();
+				LuaL.openlibs(L);
 
+				if (LuaL.dostring(L, luaContent) != 0) {
+					var errorStr = Lua.tostring(L, -1);
+					trace('Lua error in $path: $errorStr');
+				}
+
+				var luaScript = new FunkinLua(path + ".zs.lua");
+				luaScript.lua = L;
+
+				PlayState.instance.luaArray.push(luaScript);
 			} else {
 				#if DEBUG
 				trace('Transpilation FAILED for: $path');
