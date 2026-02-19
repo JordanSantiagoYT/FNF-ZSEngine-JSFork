@@ -39,21 +39,77 @@ class ZSTranspiler {
 
         for (i in 0...lines.length) {
             currentLine = i + 1;
+            trace('=== Processing line $currentLine, current stack: $indentationStack ===');
             var rawLine = lines[i];
             var originalIndent = getIndentLevel(rawLine);
             var trimmedLine = StringTools.trim(rawLine);
 
+            if (!inBlockComment) {
+                var codeToCheck = trimmedLine;
+
+                if (trimmedLine.indexOf(" -/") > -1) {
+                    var parts = trimmedLine.split(" -/");
+                    codeToCheck = parts[0];
+                }
+
+                if (codeToCheck.indexOf('"') > -1) {
+                    errors.push('Error at line $currentLine: Straight double quotes " are not allowed in ZS');
+                    errors.push('  → Use curly quotes “ and ” instead');
+                    errors.push('  Found: "$trimmedLine"');
+                    return null;
+                }
+                if (codeToCheck.indexOf("'") > -1) {
+                    errors.push('Error at line $currentLine: Straight single quotes \' are not allowed in ZS');
+                    errors.push('  → Use curly quotes ‘ and ’ instead');
+                    errors.push('  Found: "$trimmedLine"');
+                    return null;
+                }
+
+                if (codeToCheck.indexOf("~=") > -1) {
+                    errors.push('Error at line $currentLine: Lua operator "~=" is not allowed in ZS');
+                    errors.push('  → Use "!=" instead');
+                    errors.push('  Found: "$trimmedLine"');
+                    return null;
+                }
+                if (codeToCheck.indexOf("-=") > -1) {
+                    errors.push('Error at line $currentLine: Lua operator "-=" is not allowed in ZS');
+                    errors.push('  → Use "−=" instead');
+                    errors.push('  Found: "$trimmedLine"');
+                    return null;
+                }
+                if (codeToCheck.indexOf("*=") > -1) {
+                    errors.push('Error at line $currentLine: Lua operator "*=" is not allowed in ZS');
+                    errors.push('  → Use "×=" instead');
+                    errors.push('  Found: "$trimmedLine"');
+                    return null;
+                }
+                if (codeToCheck.indexOf("/=") > -1) {
+                    errors.push('Error at line $currentLine: Lua operator "/=" is not allowed in ZS');
+                    errors.push('  → Use "÷=" instead');
+                    errors.push('  Found: "$trimmedLine"');
+                    return null;
+                }
+            }
+
             trimmedLine = convertQuotes(trimmedLine);
             trimmedLine = fixMinusSigns(trimmedLine);
 
+            trimmedLine = trimmedLine.split("!=").join("~=");
+            trimmedLine = trimmedLine.split("−=").join("-=");
+            trimmedLine = trimmedLine.split("×=").join("*=");
+            trimmedLine = trimmedLine.split("÷=").join("/=");
+
             if (originalIndent < lastIndent) {
+                trace('DEDENT: from $lastIndent to $originalIndent');
                 var levelsToClose = 0;
                 while (originalIndent < indentationStack[indentationStack.length - 1]) {
                     indentationStack.pop();
                     levelsToClose++;
+                    trace('POP: Line $currentLine, stack=$indentationStack');
                 }
                 for (_ in 0...levelsToClose) {
                     luaCode.add("end\n");
+                    trace('ADDED end for dedent');
                 }
             }
 
@@ -71,21 +127,26 @@ class ZSTranspiler {
                 var codePart = parts[0];
                 var commentPart = parts[1];
 
-                var match = ZSPatterns.matchPattern(codePart);
-                if (match != null) {
-                    var luaLine = ZSPatterns.applyPattern(match.pattern, match.args);
+                if (trimmedLine.indexOf(" -/") > -1) {
+                    var parts = trimmedLine.split(" -/");
+                    var codePart = parts[0];
+                    var commentPart = parts[1];
+
+                    var luaLine = codePart;
+
+                    for (pattern in ZSPatterns.patterns) {
+                        var regex = new EReg(pattern.pattern, "g");
+                        luaLine = regex.replace(luaLine, pattern.replacement);
+                    }
+
                     for (_ in 0...originalIndent) {
                         luaCode.add(" ");
                     }
                     luaCode.add(luaLine + " --" + commentPart + "\n");
-                } else {
-                    for (_ in 0...originalIndent) {
-                        luaCode.add(" ");
-                    }
-                    luaCode.add(codePart + " --" + commentPart + "\n");
+
+                    lastIndent = originalIndent;
+                    continue;
                 }
-                lastIndent = originalIndent;
-                continue;
             }
 
             trace('Line $currentLine: raw="$rawLine", trimmed="$trimmedLine", indent=$originalIndent');
@@ -133,49 +194,86 @@ class ZSTranspiler {
                 continue;
             }
 
-            if (trimmedLine.indexOf("return") == 0 || trimmedLine.indexOf(" return ") > -1) {
-                errors.push('Error at line $currentLine: "return" keyword is not allowed in ZS. Use "proceed" or "halt" instead');
-                errors.push('  → $trimmedLine');
-                return null;
-            }
+            if (!inBlockComment && trimmedLine.indexOf("-/") != 0) {
+                var codeToCheck = trimmedLine;
+                if (trimmedLine.indexOf(" -/") > -1) {
+                    var parts = trimmedLine.split(" -/");
+                    codeToCheck = parts[0];
+                }
 
-            var match = ZSPatterns.matchPattern(trimmedLine);
-            if (match != null) {
-                try {
-                    var luaLine = ZSPatterns.applyPattern(match.pattern, match.args);
-
-                    for (_ in 0...originalIndent) {
-                        luaCode.add(" ");
-                    }
-
-                    var isReturnFreeKeyword = (match.pattern.category == "control" && (match.pattern.zs == "proceed" || match.pattern.zs == "halt" || match.pattern.zs == "haltLua" || match.pattern.zs == "haltScript" || match.pattern.zs == "haltAll"));
-
-                    if (!isReturnFreeKeyword) {
-                        if (luaLine.indexOf("function ") == 0 || luaLine.indexOf(" then") > -1 || luaLine.indexOf(" do") > -1 || luaLine == "repeat" || luaLine.indexOf("else") == 0) {
-                            indentationStack.push(originalIndent);
+                var luaKeywords = ["function", "end", "nil", "--"];
+                for (keyword in luaKeywords) {
+                    if (codeToCheck.indexOf(keyword) >= 0) {
+                        var pattern = new EReg('\\b' + keyword + '\\b', "");
+                        if (pattern.match(codeToCheck)) {
+                            errors.push('Error at line $currentLine: Lua style "$keyword" is not allowed in ZS');
+                            errors.push('  → Use ZS natural syntax instead');
+                            errors.push('  Found: "$trimmedLine"');
+                            return null;
                         }
                     }
-
-                    luaCode.add(luaLine + "\n");
-                } catch(e:Dynamic) {
-                    errors.push('Error at line $currentLine: Failed to apply pattern');
-                    errors.push('  → $trimmedLine');
-                    return null;
                 }
-            } else {
+            }
+
+            if (trimmedLine == "" || trimmedLine == null) {
                 for (_ in 0...originalIndent) {
                     luaCode.add(" ");
                 }
-                luaCode.add(trimmedLine + "\n");
+                luaCode.add("\n");
+                lastIndent = originalIndent;
+                continue;
+            }
+
+            if (trimmedLine.indexOf("else if ") == 0) {
+                trimmedLine = "elseif " + trimmedLine.substr(8);
+            }
+
+            try {
+                var luaLine = trimmedLine;
+
+                for (pattern in ZSPatterns.patterns) {
+                    var regex = new EReg(pattern.pattern, "g");
+                    luaLine = regex.replace(luaLine, pattern.replacement);
+                }
+
+                if (luaLine.indexOf("else if ") == 0) {
+                    luaLine = "elseif " + luaLine.substr(8);
+                }
+
+                for (_ in 0...originalIndent) {
+                    luaCode.add(" ");
+                }
+
+                if (luaLine.indexOf("function ") == 0 || 
+                    luaLine.indexOf(" then") > -1 || 
+                    luaLine.indexOf(" do") > -1 || 
+                    luaLine == "repeat" || 
+                    luaLine.indexOf("else") == 0) {
+                    indentationStack.push(originalIndent);
+                    trace('PUSH: Line $currentLine, indent=$originalIndent, stack=$indentationStack');
+                }
+
+                luaCode.add(luaLine + "\n");
+            } catch(e:Dynamic) {
+                errors.push('Error at line $currentLine: Failed to apply pattern');
+                errors.push('  → $trimmedLine');
+                return null;
             }
 
             lastIndent = originalIndent;
         }
 
+        trace('=== FINAL CLEANUP ===');
+        trace('Indentation stack before cleanup: $indentationStack');
+        trace('Stack length: ' + indentationStack.length);
+
         while (indentationStack.length > 1) {
+            trace('Adding end, stack length: ' + indentationStack.length);
             luaCode.add("end\n");
             indentationStack.pop();
         }
+
+        trace('Stack after cleanup: $indentationStack');
 
         return luaCode.toString();
     }

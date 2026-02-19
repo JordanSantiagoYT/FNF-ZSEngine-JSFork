@@ -3577,8 +3577,10 @@ class PlayState extends MusicBeatState
 				File.saveContent(debugPath, luaContent);
 				#end
 
-				var luaScript = new FunkinLua(path);
+				var luaScript = new FunkinLua(path + ".lua");
 				LuaL.dostring(luaScript.lua, luaContent);
+
+				PlayState.instance.luaArray.push(luaScript);
 			} else {
 				for (err in ZSTranspiler.errors) {
 					trace('ZS Error in $path: $err');

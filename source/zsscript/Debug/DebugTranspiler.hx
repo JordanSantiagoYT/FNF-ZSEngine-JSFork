@@ -3,11 +3,11 @@ class DebugTranspiler {
         var testScript = 
 "! ZS-LUA
 
-onCreate:
-    setProperty: <hitHealth> = 0.5 -/ Change value of settings
-    */- This will work 
-                    /-*
-    */- and change the hithealth property /-*";
+local <targetCharacter> = ‘scopomania-shake’
+
+opponentNoteHit<id, direction, noteType, isSustainNote>:
+    if getProperty(<dad.curCharacter>) == <targetCharacter> then
+        trigger event: ‘Screen Shake’, ‘0.1, 0.1’, ‘’";
         
         trace("=== ZS DEBUG TRANSPILER ===");
         trace("Original Script:");
@@ -29,31 +29,21 @@ onCreate:
         if (!directiveFound) trace("  ✗ Directive NOT found!");
         trace("");
         
-        // Step 2: Check pattern matching for setProperty
-        trace("Step 2: Testing pattern matching...");
+        // Step 2: Test pattern matching
+        trace("Step 2: Testing pattern replacement...");
         var testLine = "setProperty: <hitHealth> = 0.5";
         trace('  Testing line: "$testLine"');
-        
-        var match = ZSPatterns.matchPattern(testLine);
-        if (match != null) {
-            trace('  ✓ Pattern matched: "${match.pattern.zs}"');
-            trace('  → Category: ${match.pattern.category}');
-            trace('  → Args: ${match.args}');
-            
-            var luaLine = ZSPatterns.applyPattern(match.pattern, match.args);
-            trace('  → Lua output: "$luaLine"');
-        } else {
-            trace('  ✗ No pattern matched!');
-            
-            // List available patterns
-            trace("  Available property patterns:");
-            for (p in ZSPatterns.patterns) {
-                if (p.category == "properties") {
-                    trace('    - "${p.zs}"');
-                }
+
+        var resultLine = testLine;
+        for (pattern in ZSPatterns.patterns) {
+            var regex = new EReg(pattern.pattern, "g");
+            if (regex.match(resultLine)) {
+                trace('  Pattern matched: "${pattern.pattern}"');
+                trace('  → Category: ${pattern.category}');
+                resultLine = regex.replace(resultLine, pattern.replacement);
             }
         }
-        trace("");
+        trace('  → Result: "$resultLine"');
         
         // Step 3: Test comment handling
         trace("Step 3: Testing comment handling...");

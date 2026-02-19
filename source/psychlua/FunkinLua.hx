@@ -62,6 +62,7 @@ class FunkinLua {
 	public static var customFunctions:Map<String, Dynamic> = new Map<String, Dynamic>();
 
 	public function new(scriptName:String) {
+		trace('FunkinLua constructor called with: "$scriptName"');
 		#if ZS_ALLOWED
 		if (scriptName.toLowerCase().endsWith('.zs') && zsScript) {
 			trace('Error: .zs file passed to FunkinLua constructor! This should not happen.');
