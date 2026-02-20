@@ -3590,6 +3590,12 @@ class PlayState extends MusicBeatState
 
 				luaContent = StringTools.ltrim(luaContent);
 
+				var luaScript = new FunkinLua(path + ".zs.lua");
+
+				if (luaScript.lua != null) {
+					Lua.close(luaScript.lua);
+				}
+
 				var L = LuaL.newstate();
 				LuaL.openlibs(L);
 
@@ -3598,14 +3604,8 @@ class PlayState extends MusicBeatState
 					trace('Lua error in $path: $errorStr');
 				}
 
-				var luaScript = {
-					lua: L,
-					scriptName: path,
-					closed: false,
-					call: function(func:String, args:Array<Dynamic>) {
-						return null;
-					}
-				};
+				luaScript.lua = L;
+				luaScript.closed = false;
 
 				PlayState.instance.luaArray.push(luaScript);
 			} else {
