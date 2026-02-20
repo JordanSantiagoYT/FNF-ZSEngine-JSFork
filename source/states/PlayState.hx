@@ -3571,41 +3571,34 @@ class PlayState extends MusicBeatState
 
 			#if DEBUG
 			trace('Loading ZS script: $path');
-			var firstLine = zsContent.split("\n")[0];
-			trace('First line: "$firstLine"');
 			#end
 
 			var luaContent = ZSTranspiler.transpile(zsContent);
 
 			if (luaContent != null) {
 				#if DEBUG
-				trace('Transpilation successful for: $path');
-				trace('First 100 chars of output:');
-				trace(luaContent.substr(0, 100));
-
 				var debugPath = path.replace(".zs", "_debug.lua");
 				File.saveContent(debugPath, luaContent);
-				trace('Debug file saved to: $debugPath');
 				#end
 
-				luaContent = StringTools.ltrim(luaContent);
-
-				var luaScript = new zsscript.ZSScript(path, luaContent);
-
-				PlayState.instance.luaArray.push(luaScript);
-			} else {
-				#if DEBUG
-				trace('Transpilation FAILED for: $path');
-				for (err in ZSTranspiler.errors) {
-					trace('  ZS Error: $err');
-				}
+				var tempDir = Sys.getEnv("TEMP");
+				#if windows
+				if (tempDir == null) tempDir = "C:\\Windows\\Temp\\";
 				#else
-				var errorMsg = "ZS Script Errors in " + path + ":\n";
-				for (err in ZSTranspiler.errors) {
-					errorMsg += err + "\n";
-				}
-				showScriptError(errorMsg);
+				if (tempDir == null) tempDir = "/tmp/";
 				#end
+
+				var tempFile = tempDir + "zs_" + Math.floor(Math.random() * 1000000) + ".lua";
+				File.saveContent(tempFile, luaContent);
+
+				var luaScript = new FunkinLua(tempFile);
+				PlayState.instance.luaArray.push(luaScript);
+
+				FileSystem.deleteFile(tempFile);
+			} else {
+				for (err in ZSTranspiler.errors) {
+					trace('ZS Error in $path: $err');
+				}
 			}
 		} catch(e:Dynamic) {
 			trace('Failed to load ZS script $path: $e');
