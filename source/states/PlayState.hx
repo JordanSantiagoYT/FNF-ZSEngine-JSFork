@@ -3588,6 +3588,8 @@ class PlayState extends MusicBeatState
 				trace('Debug file saved to: $debugPath');
 				#end
 
+				luaContent = StringTools.ltrim(luaContent);
+
 				var L = LuaL.newstate();
 				LuaL.openlibs(L);
 
@@ -3597,8 +3599,9 @@ class PlayState extends MusicBeatState
 				}
 
 				var luaScript = new FunkinLua(path + ".zs.lua");
+				if (luaScript.lua != null) Lua.close(luaScript.lua);
 				luaScript.lua = L;
-
+				luaScript.closed = false;
 				PlayState.instance.luaArray.push(luaScript);
 			} else {
 				#if DEBUG
