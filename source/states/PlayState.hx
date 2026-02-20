@@ -3598,10 +3598,15 @@ class PlayState extends MusicBeatState
 					trace('Lua error in $path: $errorStr');
 				}
 
-				var luaScript = new FunkinLua(path + ".zs.lua");
-				if (luaScript.lua != null) Lua.close(luaScript.lua);
-				luaScript.lua = L;
-				luaScript.closed = false;
+				var luaScript = {
+					lua: L,
+					scriptName: path,
+					closed: false,
+					call: function(func:String, args:Array<Dynamic>) {
+						return null;
+					}
+				};
+
 				PlayState.instance.luaArray.push(luaScript);
 			} else {
 				#if DEBUG
