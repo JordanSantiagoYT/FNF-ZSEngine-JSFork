@@ -66,7 +66,19 @@ class ZSTranspiler {
 
                 if (codeToCheck.indexOf("~=") > -1) {
                     errors.push('Error at line $currentLine: Lua operator "~=" is not allowed in ZS');
-                    errors.push('  → Use "!=" instead');
+                    errors.push('  → Use "≠" instead');
+                    errors.push('  Found: "$trimmedLine"');
+                    return null;
+                }
+                if (codeToCheck.indexOf("<=") > -1) {
+                    errors.push('Error at line $currentLine: Lua operator "<=" is not allowed in ZS');
+                    errors.push('  → Use "≤" instead');
+                    errors.push('  Found: "$trimmedLine"');
+                    return null;
+                }
+                if (codeToCheck.indexOf(">=") > -1) {
+                    errors.push('Error at line $currentLine: Lua operator ">=" is not allowed in ZS');
+                    errors.push('  → Use "≥" instead');
                     errors.push('  Found: "$trimmedLine"');
                     return null;
                 }
@@ -93,7 +105,9 @@ class ZSTranspiler {
             trimmedLine = convertQuotes(trimmedLine);
             trimmedLine = fixMinusSigns(trimmedLine);
 
-            trimmedLine = trimmedLine.split("!=").join("~=");
+            trimmedLine = trimmedLine.split("≠").join("~=");
+            trimmedLine = trimmedLine.split("≤").join("<=");
+            trimmedLine = trimmedLine.split("≥").join(">=");
             trimmedLine = trimmedLine.split("−=").join("-=");
             trimmedLine = trimmedLine.split("×=").join("*=");
             trimmedLine = trimmedLine.split("÷=").join("/=");
