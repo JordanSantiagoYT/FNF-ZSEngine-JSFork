@@ -385,7 +385,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		selectionBox.visible = false;
 		add(selectionBox);
 
-		infoBox = new PsychUIBox(-1000, 700, 220, 300, ['Information']); // x, y, sizex, sizey, namelist
+		infoBox = new PsychUIBox(infoBoxPosition.x, infoBoxPosition.y, 220, 300, ['Information']); // x, y, sizex, sizey, namelist
 		infoBox.scrollFactor.set();
 		infoBox.cameras = [camUI];
 		infoText = new FlxText(15, 15, 230, '', 16);
