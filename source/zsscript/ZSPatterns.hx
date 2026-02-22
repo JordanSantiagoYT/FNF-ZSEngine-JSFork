@@ -321,6 +321,12 @@ class ZSPatterns {
             replacement: "$1",
             description: "Variable reference",
             category: "variables"
+        },
+        {
+            pattern: "(.+)",
+            replacement: "$1",
+            description: "Variable for `for` and `while` loops",
+            category: "variables"
         }
     ];
 }
