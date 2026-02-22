@@ -140,7 +140,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 	var mainBox:PsychUIBox;
 	var mainBoxPosition:FlxPoint = FlxPoint.get(920, 40);
 	var infoBox:PsychUIBox;
-	var infoBoxPosition:FlxPoint = FlxPoint.get(-1000, 360);
+	var infoBoxPosition:FlxPoint = FlxPoint.get(-800, 360);
 	var upperBox:PsychUIBox;
 	
 	var camUI:FlxCamera;
