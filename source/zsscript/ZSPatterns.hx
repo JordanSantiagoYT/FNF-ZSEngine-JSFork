@@ -17,7 +17,7 @@ class ZSPatterns {
             category: "events"
         },
         {
-            pattern: "call function: (.+)((.+))",
+            pattern: "call function: (.+)\\((.+)\\)",
             replacement: "$1($2)",
             description: "Call a custom function",
             category: "events"
@@ -109,6 +109,20 @@ class ZSPatterns {
             replacement: 'removeFromGroup("$2", "$1")',
             description: "Remove object from group",
             category: "groups"
+        },
+
+        // ===== CLASS PROPERTY OPERATIONS =====
+        {
+            pattern: "getPropertyFromClass\\(<([^>]+)>, <([^>]+)>\\)",
+            replacement: 'getPropertyFromClass("$1", "$2")',
+            description: "Get property from class",
+            category: "properties"
+        },
+        {
+            pattern: "setPropertyFromClass: <([^>]+)>, <([^>]+)> = (.+)",
+            replacement: 'setPropertyFromClass("$1", "$2", $3)',
+            description: "Set property on class",
+            category: "properties"
         },
 
         // ===== CONTROL STRUCTURES =====
@@ -315,17 +329,39 @@ class ZSPatterns {
             category: "notes"
         },
 
+        // ===== LOOPS =====
+        {
+            pattern: "for <([^>]+)> = (.+) do",
+            replacement: "for $1 = $2 do",
+            description: "Numeric for loop (any expression)",
+            category: "control"
+        },
+
+        // ===== TABLE OPERATIONS =====
+        {
+            pattern: "<([^>]+)>\\[([^]]+)\\]",
+            replacement: "$1[$2]",
+            description: "Table access (any index)",
+            category: "tables"
+        },
+        {
+            pattern: "({.+?})",
+            replacement: "$1",
+            description: "Table literal (any content)",
+            category: "tables"
+        },
+        {
+            pattern: "insert (.+) to table <([^>]+)>",
+            replacement: "table.insert($2, $1)",
+            description: "Insert value into table",
+            category: "tables"
+        },
+
         // ===== VARIABLE REFERENCES (must be last) =====
         {
             pattern: "<([^>]+)>",
             replacement: "$1",
             description: "Variable reference",
-            category: "variables"
-        },
-        {
-            pattern: "(.+)",
-            replacement: "$1",
-            description: "Variable for `for` and `while` loops",
             category: "variables"
         }
     ];

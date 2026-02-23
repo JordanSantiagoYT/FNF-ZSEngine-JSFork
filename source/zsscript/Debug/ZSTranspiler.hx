@@ -171,10 +171,22 @@ class ZSTranspiler {
                     var commentPart = parts[1];
 
                     var luaLine = codePart;
+                    trace('Processing line: "$luaLine"');
 
                     for (pattern in ZSPatterns.patterns) {
-                        var regex = new EReg(pattern.pattern, "g");
-                        luaLine = regex.replace(luaLine, pattern.replacement);
+                        trace('  Trying pattern: ${pattern.pattern}');
+                        try {
+                            var regex = new EReg(pattern.pattern, "g");
+                            var newLine = regex.replace(luaLine, pattern.replacement);
+                            if (newLine != luaLine) {
+                                trace('    Matched! -> "$newLine"');
+                            }
+                            luaLine = newLine;
+                        } catch (e:Dynamic) {
+                            trace('    ERROR with pattern: ${pattern.pattern}');
+                            trace('    Error: $e');
+                            throw e;
+                        }
                     }
 
                     for (_ in 0...originalIndent) {
