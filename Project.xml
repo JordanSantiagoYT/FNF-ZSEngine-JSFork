@@ -136,9 +136,6 @@
 	<haxedef name="HXVLC_NO_SHARE_DIRECTORY" if="VIDEOS_ALLOWED" />
 	<define name="x86_BUILD" if="32bits" />
 
-	<!-- ZS Library -->
-	<haxelib name="zslib" version="0.0.1"/>
-
 	<!-- ______________________________ Haxedefines _____________________________ -->
 
 	<!--Enable the Flixel core recording system-->

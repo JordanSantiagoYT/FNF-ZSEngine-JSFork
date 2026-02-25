@@ -58,8 +58,7 @@ import crowplexus.hscript.Printer;
 #end
 
 #if ZS_ALLOWED
-import zslib.Main;
-import zslib.runtime.Runtime;
+import zsscript.ZSTranspiler;
 #end
 
 /**
@@ -265,10 +264,6 @@ class PlayState extends MusicBeatState
 	// public var wiggleMap:Map<String, WiggleEffect> = new Map<String, WiggleEffect>();
 	#end
 
-	#if ZS_ALLOWED
-	public var zsRuntimes:Array<Runtime> = [];
-	#end
-
 	// public var shaderEnabled:Bool = ClientPrefs.data.shaders;
 	// public static var masterPulse:PulseEffect;
 	// var allowDisable:Bool = false;
@@ -462,6 +457,10 @@ class PlayState extends MusicBeatState
 		for (folder in Mods.directoriesWithFile(Paths.getSharedPath(), 'scripts/'))
 			for (file in FileSystem.readDirectory(folder))
 			{
+				#if ZS_ALLOWED
+				if (file.toLowerCase().endsWith('.zs') && zsScript) 
+					loadZSScript(folder + file);
+				#end
 				#if LUA_ALLOWED
 				if (file.toLowerCase().endsWith('.lua'))
 					new FunkinLua(folder + file);
@@ -469,10 +468,6 @@ class PlayState extends MusicBeatState
 				#if HSCRIPT_ALLOWED
 				if (file.toLowerCase().endsWith('.hx'))
 					initHScript(folder + file);
-				#end
-				#if ZS_ALLOWED
-				if (file.toLowerCase().endsWith('.zs') && zsScript) 
-					loadZSScript(folder + file);
 				#end
 			}
 		#end
@@ -638,6 +633,10 @@ class PlayState extends MusicBeatState
 		for (folder in Mods.directoriesWithFile(Paths.getSharedPath(), 'data/$songName/'))
 			for (file in FileSystem.readDirectory(folder))
 			{
+				#if ZS_ALLOWED
+				if (file.toLowerCase().endsWith('.zs') && zsScript) 
+					loadZSScript(folder + file);
+				#end
 				#if LUA_ALLOWED
 				if (file.toLowerCase().endsWith('.lua'))
 					new FunkinLua(folder + file);
@@ -645,10 +644,6 @@ class PlayState extends MusicBeatState
 				#if HSCRIPT_ALLOWED
 				if (file.toLowerCase().endsWith('.hx'))
 					initHScript(folder + file);
-				#end
-				#if ZS_ALLOWED
-				if (file.toLowerCase().endsWith('.zs') && zsScript) 
-					loadZSScript(folder + file);
 				#end
 			} 
 		#end
@@ -3237,14 +3232,6 @@ class PlayState extends MusicBeatState
 
 		hscriptArray = null;
 		#end
-
-		#if ZS_ALLOWED
-		for (zs in zsRuntimes) {
-			zs.stop();
-		}
-		zsRuntimes = [];
-		#end
-
 		stagesFunc(function(stage:BaseStage) stage.destroy());
 
 		#if VIDEOS_ALLOWED
@@ -3581,26 +3568,40 @@ class PlayState extends MusicBeatState
 	function loadZSScript(path:String) {
 		try {
 			var zsContent = File.getContent(path);
-			var result = Main.transpile(zsContent);
 
-			if (result.success) {
-				var runtime = Main.createRuntime(path);
-				if (runtime.execute(zsContent)) {
-					zsRuntimes.push(runtime);
-					trace('ZS script loaded: $path');
-				} else {
-					for (err in runtime.getErrors()) {
-						trace('ZS Runtime Error: $err');
-					}
-				}
+			#if DEBUG
+			trace('Loading ZS script: $path');
+			#end
+
+			var luaContent = ZSTranspiler.transpile(zsContent);
+
+			if (luaContent != null) {
+				#if DEBUG
+				var debugPath = path.replace(".zs", "_debug.lua");
+				File.saveContent(debugPath, luaContent);
+				#end
+
+				var tempDir = Sys.getEnv("TEMP");
+				#if windows
+				if (tempDir == null) tempDir = "C:\\Windows\\Temp\\";
+				#else
+				if (tempDir == null) tempDir = "/tmp/";
+				#end
+
+				var tempFile = tempDir + "zs_" + Math.floor(Math.random() * 1000000) + ".lua";
+				File.saveContent(tempFile, luaContent);
+
+				var luaScript = new FunkinLua(tempFile);
+				PlayState.instance.luaArray.push(luaScript);
+
+				FileSystem.deleteFile(tempFile);
 			} else {
-				trace('ZS Validation Failed: $path');
-				for (err in result.errors) {
-					trace('  → $err');
+				for (err in ZSTranspiler.errors) {
+					trace('ZS Error in $path: $err');
 				}
 			}
 		} catch(e:Dynamic) {
-			trace('Failed to load ZS script: $path - $e');
+			trace('Failed to load ZS script $path: $e');
 		}
 	}
 	#end
