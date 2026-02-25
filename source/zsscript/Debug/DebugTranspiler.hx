@@ -11,6 +11,21 @@ onCreate:
         trace(testScript);
         trace("");
         
+        trace("Testing patterns one by one...");
+        for (i in 0...ZSPatterns.patterns.length) {
+            var p = ZSPatterns.patterns[i];
+            trace('Pattern $i: ${p.pattern}');
+            try {
+                var regex = new EReg(p.pattern, "g");
+                trace('  ✓ OK');
+            } catch(e:Dynamic) {
+                trace('  ✗ ERROR: $e');
+                trace('  Problem pattern: ${p.pattern}');
+                trace('  Replacement: ${p.replacement}');
+                break;
+            }
+        }
+        
         // Step 1: Check directive
         trace("Step 1: Checking ! ZS-LUA directive...");
         var lines = testScript.split("\n");
