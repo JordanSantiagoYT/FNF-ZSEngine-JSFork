@@ -124,6 +124,54 @@ class ZSTranspiler {
                     errors.push('  Found: "$trimmedLine"');
                     return null;
                 }
+                if (~/[0-9] *\* *[0-9]/.match(codeToCheck)) {
+                    errors.push('Error at line $currentLine: Hyphen "-" between numbers is not allowed for subtraction');
+                    errors.push('  → Use "−" (minus sign) instead');
+                    errors.push('  Found: "$trimmedLine"');
+                    return null;
+                }
+                if (~/[0-9]\*[0-9]/.match(codeToCheck)) {
+                    errors.push('Error at line $currentLine: Hyphen "-" between numbers is not allowed for subtraction');
+                    errors.push('  → Use "−" (minus sign) instead');
+                    errors.push('  Found: "$trimmedLine"');
+                    return null;
+                }
+                if (~/[0-9] *\*[0-9]/.match(codeToCheck)) {
+                    errors.push('Error at line $currentLine: Hyphen "-" between numbers is not allowed for subtraction');
+                    errors.push('  → Use "−" (minus sign) instead');
+                    errors.push('  Found: "$trimmedLine"');
+                    return null;
+                }
+                if (~/[0-9]\* *[0-9]/.match(codeToCheck)) {
+                    errors.push('Error at line $currentLine: Hyphen "-" between numbers is not allowed for subtraction');
+                    errors.push('  → Use "−" (minus sign) instead');
+                    errors.push('  Found: "$trimmedLine"');
+                    return null;
+                }
+                if (~/[0-9] *\/ *[0-9]/.match(codeToCheck)) {
+                    errors.push('Error at line $currentLine: Hyphen "-" between numbers is not allowed for subtraction');
+                    errors.push('  → Use "−" (minus sign) instead');
+                    errors.push('  Found: "$trimmedLine"');
+                    return null;
+                }
+                if (~/[0-9]\/[0-9]/.match(codeToCheck)) {
+                    errors.push('Error at line $currentLine: Hyphen "-" between numbers is not allowed for subtraction');
+                    errors.push('  → Use "−" (minus sign) instead');
+                    errors.push('  Found: "$trimmedLine"');
+                    return null;
+                }
+                if (~/[0-9] *\/[0-9]/.match(codeToCheck)) {
+                    errors.push('Error at line $currentLine: Hyphen "-" between numbers is not allowed for subtraction');
+                    errors.push('  → Use "−" (minus sign) instead');
+                    errors.push('  Found: "$trimmedLine"');
+                    return null;
+                }
+                if (~/[0-9]\/ *[0-9]/.match(codeToCheck)) {
+                    errors.push('Error at line $currentLine: Hyphen "-" between numbers is not allowed for subtraction');
+                    errors.push('  → Use "−" (minus sign) instead');
+                    errors.push('  Found: "$trimmedLine"');
+                    return null;
+                }
             }
 
             trimmedLine = convertQuotes(trimmedLine);

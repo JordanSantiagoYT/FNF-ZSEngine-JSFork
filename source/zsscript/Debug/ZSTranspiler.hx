@@ -125,6 +125,54 @@ class ZSTranspiler {
                     errors.push('  Found: "$trimmedLine"');
                     return null;
                 }
+                if (~/[0-9] *\* *[0-9]/.match(codeToCheck)) {
+                    errors.push('Error at line $currentLine: Hyphen "-" between numbers is not allowed for subtraction');
+                    errors.push('  → Use "−" (minus sign) instead');
+                    errors.push('  Found: "$trimmedLine"');
+                    return null;
+                }
+                if (~/[0-9]\*[0-9]/.match(codeToCheck)) {
+                    errors.push('Error at line $currentLine: Hyphen "-" between numbers is not allowed for subtraction');
+                    errors.push('  → Use "−" (minus sign) instead');
+                    errors.push('  Found: "$trimmedLine"');
+                    return null;
+                }
+                if (~/[0-9] *\*[0-9]/.match(codeToCheck)) {
+                    errors.push('Error at line $currentLine: Hyphen "-" between numbers is not allowed for subtraction');
+                    errors.push('  → Use "−" (minus sign) instead');
+                    errors.push('  Found: "$trimmedLine"');
+                    return null;
+                }
+                if (~/[0-9]\* *[0-9]/.match(codeToCheck)) {
+                    errors.push('Error at line $currentLine: Hyphen "-" between numbers is not allowed for subtraction');
+                    errors.push('  → Use "−" (minus sign) instead');
+                    errors.push('  Found: "$trimmedLine"');
+                    return null;
+                }
+                if (~/[0-9] *\/ *[0-9]/.match(codeToCheck)) {
+                    errors.push('Error at line $currentLine: Hyphen "-" between numbers is not allowed for subtraction');
+                    errors.push('  → Use "−" (minus sign) instead');
+                    errors.push('  Found: "$trimmedLine"');
+                    return null;
+                }
+                if (~/[0-9]\/[0-9]/.match(codeToCheck)) {
+                    errors.push('Error at line $currentLine: Hyphen "-" between numbers is not allowed for subtraction');
+                    errors.push('  → Use "−" (minus sign) instead');
+                    errors.push('  Found: "$trimmedLine"');
+                    return null;
+                }
+                if (~/[0-9] *\/[0-9]/.match(codeToCheck)) {
+                    errors.push('Error at line $currentLine: Hyphen "-" between numbers is not allowed for subtraction');
+                    errors.push('  → Use "−" (minus sign) instead');
+                    errors.push('  Found: "$trimmedLine"');
+                    return null;
+                }
+                if (~/[0-9]\/ *[0-9]/.match(codeToCheck)) {
+                    errors.push('Error at line $currentLine: Hyphen "-" between numbers is not allowed for subtraction');
+                    errors.push('  → Use "−" (minus sign) instead');
+                    errors.push('  Found: "$trimmedLine"');
+                    return null;
+                }
             }
 
             trimmedLine = convertQuotes(trimmedLine);
@@ -174,19 +222,8 @@ class ZSTranspiler {
                     trace('Processing line: "$luaLine"');
 
                     for (pattern in ZSPatterns.patterns) {
-                        trace('  Trying pattern: ${pattern.pattern}');
-                        try {
-                            var regex = new EReg(pattern.pattern, "g");
-                            var newLine = regex.replace(luaLine, pattern.replacement);
-                            if (newLine != luaLine) {
-                                trace('    Matched! -> "$newLine"');
-                            }
-                            luaLine = newLine;
-                        } catch (e:Dynamic) {
-                            trace('    ERROR with pattern: ${pattern.pattern}');
-                            trace('    Error: $e');
-                            throw e;
-                        }
+                        var regex = new EReg(pattern.pattern, "g");
+                        luaLine = regex.replace(luaLine, pattern.replacement);
                     }
 
                     for (_ in 0...originalIndent) {
