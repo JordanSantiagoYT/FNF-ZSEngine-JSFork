@@ -260,6 +260,11 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		if(chartEditorSave.data.backupLimit != null) backupLimit = chartEditorSave.data.backupLimit;
 		if(chartEditorSave.data.vortex != null) vortexEnabled = chartEditorSave.data.vortex;
 
+		if(chartEditorSave.data.hidePreviousSection == null) chartEditorSave.data.hidePreviousSection = true;
+		if(chartEditorSave.data.hideNextSection == null) chartEditorSave.data.hideNextSection = false;
+		showPreviousSection = !chartEditorSave.data.hidePreviousSection;
+		showNextSection = !chartEditorSave.data.hideNextSection;
+
 		if(chartEditorSave.data.customBgColor == null) chartEditorSave.data.customBgColor = '303030';
 		if(chartEditorSave.data.customGridColors == null || chartEditorSave.data.customGridColors.length < 2)
 			chartEditorSave.data.customGridColors = ['DFDFDF', 'BFBFBF'];
@@ -2364,30 +2369,13 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			for (note in section.sectionNotes)
 			{
 				if(secNum > 0 && note[0] < lastTime) note[0] = lastTime;
-				else if(secNum < PlayState.SONG.notes.length && note[0] >= time - 0.000001) note[0] = time - 0.000001;
-			}
-
-			if(FlxG.sound.music != null && time >= FlxG.sound.music.length)
-			{
-				var lastSectionNum:Int = PlayState.SONG.notes.length - 1;
-				if(secNum < lastSectionNum) //Delete extra sections
-				{
-					while(PlayState.SONG.notes.length - 1 > secNum)
-					{
-						PlayState.SONG.notes.pop();
-					}
-	
-					trace('breaking at section $secNum');
-					reachedLimit = true;
-					break;
-				}
-				else if(secNum == lastSectionNum)
-				{
-					trace('reached limit at section $secNum');
-					reachedLimit = true;
-				}
+				// Intentionally do NOT clamp notes to the section end time.
+				// Some editor operations (shift/duplicate) can push notes into future sections.
+				// Those notes will be re-bucketed into the correct section later.
 			}
 		}
+
+		reachedLimit = (FlxG.sound.music != null && time >= FlxG.sound.music.length);
 
 		if(FlxG.sound.music != null && !reachedLimit) //Created sections to fill blank space
 		{
@@ -2430,6 +2418,75 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		}
 		cachedSectionRow.push(row);
 		cachedSectionTimes.push(time);
+	}
+
+	function safeUpdateChartData():Void
+	{
+		// If we skipped instantiating huge sections (performance), updateChartData() would wipe them.
+		var expectedCount:Int = 0;
+		for (sec in PlayState.SONG.notes)
+			for (n in sec.sectionNotes)
+				if(n != null && n.length > 1 && n[1] >= 0) expectedCount++;
+
+		if(notes.length == expectedCount)
+			updateChartData();
+	}
+
+	function ensureNextSectionExists():Void
+	{
+		if(curSec + 1 < PlayState.SONG.notes.length) return;
+
+		var lastSection = PlayState.SONG.notes[PlayState.SONG.notes.length - 1];
+		var sectionBeats:Float = (lastSection != null) ? lastSection.sectionBeats : 4;
+		PlayState.SONG.notes.push({
+			sectionNotes: [],
+			sectionBeats: sectionBeats,
+			mustHitSection: lastSection != null ? lastSection.mustHitSection : true,
+			bpm: (lastSection != null) ? lastSection.bpm : Conductor.bpm,
+			changeBPM: false,
+			altAnim: lastSection != null ? lastSection.altAnim : false,
+			gfSection: lastSection != null ? lastSection.gfSection : false
+		});
+		_cacheSections();
+	}
+
+	function rebucketSectionNotes():Void
+	{
+		// Rebuild sectionNotes based on each note's strumTime.
+		// This matches JS-Engine's behavior where notes can be shifted into future sections.
+		var allNotes:Array<Dynamic> = [];
+		for (sec in PlayState.SONG.notes)
+		{
+			if(sec != null && sec.sectionNotes != null)
+			{
+				for (n in sec.sectionNotes)
+					if(n != null) allNotes.push(n);
+				sec.sectionNotes = [];
+			}
+		}
+
+		allNotes.sort(function(a:Dynamic, b:Dynamic)
+		{
+			return FlxSort.byValues(FlxSort.ASCENDING, a[0], b[0]);
+		});
+
+		for (n in allNotes)
+		{
+			if(n == null || n.length < 2) continue;
+			// Skip events embedded in sectionNotes (old-format compatibility)
+			if(n[1] < 0) continue;
+
+			while(cachedSectionTimes.length < 2) _cacheSections();
+			while(cachedSectionTimes[cachedSectionTimes.length - 1] <= n[0])
+				ensureNextSectionExists();
+
+			var noteSec:Int = 0;
+			while(noteSec + 1 < cachedSectionTimes.length && cachedSectionTimes[noteSec + 1] <= n[0])
+				noteSec++;
+			noteSec = Std.int(FlxMath.bound(noteSec, 0, PlayState.SONG.notes.length - 1));
+
+			PlayState.SONG.notes[noteSec].sectionNotes.push(n);
+		}
 	}
 
 	var showPreviousSection:Bool = false;
@@ -2697,9 +2754,8 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 	var mouseSnapCheckBox:PsychUICheckBox;
 	var ignoreProgressCheckBox:PsychUICheckBox;
-	// Old Checkboxes
-	// var hidePreviousSectionCheckBox:PsychUICheckBox;
-	// var hideNextSectionCheckBox:PsychUICheckBox;
+	var hidePreviousSectionCheckBox:PsychUICheckBox;
+	var hideNextSectionCheckBox:PsychUICheckBox;
 	var hitsoundPlayerStepper:PsychUINumericStepper;
 	var hitsoundOpponentStepper:PsychUINumericStepper;
 	var metronomeStepper:PsychUINumericStepper;
@@ -2732,31 +2788,33 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		ignoreProgressCheckBox.checked = chartEditorSave.data.ignoreProgressWarns;
 
 		objY += 50;
-
-		// Old Checkboxes
-		/*
 		hidePreviousSectionCheckBox = new PsychUICheckBox(objX, objY, 'Hide Previous Section', 140, function()
 		{
+			chartEditorSave.data.hidePreviousSection = hidePreviousSectionCheckBox.checked;
+			chartEditorSave.flush();
 			showPreviousSection = !hidePreviousSectionCheckBox.checked;
 			loadSection();
 		});
-		hidePreviousSectionCheckBox.checked = !showPreviousSection;
+		hidePreviousSectionCheckBox.checked = (chartEditorSave.data.hidePreviousSection == true);
+		showPreviousSection = !hidePreviousSectionCheckBox.checked;
 
 		hideNextSectionCheckBox = new PsychUICheckBox(objX + 150, objY, 'Hide Next Section', 140, function()
 		{
+			chartEditorSave.data.hideNextSection = hideNextSectionCheckBox.checked;
+			chartEditorSave.flush();
 			showNextSection = !hideNextSectionCheckBox.checked;
 			loadSection();
 		});
-		hideNextSectionCheckBox.checked = !showNextSection;
+		hideNextSectionCheckBox.checked = (chartEditorSave.data.hideNextSection == true);
+		showNextSection = !hideNextSectionCheckBox.checked;
 
-		objY += 30;
-		*/
+		objY += 40;
 
 		hitsoundPlayerStepper = new PsychUINumericStepper(objX, objY, 0.2, 0, 0, 1, 1);
 		hitsoundOpponentStepper = new PsychUINumericStepper(objX + 100, objY, 0.2, 0, 0, 1, 1);
 		metronomeStepper = new PsychUINumericStepper(objX + 200, objY, 0.2, 0, 0, 1, 1);
 
-		objY += 50;
+		objY += 70;
 		instVolumeStepper = new PsychUINumericStepper(objX, objY, 0.1, 0.6, 0, 1, 1);
 		instVolumeStepper.onValueChange = updateAudioVolume;
 		playerVolumeStepper = new PsychUINumericStepper(objX + 100, objY, 0.1, 1, 0, 1, 1);
@@ -2764,7 +2822,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		opponentVolumeStepper = new PsychUINumericStepper(objX + 200, objY, 0.1, 1, 0, 1, 1);
 		opponentVolumeStepper.onValueChange = updateAudioVolume;
 
-		objY += 25;
+		objY += 45;
 		instMuteCheckBox = new PsychUICheckBox(objX, objY, 'Mute', 60, updateAudioVolume);
 		playerMuteCheckBox = new PsychUICheckBox(objX + 100, objY, 'Mute', 60, updateAudioVolume);
 		opponentMuteCheckBox = new PsychUICheckBox(objX + 200, objY, 'Mute', 60, updateAudioVolume);
@@ -2772,9 +2830,10 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		tab_group.add(playbackSlider);
 		tab_group.add(mouseSnapCheckBox);
 		tab_group.add(ignoreProgressCheckBox);
-		// Old Checkboxes
-		// tab_group.add(hidePreviousSectionCheckBox);
-		// tab_group.add(hideNextSectionCheckBox);
+		tab_group.add(hidePreviousSectionCheckBox);
+		tab_group.add(hideNextSectionCheckBox);
+		tab_group.add(hidePreviousSectionCheckBox);
+		tab_group.add(hideNextSectionCheckBox);
 
 		tab_group.add(new FlxText(hitsoundPlayerStepper.x, hitsoundPlayerStepper.y - 15, 100, 'Hitsound (Player):'));
 		tab_group.add(new FlxText(hitsoundOpponentStepper.x, hitsoundOpponentStepper.y - 15, 100, 'Hitsound (Opp.):'));
@@ -3786,7 +3845,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 		var shrinkNotesButton:PsychUIButton = new PsychUIButton(objX, doubleShrinker.y + 30, "Stretch Notes", function()
 		{
-			updateChartData(); // Sync notes array to sectionNotes first
+			safeUpdateChartData(); // Sync only if safe
 			var sec = getCurChartSection();
 			if(sec == null || sec.sectionNotes == null) return;
 			
@@ -3813,8 +3872,18 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			}
 			
 			_cacheSections();
+			rebucketSectionNotes();
+			_cacheSections();
 			// Use lightweight update for current section only to prevent lag
-			sec.sectionNotes.length <= 30000 ? updateCurrentSectionNotes() : loadSection(curSec + 1);
+			if(sec.sectionNotes.length <= 30000)
+			{
+				updateCurrentSectionNotes();
+			}
+			else
+			{
+				ensureNextSectionExists();
+				loadSection(curSec + 1);
+			}
 		});
 
 		stepperShiftSteps = new PsychUINumericStepper(objX, shrinkNotesButton.y + 30, 1, 1, -8192, 8192, 4);
@@ -3822,7 +3891,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 		var shiftNotesButton:PsychUIButton = new PsychUIButton(objX, stepperShiftSteps.y + 20, "Shift Notes", function()
 		{
-			updateChartData(); // Sync notes array to sectionNotes first
+			safeUpdateChartData(); // Sync only if safe
 			var sec = getCurChartSection();
 			if(sec == null || sec.sectionNotes == null) return;
 			
@@ -3835,8 +3904,18 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 				sec.sectionNotes[i][0] += (stepperShiftSteps.value) * (15000/Conductor.bpm);
 			}
 			_cacheSections();
+			rebucketSectionNotes();
+			_cacheSections();
 			// Use lightweight update for current section only to prevent lag
-			sec.sectionNotes.length <= 30000 ? updateCurrentSectionNotes() : loadSection(curSec + 1);
+			if(sec.sectionNotes.length <= 30000)
+			{
+				updateCurrentSectionNotes();
+			}
+			else
+			{
+				ensureNextSectionExists();
+				loadSection(curSec + 1);
+			}
 		});
 
 		stepperDuplicateAmount = new PsychUINumericStepper(objX, shiftNotesButton.y + 30, 1, 1, 0, 32, 4);
@@ -3844,7 +3923,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 		var dupeNotesButton:PsychUIButton = new PsychUIButton(objX, stepperDuplicateAmount.y + 20, "Duplicate Notes", function()
 		{
-			updateChartData(); // Sync notes array to sectionNotes first
+			safeUpdateChartData(); // Sync only if safe
 			var sec = getCurChartSection();
 			if(sec == null || sec.sectionNotes == null) return;
 			
@@ -3871,28 +3950,14 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 				}
 			}
 			_cacheSections();
+			rebucketSectionNotes();
+			_cacheSections();
 			
 			// If too many notes, jump to next section to avoid lag (matching JS-Engine-source behavior)
 			if(finalNoteCount > 30000)
 			{
 				// Ensure next section exists
-				if(curSec + 1 >= PlayState.SONG.notes.length)
-				{
-					// Create a new section if needed
-					var lastSection = PlayState.SONG.notes[PlayState.SONG.notes.length - 1];
-					var beat:Float = Conductor.calculateCrochet(Conductor.bpm);
-					var sectionBeats:Float = lastSection != null ? lastSection.sectionBeats : 4;
-					PlayState.SONG.notes.push({
-						sectionNotes: [],
-						sectionBeats: sectionBeats,
-						mustHitSection: lastSection != null ? lastSection.mustHitSection : true,
-						bpm: Conductor.bpm,
-						changeBPM: false,
-						altAnim: lastSection != null ? lastSection.altAnim : false,
-						gfSection: lastSection != null ? lastSection.gfSection : false
-					});
-					_cacheSections();
-				}
+				ensureNextSectionExists();
 				showOutput('Section has ${FlxStringUtil.formatMoney(finalNoteCount, false)} notes (>30,000). Jumped to next section to prevent lag.');
 				loadSection(curSec + 1);
 				forceDataUpdate = true;
@@ -4247,12 +4312,34 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			upperBox.isMinimized = true;
 			upperBox.bg.visible = false;
 
-			updateChartData();
+			// Only sync from MetaNotes if we actually have all notes instantiated.
+			// If we skipped instantiating huge sections (performance), updateChartData() would wipe them.
+			var expectedCount:Int = 0;
+			for (sec in PlayState.SONG.notes)
+				for (n in sec.sectionNotes)
+					if(n != null && n.length > 1 && n[1] >= 0) expectedCount++;
+			if(notes.length == expectedCount)
+				updateChartData();
+
+			openfl.system.System.gc();
+			#if cpp
+			if(expectedCount > 1000000) cpp.vm.Gc.enable(false);
+			#end
+
 			var oldChart:Dynamic = convertToOldFormat(PlayState.SONG);
 			var chartName:String = Paths.formatToSongPath(PlayState.SONG.song) + '.json';
 			if(Song.chartPath != null) chartName = Song.chartPath.substr(Song.chartPath.lastIndexOf('/')).trim();
-			
-			fileDialog.save(chartName, haxe.Json.stringify({song: oldChart}),
+
+			var data:String = PsychJsonPrinter.print({song: oldChart}, ['sectionNotes', 'events']);
+			#if cpp
+			if(expectedCount > 1000000)
+			{
+				cpp.vm.Gc.enable(true);
+				openfl.system.System.gc();
+			}
+			#end
+
+			fileDialog.save(chartName, data,
 				function()
 				{
 					showOutput('Old format chart saved successfully to: ${fileDialog.path}');
