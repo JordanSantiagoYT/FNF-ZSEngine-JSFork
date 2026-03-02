@@ -1431,13 +1431,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 								var addCount:Float = stepperStackNum.value * stepperStackOffset.value - 1;
 								var notesToAdd:Array<MetaNote> = [];
 
-								// Clear previous selection if Shift isn't held
-								if(!FlxG.keys.pressed.SHIFT) {
-									for(note in selectedNotes) {
-										if(note != null) note.isSelected = false;
-									}
-									selectedNotes = [];
-								}
+								// Don't clear selection here - let the existing system handle it
 
 								for(i in 0...Std.int(addCount)) {
 									var spamStrumTime:Float = strumTime + (15000/Conductor.bpm)/stepperStackOffset.value * (i + 1);
@@ -1459,15 +1453,17 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 										spamNoteSetupData.push(typeSelected);
 
 									var spamNoteAdded:MetaNote = createNote(spamNoteSetupData);
-									spamNoteAdded.isSelected = true; // Mark as selected
 									notesToAdd.push(spamNoteAdded);
-									selectedNotes.push(spamNoteAdded); // Add to selection
-									addUndoAction(ADD_NOTE, {notes: [spamNoteAdded]});
 								}
 
 								// Use bulkAddNotes to efficiently add all notes at once
 								if(notesToAdd.length > 0) {
 									bulkAddNotes(notesToAdd);
+
+									// Add to selection after they're created
+									for(note in notesToAdd) {
+										selectedNotes.push(note);
+									}
 								}
 							}
 						}
@@ -1552,13 +1548,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 						var addCount:Float = stepperStackNum.value * stepperStackOffset.value - 1;
 						var notesToAdd:Array<MetaNote> = [];
 
-						// Clear previous selection if Shift isn't held
-						if(!FlxG.keys.pressed.SHIFT) {
-							for(note in selectedNotes) {
-								if(note != null) note.isSelected = false;
-							}
-							selectedNotes = [];
-						}
+						// Don't clear selection here - let the existing system handle it
 
 						for(i in 0...Std.int(addCount)) {
 							var spamStrumTime:Float = strumTime + (15000/Conductor.bpm)/stepperStackOffset.value * (i + 1);
@@ -1580,15 +1570,17 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 								spamNoteSetupData.push(typeSelected);
 
 							var spamNoteAdded:MetaNote = createNote(spamNoteSetupData);
-							spamNoteAdded.isSelected = true; // Mark as selected
 							notesToAdd.push(spamNoteAdded);
-							selectedNotes.push(spamNoteAdded); // Add to selection
-							addUndoAction(ADD_NOTE, {notes: [spamNoteAdded]});
 						}
 
 						// Use bulkAddNotes to efficiently add all notes at once
 						if(notesToAdd.length > 0) {
 							bulkAddNotes(notesToAdd);
+
+							// Add to selection after they're created
+							for(note in notesToAdd) {
+								selectedNotes.push(note);
+							}
 						}
 					}
 				}
@@ -2753,11 +2745,6 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			#end
 		} else {
 			updateCurrentSectionNotes();
-		}
-
-		// Ensure selection is visible
-		for(note in newNotes) {
-			note.isSelected = true;
 		}
 
 		loadSection(curSec);
