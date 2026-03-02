@@ -1430,7 +1430,14 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 							if (check_stackActive != null && check_stackActive.checked) {
 								var addCount:Float = stepperStackNum.value * stepperStackOffset.value - 1;
 								var notesToAdd:Array<MetaNote> = [];
-								var originalSec = getCurChartSection();
+
+								// Clear previous selection if Shift isn't held
+								if(!FlxG.keys.pressed.SHIFT) {
+									for(note in selectedNotes) {
+										if(note != null) note.isSelected = false;
+									}
+									selectedNotes = [];
+								}
 
 								for(i in 0...Std.int(addCount)) {
 									var spamStrumTime:Float = strumTime + (15000/Conductor.bpm)/stepperStackOffset.value * (i + 1);
@@ -1452,52 +1459,15 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 										spamNoteSetupData.push(typeSelected);
 
 									var spamNoteAdded:MetaNote = createNote(spamNoteSetupData);
+									spamNoteAdded.isSelected = true; // Mark as selected
 									notesToAdd.push(spamNoteAdded);
+									selectedNotes.push(spamNoteAdded); // Add to selection
+									addUndoAction(ADD_NOTE, {notes: [spamNoteAdded]});
 								}
 
-								// Add all notes at once with proper section insertion
+								// Use bulkAddNotes to efficiently add all notes at once
 								if(notesToAdd.length > 0) {
-									// Sort notes by time
-									notesToAdd.sort(function(a, b) return Std.int(a.strumTime - b.strumTime));
-
-									// Add to notes array in correct position
-									var insertIndex:Int = 0;
-									for(spamNoteAdded in notesToAdd) {
-										var spamDidAdd:Bool = false;
-										for (num in insertIndex...notes.length) {
-											var note = notes[num];
-											if(note.strumTime >= spamNoteAdded.strumTime) {
-												notes.insert(num, spamNoteAdded);
-												spamDidAdd = true;
-												insertIndex = num + 1;
-												break;
-											}
-										}
-										if(!spamDidAdd) {
-											notes.push(spamNoteAdded);
-											insertIndex = notes.length;
-										}
-										selectedNotes.push(spamNoteAdded);
-										addUndoAction(ADD_NOTE, {notes: [spamNoteAdded]});
-
-										// Add to correct section in sectionNotes
-										var targetSec = 0;
-										while(targetSec + 1 < cachedSectionTimes.length && cachedSectionTimes[targetSec + 1] <= spamNoteAdded.strumTime)
-											targetSec++;
-										targetSec = Std.int(FlxMath.bound(targetSec, 0, PlayState.SONG.notes.length - 1));
-										
-										PlayState.SONG.notes[targetSec].sectionNotes.push(spamNoteAdded.songData);
-									}
-
-									// Update display based on note count
-									var totalSectionNotes = PlayState.SONG.notes[curSec].sectionNotes.length;
-									if(totalSectionNotes > 30000) {
-										reloadNotes(); // Full reload for large sections
-										loadSection(curSec);
-									} else {
-										updateCurrentSectionNotes(); // Lightweight update
-									}
-									forceDataUpdate = true;
+									bulkAddNotes(notesToAdd);
 								}
 							}
 						}
@@ -1581,7 +1551,14 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 					if (check_stackActive != null && check_stackActive.checked) {
 						var addCount:Float = stepperStackNum.value * stepperStackOffset.value - 1;
 						var notesToAdd:Array<MetaNote> = [];
-						var originalSec = getCurChartSection();
+
+						// Clear previous selection if Shift isn't held
+						if(!FlxG.keys.pressed.SHIFT) {
+							for(note in selectedNotes) {
+								if(note != null) note.isSelected = false;
+							}
+							selectedNotes = [];
+						}
 
 						for(i in 0...Std.int(addCount)) {
 							var spamStrumTime:Float = strumTime + (15000/Conductor.bpm)/stepperStackOffset.value * (i + 1);
@@ -1603,52 +1580,15 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 								spamNoteSetupData.push(typeSelected);
 
 							var spamNoteAdded:MetaNote = createNote(spamNoteSetupData);
+							spamNoteAdded.isSelected = true; // Mark as selected
 							notesToAdd.push(spamNoteAdded);
+							selectedNotes.push(spamNoteAdded); // Add to selection
+							addUndoAction(ADD_NOTE, {notes: [spamNoteAdded]});
 						}
 
-						// Add all notes at once with proper section insertion
+						// Use bulkAddNotes to efficiently add all notes at once
 						if(notesToAdd.length > 0) {
-							// Sort notes by time
-							notesToAdd.sort(function(a, b) return Std.int(a.strumTime - b.strumTime));
-
-							// Add to notes array in correct position
-							var insertIndex:Int = 0;
-							for(spamNoteAdded in notesToAdd) {
-								var spamDidAdd:Bool = false;
-								for (num in insertIndex...notes.length) {
-									var note = notes[num];
-									if(note.strumTime >= spamNoteAdded.strumTime) {
-										notes.insert(num, spamNoteAdded);
-										spamDidAdd = true;
-										insertIndex = num + 1;
-										break;
-									}
-								}
-								if(!spamDidAdd) {
-									notes.push(spamNoteAdded);
-									insertIndex = notes.length;
-								}
-								selectedNotes.push(spamNoteAdded);
-								addUndoAction(ADD_NOTE, {notes: [spamNoteAdded]});
-
-								// Add to correct section in sectionNotes
-								var targetSec = 0;
-								while(targetSec + 1 < cachedSectionTimes.length && cachedSectionTimes[targetSec + 1] <= spamNoteAdded.strumTime)
-									targetSec++;
-								targetSec = Std.int(FlxMath.bound(targetSec, 0, PlayState.SONG.notes.length - 1));
-
-								PlayState.SONG.notes[targetSec].sectionNotes.push(spamNoteAdded.songData);
-							}
-
-							// Update display based on note count
-							var totalSectionNotes = PlayState.SONG.notes[curSec].sectionNotes.length;
-							if(totalSectionNotes > 30000) {
-								reloadNotes(); // Full reload for large sections
-								loadSection(curSec);
-							} else {
-								updateCurrentSectionNotes(); // Lightweight update
-							}
-							forceDataUpdate = true;
+							bulkAddNotes(notesToAdd);
 						}
 					}
 				}
@@ -2419,7 +2359,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		{
 			var secs:Null<Float> = cast section.sectionBeats;
 			if(secs == null || Math.isNaN(secs) || secs <= 0) section.sectionBeats = 4;
-		
+
 			if(section.changeBPM) bpm = section.bpm;
 			var beat:Float = Conductor.calculateCrochet(bpm);
 				
@@ -2571,6 +2511,24 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 			PlayState.SONG.notes[noteSec].sectionNotes.push(n);
 		}
+	}
+
+	function cleanupEmptySections():Void
+	{
+		var i:Int = PlayState.SONG.notes.length - 1;
+		while(i >= 0) {
+			var section = PlayState.SONG.notes[i];
+			if(section != null && (section.sectionNotes == null || section.sectionNotes.length == 0)) {
+				// Only remove if it's not the last section and not the current section
+				if(i > 0 && i != curSec) {
+					PlayState.SONG.notes.splice(i, 1);
+				}
+			}
+			i--;
+		}
+		
+		// Recache after cleanup
+		_cacheSections();
 	}
 
 	var showPreviousSection:Bool = false;
@@ -2770,18 +2728,22 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			}
 		}
 
-		// Add to sectionNotes
+		// Force all new notes to current section only (fixes archiving issue)
+		var targetSec = curSec;
+		var section = PlayState.SONG.notes[targetSec];
+
 		for(note in newNotes) {
-			var targetSec:Int = 0;
-			while(targetSec + 1 < cachedSectionTimes.length && cachedSectionTimes[targetSec + 1] <= note.strumTime)
-				targetSec++;
-			targetSec = Std.int(FlxMath.bound(targetSec, 0, PlayState.SONG.notes.length - 1));
-			
-			PlayState.SONG.notes[targetSec].sectionNotes.push(note.songData);
+			// Override to current section
+			if(section != null) {
+				section.sectionNotes.push(note.songData);
+			}
 		}
 
-		// Update display
-		if(PlayState.SONG.notes[curSec].sectionNotes.length > 30000) {
+		// Clean up any empty sections that might have been created
+		cleanupEmptySections();
+
+		// Update display based on note count
+		if(section != null && section.sectionNotes.length > 30000) {
 			#if cpp
 			cpp.vm.Gc.enable(false);
 			#end
@@ -2792,6 +2754,12 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		} else {
 			updateCurrentSectionNotes();
 		}
+
+		// Ensure selection is visible
+		for(note in newNotes) {
+			note.isSelected = true;
+		}
+
 		loadSection(curSec);
 		forceDataUpdate = true;
 	}
@@ -3497,6 +3465,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 				selectedNotes.remove(note);
 			}
+			cleanupEmptySections();
 			softReloadNotes(true);
 		});
 		clearButton.normalStyle.bgColor = FlxColor.RED;
