@@ -1429,10 +1429,6 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 							if (check_stackActive != null && check_stackActive.checked) {
 								var addCount:Float = stepperStackNum.value * stepperStackOffset.value - 1;
-								var notesToAdd:Array<MetaNote> = [];
-
-								// Don't clear selection here - let the existing system handle it
-
 								for(i in 0...Std.int(addCount)) {
 									var spamStrumTime:Float = strumTime + (15000/Conductor.bpm)/stepperStackOffset.value * (i + 1);
 
@@ -1453,17 +1449,21 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 										spamNoteSetupData.push(typeSelected);
 
 									var spamNoteAdded:MetaNote = createNote(spamNoteSetupData);
-									notesToAdd.push(spamNoteAdded);
-								}
-
-								// Use bulkAddNotes to efficiently add all notes at once
-								if(notesToAdd.length > 0) {
-									bulkAddNotes(notesToAdd);
-
-									// Add to selection after they're created
-									for(note in notesToAdd) {
-										selectedNotes.push(note);
+									var spamDidAdd:Bool = false;
+									for (num in sectionFirstNoteID...notes.length)
+									{
+										var note = notes[num];
+										if(note.strumTime >= spamStrumTime)
+											{
+												notes.insert(num, spamNoteAdded);
+												spamDidAdd = true;
+												break;
+											}
 									}
+									if(!spamDidAdd) notes.push(spamNoteAdded);
+
+									selectedNotes.push(spamNoteAdded);
+									addUndoAction(ADD_NOTE, {notes: [spamNoteAdded]});
 								}
 							}
 						}
@@ -1546,10 +1546,6 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 					// Note Spamming feature for C key drawing
 					if (check_stackActive != null && check_stackActive.checked) {
 						var addCount:Float = stepperStackNum.value * stepperStackOffset.value - 1;
-						var notesToAdd:Array<MetaNote> = [];
-
-						// Don't clear selection here - let the existing system handle it
-
 						for(i in 0...Std.int(addCount)) {
 							var spamStrumTime:Float = strumTime + (15000/Conductor.bpm)/stepperStackOffset.value * (i + 1);
 
@@ -1570,17 +1566,21 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 								spamNoteSetupData.push(typeSelected);
 
 							var spamNoteAdded:MetaNote = createNote(spamNoteSetupData);
-							notesToAdd.push(spamNoteAdded);
-						}
-
-						// Use bulkAddNotes to efficiently add all notes at once
-						if(notesToAdd.length > 0) {
-							bulkAddNotes(notesToAdd);
-
-							// Add to selection after they're created
-							for(note in notesToAdd) {
-								selectedNotes.push(note);
+							var spamDidAdd:Bool = false;
+							for (num in sectionFirstNoteID...notes.length)
+							{
+								var note = notes[num];
+								if(note.strumTime >= spamStrumTime)
+									{
+										notes.insert(num, spamNoteAdded);
+										spamDidAdd = true;
+										break;
+									}
 							}
+							if(!spamDidAdd) notes.push(spamNoteAdded);
+
+							selectedNotes.push(spamNoteAdded);
+							addUndoAction(ADD_NOTE, {notes: [spamNoteAdded]});
 						}
 					}
 				}
@@ -2505,24 +2505,6 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		}
 	}
 
-	function cleanupEmptySections():Void
-	{
-		var i:Int = PlayState.SONG.notes.length - 1;
-		while(i >= 0) {
-			var section = PlayState.SONG.notes[i];
-			if(section != null && (section.sectionNotes == null || section.sectionNotes.length == 0)) {
-				// Only remove if it's not the last section and not the current section
-				if(i > 0 && i != curSec) {
-					PlayState.SONG.notes.splice(i, 1);
-				}
-			}
-			i--;
-		}
-		
-		// Recache after cleanup
-		_cacheSections();
-	}
-
 	var showPreviousSection:Bool = false;
 	var showNextSection:Bool = true;
 	var showNoteTypeLabels:Bool = true;
@@ -3441,19 +3423,50 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		});
 		var clearButton:PsychUIButton = new PsychUIButton(objX + 200, objY, 'Clear', function()
 		{
-			for (note in curRenderedNotes)
+			var currentSection = getCurChartSection();
+			if(currentSection == null) return;
+
+			if(affectNotes.checked)
 			{
-				if(note == null) continue;
+				currentSection.sectionNotes = [];
 
-				if(!note.isEvent && affectNotes.checked)
+				var minTime:Float = cachedSectionTimes[curSec];
+				var maxTime:Float = cachedSectionTimes[curSec + 1];
+
+				var notesToRemove:Array<MetaNote> = [];
+				for (note in notes)
+				{
+					if(note != null && !note.isEvent && note.strumTime >= minTime && note.strumTime < maxTime)
+						notesToRemove.push(note);
+				}
+
+				for (note in notesToRemove)
+				{
 					notes.remove(note);
-				if(note.isEvent && affectEvents.checked)
-					events.remove(cast (note, EventMetaNote));
-
-				selectedNotes.remove(note);
+					selectedNotes.remove(note);
+					if(note != null) note.destroy();
+				}
 			}
-			cleanupEmptySections();
-			softReloadNotes(true);
+
+			if(affectEvents.checked)
+			{
+				var eventsToRemove:Array<EventMetaNote> = [];
+				for (event in events)
+				{
+					if(event != null && event.strumTime >= minTime && event.strumTime < maxTime)
+						eventsToRemove.push(event);
+				}
+
+				for (event in eventsToRemove)
+				{
+					events.remove(event);
+					selectedNotes.remove(event);
+					if(event != null) event.destroy();
+				}
+			}
+
+			updateCurrentSectionNotes();
+			forceDataUpdate = true;
 		});
 		clearButton.normalStyle.bgColor = FlxColor.RED;
 		clearButton.normalStyle.textColor = FlxColor.WHITE;
@@ -3941,7 +3954,6 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			if(sec == null || sec.sectionNotes == null) return;
 
 			var minimumTime:Float = cachedSectionTimes[curSec];
-			var modifiedNotes:Array<Dynamic> = [];
 
 			for (i in 0...sec.sectionNotes.length)
 			{
@@ -3956,18 +3968,13 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 				var newStartTime:Float = minimumTime + stretchedStartTime;
 
 				note[0] = Math.max(newStartTime, minimumTime);
-				modifiedNotes.push(note);
 			}
 
-			// Proper sync
+			// Update section boundaries
 			_cacheSections();
 
-			// Reload notes
-			if(sec.sectionNotes.length > 30000) {
-				reloadNotes();
-			} else {
-				updateCurrentSectionNotes();
-			}
+			// Just update current section - DON'T rebucket
+			updateCurrentSectionNotes();
 			loadSection(curSec);
 			forceDataUpdate = true;
 		});
@@ -3981,23 +3988,45 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			var sec = getCurChartSection();
 			if(sec == null || sec.sectionNotes == null) return;
 
+			var shiftAmount:Float = (stepperShiftSteps.value) * (15000/Conductor.bpm);
+
 			for (i in 0...sec.sectionNotes.length)
 			{
 				if(sec.sectionNotes[i] == null || sec.sectionNotes[i].length < 1) continue;
 				if (sec.sectionNotes[i][1] < 0) continue; // Skip events
-					
-				sec.sectionNotes[i][0] += (stepperShiftSteps.value) * (15000/Conductor.bpm);
+
+				sec.sectionNotes[i][0] += shiftAmount;
 			}
 
-			_cacheSections();
-			rebucketSectionNotes(); // Reorganize notes that crossed section boundaries
+			// Update section boundaries
 			_cacheSections();
 
-			if(sec.sectionNotes.length > 30000) {
+			// Check if notes crossed section boundaries
+			var needsRebucket:Bool = false;
+			var minTime:Float = cachedSectionTimes[curSec];
+			var maxTime:Float = cachedSectionTimes[curSec + 1];
+
+			for (note in sec.sectionNotes)
+			{
+				if(note[0] < minTime || note[0] >= maxTime)
+				{
+					needsRebucket = true;
+					break;
+				}
+			}
+
+			if(needsRebucket)
+			{
+				// Only rebucket if notes actually left the section
+				rebucketSectionNotes();
+				_cacheSections();
 				reloadNotes();
-			} else {
+			}
+			else
+			{
 				updateCurrentSectionNotes();
 			}
+
 			loadSection(curSec);
 			forceDataUpdate = true;
 		});
@@ -4011,7 +4040,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			var sec = getCurChartSection();
 			if(sec == null || sec.sectionNotes == null) return;
 
-			var copiedNotes:Array<Dynamic> = [];
+			var copiedNotes:Array<Array<Dynamic>> = [];
 			for (i in 0...sec.sectionNotes.length)
 			{
 				var note:Array<Dynamic> = sec.sectionNotes[i];
@@ -4020,6 +4049,14 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			}
 
 			var finalNoteCount:Int = sec.sectionNotes.length + (copiedNotes.length * Std.int(stepperDuplicateAmount.value));
+			var shiftAmount:Float = (stepperShiftSteps.value) * (15000/Conductor.bpm);
+
+			// Store original notes to check section boundaries later
+			var originalTimes:Array<Float> = [];
+			for (note in sec.sectionNotes)
+			{
+				originalTimes.push(note[0]);
+			}
 
 			for (_i in 1...Std.int(stepperDuplicateAmount.value)+1)
 			{
@@ -4028,26 +4065,58 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 					if(copiedNotes[i] == null || copiedNotes[i].length < 3) continue;
 					// Deep copy the note with all metadata
 					var copiedNote:Array<Dynamic> = copiedNotes[i].copy();
-					copiedNote[0] += (stepperShiftSteps.value * _i) * (15000/Conductor.bpm);
+					copiedNote[0] += shiftAmount * _i;
 					sec.sectionNotes.push(copiedNote);
 				}
 			}
 
 			_cacheSections();
-			rebucketSectionNotes();
-			_cacheSections();
 
-			if(finalNoteCount > 30000)
+			// Check if any notes (original or new) crossed section boundaries
+			var needsRebucket:Bool = false;
+			var minTime:Float = cachedSectionTimes[curSec];
+			var maxTime:Float = cachedSectionTimes[curSec + 1];
+
+			for (note in sec.sectionNotes)
 			{
-				ensureNextSectionExists();
-				reloadNotes();
-				showOutput('Section has ${FlxStringUtil.formatMoney(finalNoteCount, false)} notes (>30,000). Full reload performed.');
-				loadSection(curSec);
+				if(note[0] < minTime || note[0] >= maxTime)
+				{
+					needsRebucket = true;
+					break;
+				}
+			}
+
+			if(needsRebucket)
+			{
+				rebucketSectionNotes();
+				_cacheSections();
+
+				if(finalNoteCount > 30000)
+				{
+					ensureNextSectionExists();
+					reloadNotes();
+					showOutput('Section has ${FlxStringUtil.formatMoney(finalNoteCount, false)} notes (>30,000). Full reload performed.');
+				}
+				else
+				{
+					reloadNotes();
+				}
 			}
 			else
 			{
-				updateCurrentSectionNotes();
+				if(finalNoteCount > 30000)
+				{
+					ensureNextSectionExists();
+					reloadNotes();
+					showOutput('Section has ${FlxStringUtil.formatMoney(finalNoteCount, false)} notes (>30,000). Full reload performed.');
+				}
+				else
+				{
+					updateCurrentSectionNotes();
+				}
 			}
+
+			loadSection(curSec);
 			forceDataUpdate = true;
 		});
 
