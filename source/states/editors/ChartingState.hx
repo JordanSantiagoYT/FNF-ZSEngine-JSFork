@@ -3423,13 +3423,16 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			var currentSection = getCurChartSection();
 			if(currentSection == null) return;
 
+			var minTime:Float = cachedSectionTimes[curSec];
+			var maxTime:Float = cachedSectionTimes[curSec + 1];
+
+			// Clear ONLY the current section's notes
 			if(affectNotes.checked)
 			{
+				// Clear sectionNotes data
 				currentSection.sectionNotes = [];
 
-				var minTime:Float = cachedSectionTimes[curSec];
-				var maxTime:Float = cachedSectionTimes[curSec + 1];
-
+				// Remove visual notes for current section
 				var notesToRemove:Array<MetaNote> = [];
 				for (note in notes)
 				{
@@ -3447,6 +3450,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 			if(affectEvents.checked)
 			{
+				// Clear events for current section if needed
 				var eventsToRemove:Array<EventMetaNote> = [];
 				for (event in events)
 				{
@@ -3462,6 +3466,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 				}
 			}
 
+			// Update display
 			updateCurrentSectionNotes();
 			forceDataUpdate = true;
 		});
