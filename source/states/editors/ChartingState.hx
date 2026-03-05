@@ -2436,6 +2436,24 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		cachedSectionTimes.push(time);
 	}
 
+	function ensureNextSectionExists():Void
+	{
+		if(curSec + 1 < PlayState.SONG.notes.length) return;
+
+		var lastSection = PlayState.SONG.notes[PlayState.SONG.notes.length - 1];
+		var sectionBeats:Float = (lastSection != null) ? lastSection.sectionBeats : 4;
+		PlayState.SONG.notes.push({
+			sectionNotes: [],
+			sectionBeats: sectionBeats,
+			mustHitSection: lastSection != null ? lastSection.mustHitSection : true,
+			bpm: (lastSection != null) ? lastSection.bpm : Conductor.bpm,
+			changeBPM: false,
+			altAnim: lastSection != null ? lastSection.altAnim : false,
+			gfSection: lastSection != null ? lastSection.gfSection : false
+		});
+		_cacheSections();
+	}
+
 	function rebucketSectionNotes():Void
 	{
 		// Rebuild sectionNotes based on each note's strumTime.
