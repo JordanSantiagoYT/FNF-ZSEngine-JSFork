@@ -3889,36 +3889,57 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			var sec = getCurChartSection();
 			if(sec == null || sec.sectionNotes == null) return;
 
+			trace('Shrink button clicked - before: ' + sec.sectionNotes.length + ' notes');
+
 			var minimumTime:Float = cachedSectionTimes[curSec];
 			var maxTime:Float = cachedSectionTimes[curSec + 1];
 			var modifiedCount:Int = 0;
 
-			// Modify the sectionNotes data
 			for (i in 0...sec.sectionNotes.length)
 			{
 				var note:Array<Dynamic> = sec.sectionNotes[i];
 				if (note == null || note.length < 3) continue;
-				if (note[1] < 0) continue; // Skip events
+				if (note[1] < 0) continue;
 
 				if(note[0] >= minimumTime && note[0] < maxTime)
 				{
 					if (note[2] > 0) note[2] *= stepperShrinkAmount.value;
-						
+
 					var originalStartTime:Float = note[0] - minimumTime;
 					var stretchedStartTime:Float = originalStartTime * stepperShrinkAmount.value;
 					var newStartTime:Float = minimumTime + stretchedStartTime;
-						
+
 					note[0] = Math.max(newStartTime, minimumTime);
 					modifiedCount++;
 				}
 			}
 
+			trace('Shrink button - modified: ' + modifiedCount + ' notes');
+
 			if(modifiedCount > 0)
 			{
-				// Force a complete reload of notes from sectionNotes
-				reloadNotes();
+				// Force complete rebuild
+				notes = [];
+				selectedNotes = [];
+
+				// Rebuild notes from sectionNotes
+				for (secNum => section in PlayState.SONG.notes)
+				{
+					for (noteData in section.sectionNotes)
+					{
+						if(noteData != null && noteData.length >= 3 && noteData[1] >= 0)
+						{
+							var newNote = createNote(noteData, secNum);
+							notes.push(newNote);
+						}
+					}
+				}
+
+				notes.sort(PlayState.sortByTime);
 				loadSection(curSec);
 				forceDataUpdate = true;
+
+				trace('Shrink button - after: notes.length = ' + notes.length);
 			}
 		});
 
@@ -3930,53 +3951,52 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			var sec = getCurChartSection();
 			if(sec == null || sec.sectionNotes == null) return;
 
+			trace('Shift button clicked - before: ' + sec.sectionNotes.length + ' notes');
+
 			var minimumTime:Float = cachedSectionTimes[curSec];
 			var maxTime:Float = cachedSectionTimes[curSec + 1];
 			var shiftAmount:Float = (stepperShiftSteps.value) * (15000/Conductor.bpm);
 			var modifiedCount:Int = 0;
 
-			// Store original positions to check if any notes left the section
-			var notesLeftSection:Bool = false;
-
 			for (i in 0...sec.sectionNotes.length)
 			{
 				if(sec.sectionNotes[i] == null || sec.sectionNotes[i].length < 1) continue;
-				if (sec.sectionNotes[i][1] < 0) continue; // Skip events
+				if (sec.sectionNotes[i][1] < 0) continue;
 
-				var oldTime = sec.sectionNotes[i][0];
-				if(oldTime >= minimumTime && oldTime < maxTime)
+				if(sec.sectionNotes[i][0] >= minimumTime && sec.sectionNotes[i][0] < maxTime)
 				{
-					var newTime = oldTime + shiftAmount;
-					sec.sectionNotes[i][0] = newTime;
+					sec.sectionNotes[i][0] += shiftAmount;
 					modifiedCount++;
-
-					// Check if this note left the current section
-					if(newTime < minimumTime || newTime >= maxTime)
-					{
-						notesLeftSection = true;
-					}
 				}
 			}
+
+			trace('Shift button - modified: ' + modifiedCount + ' notes');
 
 			if(modifiedCount > 0)
 			{
 				_cacheSections();
 
-				if(notesLeftSection)
+				// Force complete rebuild
+				notes = [];
+				selectedNotes = [];
+
+				for (secNum => section in PlayState.SONG.notes)
 				{
-					// If notes moved to other sections, do a full rebucket and reload
-					rebucketSectionNotes();
-					_cacheSections();
-					reloadNotes();
-				}
-				else
-				{
-					// All notes stayed in current section, just update current section
-					reloadNotes(); // Still need full reload to update positions
+					for (noteData in section.sectionNotes)
+					{
+						if(noteData != null && noteData.length >= 3 && noteData[1] >= 0)
+						{
+							var newNote = createNote(noteData, secNum);
+							notes.push(newNote);
+						}
+					}
 				}
 
+				notes.sort(PlayState.sortByTime);
 				loadSection(curSec);
 				forceDataUpdate = true;
+
+				trace('Shift button - after: notes.length = ' + notes.length);
 			}
 		});
 
@@ -3987,6 +4007,8 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		{
 			var sec = getCurChartSection();
 			if(sec == null || sec.sectionNotes == null) return;
+
+			trace('Duplicate button clicked - before: ' + sec.sectionNotes.length + ' notes');
 
 			var minimumTime:Float = cachedSectionTimes[curSec];
 			var maxTime:Float = cachedSectionTimes[curSec + 1];
@@ -4008,45 +4030,55 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 				}
 			}
 
-			if(copiedNotes.length == 0) return;
+			if(copiedNotes.length == 0)
+			{
+				trace('No notes to copy in current section');
+				return;
+			}
 
 			var notesAdded:Int = 0;
 
-			// Add duplicated notes
 			for (_i in 1...duplicateCount+1)
 			{
 				for (i in 0...copiedNotes.length)
 				{
 					if(copiedNotes[i] == null || copiedNotes[i].length < 3) continue;
 
-					// Deep copy the note with all metadata
-					var copiedNote:Array<Dynamic> = [];
-					for(val in copiedNotes[i])
-					{
-						copiedNote.push(val);
-					}
-
+					var copiedNote:Array<Dynamic> = copiedNotes[i].copy();
 					copiedNote[0] += shiftAmount * _i;
 					sec.sectionNotes.push(copiedNote);
 					notesAdded++;
 				}
 			}
 
+			trace('Duplicate button - added: ' + notesAdded + ' notes');
+
 			if(notesAdded > 0)
 			{
 				_cacheSections();
 
-				// Always do a full reload after adding notes
-				reloadNotes();
+				// Force complete rebuild
+				notes = [];
+				selectedNotes = [];
 
-				if(sec.sectionNotes.length > 30000)
+				for (secNum => section in PlayState.SONG.notes)
 				{
-					ensureNextSectionExists();
-					showOutput('Section has ${FlxStringUtil.formatMoney(sec.sectionNotes.length, false)} notes (>30,000).');
+					for (noteData in section.sectionNotes)
+					{
+						if(noteData != null && noteData.length >= 3 && noteData[1] >= 0)
+						{
+							var newNote = createNote(noteData, secNum);
+							notes.push(newNote);
+						}
+					}
 				}
 
+				notes.sort(PlayState.sortByTime);
 				loadSection(curSec);
 				forceDataUpdate = true;
+
+				trace('Duplicate button - after: notes.length = ' + notes.length);
+				trace('Section now has: ' + sec.sectionNotes.length + ' notes');
 			}
 		});
 
