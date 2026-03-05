@@ -2713,9 +2713,6 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			}
 		}
 
-		// Clean up any empty sections that might have been created
-		cleanupEmptySections();
-
 		// Update display based on note count
 		if(section != null && section.sectionNotes.length > 30000) {
 			#if cpp
