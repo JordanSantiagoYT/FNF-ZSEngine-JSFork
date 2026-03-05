@@ -3876,7 +3876,6 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 			if(modifiedCount > 0)
 			{
-				// Just update current section
 				updateCurrentSectionNotes();
 				forceDataUpdate = true;
 			}
@@ -3910,30 +3909,8 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 			if(modifiedCount > 0)
 			{
-				// Update section boundaries
 				_cacheSections();
-
-				// Check if any shifted notes left the section
-				var needsReload:Bool = false;
-				for (i in 0...sec.sectionNotes.length)
-				{
-					if(sec.sectionNotes[i][0] < minimumTime || sec.sectionNotes[i][0] >= maxTime)
-					{
-						needsReload = true;
-						break;
-					}
-				}
-
-				if(needsReload)
-				{
-					// Full reload if notes changed sections
-					reloadNotes();
-				}
-				else
-				{
-					// Just update current section
-					updateCurrentSectionNotes();
-				}
+				updateCurrentSectionNotes();
 				loadSection(curSec);
 				forceDataUpdate = true;
 			}
@@ -3967,8 +3944,6 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 			if(copiedNotes.length == 0) return;
 
-			var finalNoteCount:Int = sec.sectionNotes.length + (copiedNotes.length * Std.int(stepperDuplicateAmount.value));
-
 			// Add duplicated notes
 			for (_i in 1...Std.int(stepperDuplicateAmount.value)+1)
 			{
@@ -3983,19 +3958,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			}
 
 			_cacheSections();
-
-			// Handle large note counts
-			if(finalNoteCount > 30000)
-			{
-				ensureNextSectionExists();
-				reloadNotes();
-				showOutput('Section has ${FlxStringUtil.formatMoney(finalNoteCount, false)} notes (>30,000). Full reload performed.');
-			}
-			else
-			{
-				updateCurrentSectionNotes();
-			}
-
+			updateCurrentSectionNotes();
 			loadSection(curSec);
 			forceDataUpdate = true;
 		});
