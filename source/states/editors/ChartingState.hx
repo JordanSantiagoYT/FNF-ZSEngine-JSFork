@@ -2436,63 +2436,6 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		cachedSectionTimes.push(time);
 	}
 
-	function ensureNextSectionExists():Void
-	{
-		if(curSec + 1 < PlayState.SONG.notes.length) return;
-
-		var lastSection = PlayState.SONG.notes[PlayState.SONG.notes.length - 1];
-		var sectionBeats:Float = (lastSection != null) ? lastSection.sectionBeats : 4;
-		PlayState.SONG.notes.push({
-			sectionNotes: [],
-			sectionBeats: sectionBeats,
-			mustHitSection: lastSection != null ? lastSection.mustHitSection : true,
-			bpm: (lastSection != null) ? lastSection.bpm : Conductor.bpm,
-			changeBPM: false,
-			altAnim: lastSection != null ? lastSection.altAnim : false,
-			gfSection: lastSection != null ? lastSection.gfSection : false
-		});
-		_cacheSections();
-	}
-
-	function rebucketSectionNotes():Void
-	{
-		// Rebuild sectionNotes based on each note's strumTime.
-		// This matches JS-Engine's behavior where notes can be shifted into future sections.
-		var allNotes:Array<Dynamic> = [];
-		for (sec in PlayState.SONG.notes)
-		{
-			if(sec != null && sec.sectionNotes != null)
-			{
-				for (n in sec.sectionNotes)
-					if(n != null) allNotes.push(n);
-				sec.sectionNotes = [];
-			}
-		}
-
-		allNotes.sort(function(a:Dynamic, b:Dynamic)
-		{
-			return FlxSort.byValues(FlxSort.ASCENDING, a[0], b[0]);
-		});
-
-		for (n in allNotes)
-		{
-			if(n == null || n.length < 2) continue;
-			// Skip events embedded in sectionNotes (old-format compatibility)
-			if(n[1] < 0) continue;
-
-			while(cachedSectionTimes.length < 2) _cacheSections();
-			while(cachedSectionTimes[cachedSectionTimes.length - 1] <= n[0])
-				ensureNextSectionExists();
-
-			var noteSec:Int = 0;
-			while(noteSec + 1 < cachedSectionTimes.length && cachedSectionTimes[noteSec + 1] <= n[0])
-				noteSec++;
-			noteSec = Std.int(FlxMath.bound(noteSec, 0, PlayState.SONG.notes.length - 1));
-
-			PlayState.SONG.notes[noteSec].sectionNotes.push(n);
-		}
-	}
-
 	var showPreviousSection:Bool = false;
 	var showNextSection:Bool = true;
 	var showNoteTypeLabels:Bool = true;
