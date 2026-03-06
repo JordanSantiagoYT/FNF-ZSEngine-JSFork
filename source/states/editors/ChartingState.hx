@@ -3920,7 +3920,6 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			// If too many notes, jump to next section to avoid lag
 			if(finalNoteCount > 30000)
 			{
-				// Ensure next section exists
 				if(curSec + 1 >= PlayState.SONG.notes.length)
 				{
 					// Create a new section if needed
@@ -3939,20 +3938,13 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 					_cacheSections();
 				}
 
-				// Show output and load next section
 				showOutput('Section has ${FlxStringUtil.formatMoney(finalNoteCount, false)} notes (>30,000). Jumped to next section to prevent lag.');
 
-				// IMPORTANT: Update current section notes before leaving
-				updateCurrentSectionNotes();
-
-				// Then load next section
-				loadSection(curSec + 1);
+				// Force section change
+				curSec = curSec + 1; // Manually increment current section
+				loadSection(curSec); // Load the new section
+				updateCurrentSectionNotes(); // Update display
 				forceDataUpdate = true;
-			}
-			else
-			{
-				// Use lightweight update for current section only
-				updateCurrentSectionNotes();
 			}
 		});
 
