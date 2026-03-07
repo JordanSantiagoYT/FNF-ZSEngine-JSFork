@@ -3891,6 +3891,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			var sec = getCurChartSection();
 			if(sec == null || sec.sectionNotes == null) return;
 
+			// Collect notes to duplicate (only actual notes, not events)
 			var copiedNotes:Array<Dynamic> = [];
 			for (i in 0...sec.sectionNotes.length)
 			{
@@ -3902,27 +3903,26 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			// Calculate final note count before duplicating
 			var finalNoteCount:Int = sec.sectionNotes.length + (copiedNotes.length * Std.int(stepperDuplicateAmount.value));
 
-			// FIRST, add the duplicated notes to the current section
 			for (_i in 1...Std.int(stepperDuplicateAmount.value)+1)
 			{
 				for (i in 0...copiedNotes.length)
 				{
 					if(copiedNotes[i] == null || copiedNotes[i].length < 3) continue;
+					// Create a new note array (copy)
 					var copiedNote:Array<Dynamic> = [copiedNotes[i][0], copiedNotes[i][1], copiedNotes[i][2]];
 					if(copiedNotes[i].length > 3) copiedNote.push(copiedNotes[i][3]);
 					copiedNote[0] += (stepperShiftSteps.value * _i) * (15000/Conductor.bpm);
 					sec.sectionNotes.push(copiedNote);
 				}
 			}
+			_cacheSections(); // Update section timings after adding notes
 
-			_cacheSections();
-
-			// If too many notes, jump to next section to avoid lag
 			if(finalNoteCount > 30000)
 			{
+				// Ensure next section exists
 				if(curSec + 1 >= PlayState.SONG.notes.length)
 				{
-					// Create a new section if needed
+					// Create a new section
 					var lastSection = PlayState.SONG.notes[PlayState.SONG.notes.length - 1];
 					var beat:Float = Conductor.calculateCrochet(Conductor.bpm);
 					var sectionBeats:Float = lastSection != null ? lastSection.sectionBeats : 4;
@@ -3940,11 +3940,21 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 				showOutput('Section has ${FlxStringUtil.formatMoney(finalNoteCount, false)} notes (>30,000). Jumped to next section to prevent lag.');
 
-				// Force section change
-				curSec = curSec + 1; // Manually increment current section
-				loadSection(curSec); // Load the new section
-				updateCurrentSectionNotes(); // Update display
+				// First, update the current section's notes so they appear correctly
+				updateCurrentSectionNotes();
+
+				// Then manually change curSec and load the new section
+				curSec = curSec + 1;
+				loadSection(curSec);
+				// Also update the new section's notes
+				updateCurrentSectionNotes();
+
 				forceDataUpdate = true;
+			}
+			else
+			{
+				// Normal case: just update current section
+				updateCurrentSectionNotes();
 			}
 		});
 
