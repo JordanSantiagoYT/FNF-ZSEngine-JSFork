@@ -3961,6 +3961,11 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			// --- HANDLE LARGE NOTE COUNT ---
 			if(finalNoteCount > 30000)
 			{
+				trace('Changing curSec from ' + curSec + ' to ' + (curSec + 1));
+				curSec = curSec + 1;
+				trace('Loading new section ' + curSec);
+				loadSection(curSec);
+
 				trace('=== HANDLING LARGE NOTE COUNT (>30,000) ===');
 				trace('Final note count: ' + finalNoteCount);
 
@@ -4007,14 +4012,6 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 				trace('Updating current section notes before jump...');
 				updateCurrentSectionNotes();
 				trace('updateCurrentSectionNotes() called for current section');
-
-				// Then manually change curSec and load the new section
-				trace('Changing curSec from ' + curSec + ' to ' + (curSec + 1));
-				curSec = curSec + 1;
-
-				trace('Loading new section ' + curSec);
-				loadSection(curSec);
-				trace('loadSection(' + curSec + ') called');
 
 				trace('Updating new section notes...');
 				updateCurrentSectionNotes();
