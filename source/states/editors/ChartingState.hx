@@ -3891,41 +3891,37 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			var sec = getCurChartSection();
 			if(sec == null || sec.sectionNotes == null) return;
 
-			// Collect notes to duplicate (only actual notes, not events)
 			var copiedNotes:Array<Dynamic> = [];
 			for (i in 0...sec.sectionNotes.length)
 			{
 				var note:Array<Dynamic> = sec.sectionNotes[i];
-				if(note != null && note.length > 1 && note[1] >= 0)
-				{
+				if(note != null && note.length > 1 && note[1] >= 0) // Only copy actual notes, not events
 					copiedNotes.push(note);
-				}
 			}
 
-			// Calculate final note count after duplication
-			var duplicateAmount:Int = Std.int(stepperDuplicateAmount.value);
-			var finalNoteCount:Int = sec.sectionNotes.length + (copiedNotes.length * duplicateAmount);
+			// Calculate final note count before duplicating
+			var finalNoteCount:Int = sec.sectionNotes.length + (copiedNotes.length * Std.int(stepperDuplicateAmount.value));
 
-			trace('Starting duplication process...');
-
-			for (_i in 1...duplicateAmount + 1)
+			for (_i in 1...Std.int(stepperDuplicateAmount.value) + 1)
 			{
 				for (i in 0...copiedNotes.length)
 				{
 					if(copiedNotes[i] == null || copiedNotes[i].length < 3) continue;
-
-					// Create a new note array (copy)
 					var copiedNote:Array<Dynamic> = [copiedNotes[i][0], copiedNotes[i][1], copiedNotes[i][2]];
 					if(copiedNotes[i].length > 3) copiedNote.push(copiedNotes[i][3]);
 					copiedNote[0] += (stepperShiftSteps.value * _i) * (15000/Conductor.bpm);
-
 					sec.sectionNotes.push(copiedNote);
 				}
 			}
+			_cacheSections();
 
-			_cacheSections(); // Update section timings after adding notes
+			// Show output message for large note counts
+			if(finalNoteCount > 30000)
+			{
+				showOutput('Section has ' + finalNoteCount + ' notes (>30,000). Jumped to next section to prevent lag.');
+			}
 
-			/*
+			/* Old loop
 			// --- HANDLE LARGE NOTE COUNT ---
 			if(finalNoteCount > 30000)
 			{
@@ -3953,8 +3949,6 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 				updateCurrentSectionNotes();
 			}
 			*/
-
-			showOutput('Section has ' + finalNoteCount + ' notes (>30,000). Jumped to next section to prevent lag.');
 			sec.sectionNotes.length <= 30000 ? updateCurrentSectionNotes() : loadSection(curSec + 1);
 		});
 
