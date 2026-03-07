@@ -3997,13 +3997,13 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 				{
 					trace('Next section already exists at index ' + (curSec + 1));
 					var nextSec = PlayState.SONG.notes[curSec + 1];
-					trace('Next section has ' + (nextSec != null ? nextSec.sectionNotes.length : 'null') + ' notes');
+					var nextSecNotes:Int = (nextSec != null && nextSec.sectionNotes != null) ? nextSec.sectionNotes.length : 0;
+					trace('Next section has ' + nextSecNotes + ' notes');
 				}
 
 				showOutput('Section has ' + finalNoteCount + ' notes (>30,000). Jumped to next section to prevent lag.');
 				trace('Output message shown');
 
-				// --- FIX: Properly move to next section ---
 				trace('Updating current section notes before jump...');
 				updateCurrentSectionNotes();
 				trace('updateCurrentSectionNotes() called for current section');
@@ -4022,7 +4022,8 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 				// Verify the new section loaded correctly
 				var newSec = getCurChartSection();
-				trace('New current section has ' + (newSec != null ? newSec.sectionNotes.length : 'null') + ' notes');
+				var newSecNotes:Int = (newSec != null && newSec.sectionNotes != null) ? newSec.sectionNotes.length : 0;
+				trace('New current section has ' + newSecNotes + ' notes');
 				trace('New curSec value: ' + curSec);
 
 				forceDataUpdate = true;
