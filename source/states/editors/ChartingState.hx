@@ -4000,7 +4000,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 					trace('Next section has ' + (nextSec != null ? nextSec.sectionNotes.length : 'null') + ' notes');
 				}
 
-				showOutput('Section has ${FlxStringUtil.formatMoney(finalNoteCount, false)} notes (>30,000). Jumped to next section to prevent lag.');
+				showOutput('Section has ' + finalNoteCount + ' notes (>30,000). Jumped to next section to prevent lag.');
 				trace('Output message shown');
 
 				// --- FIX: Properly move to next section ---
