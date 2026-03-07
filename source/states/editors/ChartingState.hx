@@ -3887,51 +3887,98 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 		var dupeNotesButton:PsychUIButton = new PsychUIButton(objX, stepperDuplicateAmount.y + 20, "Duplicate Notes", function()
 		{
+			trace('=== DUPLICATE BUTTON STARTED ===');
+			trace('Current section: ' + curSec);
+
 			updateChartData(); // Sync notes array to sectionNotes first
 			var sec = getCurChartSection();
-			if(sec == null || sec.sectionNotes == null) return;
+			if(sec == null || sec.sectionNotes == null) 
+			{
+				trace('ERROR: Section or sectionNotes is null');
+				return;
+			}
 
+			trace('Section exists, current notes in section: ' + sec.sectionNotes.length);
+
+			// Collect notes to duplicate (only actual notes, not events)
 			var copiedNotes:Array<Dynamic> = [];
 			for (i in 0...sec.sectionNotes.length)
 			{
 				var note:Array<Dynamic> = sec.sectionNotes[i];
-				if(note != null && note.length > 1 && note[1] >= 0) // Only copy actual notes, not events
+				if(note != null && note.length > 1 && note[1] >= 0)
+				{
 					copiedNotes.push(note);
+					trace('Found note to copy: time=' + note[0] + ', data=' + note[1] + ', length=' + note[2]);
+				}
 			}
 
-			// Calculate final note count before duplicating
-			var finalNoteCount:Int = sec.sectionNotes.length + (copiedNotes.length * Std.int(stepperDuplicateAmount.value));
+			trace('Found ' + copiedNotes.length + ' notes to duplicate');
 
-			for (_i in 1...Std.int(stepperDuplicateAmount.value) + 1)
+			if(copiedNotes.length == 0)
+			{
+				trace('WARNING: No notes found to duplicate');
+				return;
+			}
+
+			// Calculate final note count after duplication
+			var duplicateAmount:Int = Std.int(stepperDuplicateAmount.value);
+			var finalNoteCount:Int = sec.sectionNotes.length + (copiedNotes.length * duplicateAmount);
+			trace('Duplicate amount: ' + duplicateAmount);
+			trace('Current section notes: ' + sec.sectionNotes.length);
+			trace('Final note count will be: ' + finalNoteCount);
+
+			// Store original count for comparison
+			var originalNoteCount:Int = sec.sectionNotes.length;
+
+			// --- DUPLICATION (always happens) ---
+			trace('Starting duplication process...');
+			var notesAdded:Int = 0;
+
+			for (_i in 1...duplicateAmount+1)
 			{
 				for (i in 0...copiedNotes.length)
 				{
 					if(copiedNotes[i] == null || copiedNotes[i].length < 3) continue;
+
+					// Create a new note array (copy)
 					var copiedNote:Array<Dynamic> = [copiedNotes[i][0], copiedNotes[i][1], copiedNotes[i][2]];
 					if(copiedNotes[i].length > 3) copiedNote.push(copiedNotes[i][3]);
 					copiedNote[0] += (stepperShiftSteps.value * _i) * (15000/Conductor.bpm);
+
 					sec.sectionNotes.push(copiedNote);
+					notesAdded++;
+
+					if(notesAdded % 100 == 0) trace('Added ' + notesAdded + ' notes so far...');
 				}
 			}
-			_cacheSections();
 
-			// Show output message for large note counts
-			if(finalNoteCount > 30000)
-			{
-				showOutput('Section has ' + finalNoteCount + ' notes (>30,000). Jumped to next section to prevent lag.');
-			}
+			trace('Duplication complete. Added ' + notesAdded + ' new notes');
+			trace('Section now has ' + sec.sectionNotes.length + ' notes (was ' + originalNoteCount + ')');
 
-			/* Old loop
+			_cacheSections(); // Update section timings after adding notes
+			trace('_cacheSections() called');
+
 			// --- HANDLE LARGE NOTE COUNT ---
 			if(finalNoteCount > 30000)
 			{
+				trace('=== HANDLING LARGE NOTE COUNT (>30,000) ===');
+				trace('Final note count: ' + finalNoteCount);
+
 				// Ensure next section exists
+				trace('Checking if next section exists...');
+				trace('Current curSec: ' + curSec);
+				trace('Total sections: ' + PlayState.SONG.notes.length);
+				trace('Next section index would be: ' + (curSec + 1));
+
 				if(curSec + 1 >= PlayState.SONG.notes.length)
 				{
-					// Create a new section if needed
+					trace('Next section does NOT exist. Creating new section...');
+
+					// Create a new section
 					var lastSection = PlayState.SONG.notes[PlayState.SONG.notes.length - 1];
 					var beat:Float = Conductor.calculateCrochet(Conductor.bpm);
 					var sectionBeats:Float = lastSection != null ? lastSection.sectionBeats : 4;
+
 					PlayState.SONG.notes.push({
 						sectionNotes: [],
 						sectionBeats: sectionBeats,
@@ -3941,15 +3988,54 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 						altAnim: lastSection != null ? lastSection.altAnim : false,
 						gfSection: lastSection != null ? lastSection.gfSection : false
 					});
+
+					trace('New section created. Total sections now: ' + PlayState.SONG.notes.length);
 					_cacheSections();
+					trace('_cacheSections() called after creating new section');
 				}
+				else
+				{
+					trace('Next section already exists at index ' + (curSec + 1));
+					var nextSec = PlayState.SONG.notes[curSec + 1];
+					var nextSecNotes:Int = (nextSec != null && nextSec.sectionNotes != null) ? nextSec.sectionNotes.length : 0;
+					trace('Next section has ' + nextSecNotes + ' notes');
+				}
+
+				showOutput('Section has ' + finalNoteCount + ' notes (>30,000). Jumped to next section to prevent lag.');
+				trace('Output message shown');
+
+				trace('Updating current section notes before jump...');
+				updateCurrentSectionNotes();
+				trace('updateCurrentSectionNotes() called for current section');
+
+				// --- CRITICAL FIX: Copy the jumpSection button logic ---
+				var nextSection:Int = curSec + 1;
+				loadSection(nextSection);
+				Conductor.songPosition = FlxG.sound.music.time = cachedSectionTimes[nextSection] - Conductor.offset + 0.000001;
+
+				// Update the waveform to match new position
+				updateWaveform();
+
+				forceDataUpdate = true;
+				trace('forceDataUpdate set to true');
 			}
 			else
 			{
+				trace('=== NOTE COUNT NORMAL (<=30,000) ===');
+				trace('Final note count: ' + finalNoteCount + ' is within limit');
+
+				// Normal case: just update current section
+				trace('Updating current section notes...');
 				updateCurrentSectionNotes();
+				trace('updateCurrentSectionNotes() called');
+
+				forceDataUpdate = true;
+				trace('forceDataUpdate set to true');
 			}
-			*/
-			sec.sectionNotes.length <= 30000 ? updateCurrentSectionNotes() : loadSection(curSec + 1);
+
+			trace('=== DUPLICATE BUTTON FINISHED ===');
+			trace('Final curSec: ' + curSec);
+			trace('===============================');
 		});
 
 		tab_group.add(check_stackActive);
