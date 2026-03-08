@@ -3891,8 +3891,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			var sec = getCurChartSection();
 			if(sec == null || sec.sectionNotes == null) return;
 
-			// Show loading cursor
-			FlxG.mouse.load(cursorWait);
+			// Show loading message
 			showOutput('Preparing duplication...');
 
 			// Disable GC for massive operations
@@ -3902,7 +3901,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 			var startTime = haxe.Timer.stamp();
 
-			// Collect notes to duplicate (using fast array iteration)
+			// Collect notes to duplicate
 			var copiedNotes:Array<Dynamic> = [];
 			var notesLength:Int = sec.sectionNotes.length;
 			for (i in 0...notesLength)
@@ -3913,7 +3912,6 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 			if(copiedNotes.length == 0)
 			{
-				FlxG.mouse.unload();
 				#if cpp cpp.vm.Gc.enable(true); #end
 				showOutput('No notes to duplicate!');
 				return;
@@ -3926,78 +3924,58 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 			showOutput('Generating ' + totalNewNotes + ' notes...');
 
-			// PRE-ALLOCATION STRATEGY: Use Vector for exact size
-			var newNotes:Vector<Array<Dynamic>> = new Vector<Array<Dynamic>>(totalNewNotes);
-			var index:Int = 0;
+			// Pre-allocate array with estimated size
+			var newNotes:Array<Array<Dynamic>> = [];
+			// Set capacity hint for better performance
+			if (newNotes.capacity != null) newNotes.capacity = totalNewNotes;
+
 			var copyCount:Int = copiedNotes.length;
+			var chunkSize:Int = 2000;
+			var lastProgress:Int = 0;
 
-			// CHUNKED PROCESSING + MEMORY POOLING
-			var chunkSize:Int = 2000; // Process 2000 notes at a time
-			var chunks:Int = Math.ceil(totalNewNotes / chunkSize);
-
-			// Reusable note template pool (reduces allocations)
-			var notePool:Array<Array<Dynamic>> = [];
-			for (i in 0...copyCount)
+			// Generate all notes
+			for (i in 0...totalNewNotes)
 			{
-				var original = copiedNotes[i];
-				var template:Array<Dynamic> = [original[0], original[1], original[2]];
-				if(original.length > 3) template.push(original[3]);
-				notePool.push(template);
-			}
+				var copyIndex:Int = i % copyCount;
+				var offsetMultiplier:Int = Math.floor(i / copyCount) + 1;
 
-			for (chunk in 0...chunks)
-			{
-				var startIdx:Int = chunk * chunkSize;
-				var endIdx:Int = Std.int(Math.min(startIdx + chunkSize, totalNewNotes));
+				var original = copiedNotes[copyIndex];
+				var newNote:Array<Dynamic> = [original[0], original[1], original[2]];
+				if(original.length > 3) newNote.push(original[3]);
+				newNote[0] += shiftStep * offsetMultiplier;
+				newNotes.push(newNote);
 
-				// Process chunk
-				for (i in startIdx...endIdx)
+				// Show progress every 10%
+				var percent:Int = Std.int((i / totalNewNotes) * 100);
+				if (percent >= lastProgress + 10)
 				{
-					var copyIndex:Int = i % copyCount;
-					var offsetMultiplier:Int = Math.floor(i / copyCount) + 1;
+					lastProgress = percent;
+					showOutput('Duplicating... ' + percent + '%');
 
-					// Use pooled template and copy efficiently
-					var template = notePool[copyIndex];
-					var newNote:Array<Dynamic> = template.copy(); // Fast shallow copy
-					newNote[0] += shiftStep * offsetMultiplier;
-					newNotes[i] = newNote;
-				}
-
-				// UI BREATHING: Allow frame render every chunk
-				if (chunk % 3 == 0)
-				{
-					FlxG.stage.frameRender();
-
-					// Show progress
-					var percent:Int = Std.int((endIdx / totalNewNotes) * 100);
-					if (percent % 10 == 0) showOutput('Duplicating... $percent%');
+					// Small pause to let UI breathe (every 10%)
+					Sys.sleep(0.001); // Only works on sys targets
 				}
 			}
 
-			// BULK INSERTION: Add all at once (faster than individual pushes)
-			var currentNotes = sec.sectionNotes;
+			// Bulk add all at once
 			for (i in 0...newNotes.length)
 			{
-				currentNotes.push(newNotes[i]);
+				sec.sectionNotes.push(newNotes[i]);
 			}
 
-			// Clean up references for GC
+			// Clear reference for GC
 			newNotes = null;
-			notePool = null;
 
 			trace('Added ' + totalNewNotes + ' notes in ' + (haxe.Timer.stamp() - startTime) + ' seconds');
 
 			_cacheSections();
 
-			// Reset cursor
-			FlxG.mouse.unload();
-
-			// Handle large note count - JUMP ONLY
+			// Handle large note count
 			if(finalNoteCount > 30000)
 			{
 				showOutput('Section has ' + finalNoteCount + ' notes (>30,000). Jumping to next section...');
 
-				// FULL RELOAD with GC still disabled
+				// Full reload with GC still disabled
 				reloadNotes();
 
 				var nextSection:Int = curSec + 1;
@@ -4010,7 +3988,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			}
 			else
 			{
-				// FAST UPDATE for small sections
+				// Fast update for small sections
 				updateCurrentSectionNotes();
 			}
 
@@ -4019,7 +3997,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			// Re-enable GC
 			#if cpp
 			cpp.vm.Gc.enable(true);
-			openfl.system.System.gc(); // Force cleanup
+			openfl.system.System.gc();
 			#end
 
 			showOutput('Successfully duplicated ' + totalNewNotes + ' notes!');
