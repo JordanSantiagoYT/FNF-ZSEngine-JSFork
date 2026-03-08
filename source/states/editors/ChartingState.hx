@@ -3887,11 +3887,19 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 		var dupeNotesButton:PsychUIButton = new PsychUIButton(objX, stepperDuplicateAmount.y + 20, "Duplicate Notes", function()
 		{
-			updateChartData(); // Sync notes array to sectionNotes first
+			updateChartData();
 			var sec = getCurChartSection();
 			if(sec == null || sec.sectionNotes == null) return;
 
-			// Collect notes to duplicate (only actual notes, not events)
+			// Disable GC for massive operations
+			#if cpp
+			cpp.vm.Gc.enable(false);
+			#end
+
+			var startTime = haxe.Timer.stamp();
+			trace('Starting duplication...');
+
+			// Collect notes to duplicate
 			var copiedNotes:Array<Dynamic> = [];
 			for (i in 0...sec.sectionNotes.length)
 			{
@@ -3899,62 +3907,71 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 				if(note != null && note.length > 1 && note[1] >= 0) copiedNotes.push(note);
 			}
 
-			// Calculate final note count after duplication
-			var finalNoteCount:Int = sec.sectionNotes.length + (copiedNotes.length * Std.int(stepperDuplicateAmount.value));
+			if(copiedNotes.length == 0) return;
 
-			for (_i in 1...Std.int(stepperDuplicateAmount.value) + 1)
+			var duplicateAmount:Int = Std.int(stepperDuplicateAmount.value);
+			var shiftStep:Float = (stepperShiftSteps.value) * (15000/Conductor.bpm);
+			var finalNoteCount:Int = sec.sectionNotes.length + (copiedNotes.length * duplicateAmount);
+
+			// Pre-allocate array for better performance
+			var newNotes:Array<Dynamic> = [];
+
+			// Generate all new notes first
+			for (_i in 1...duplicateAmount + 1)
 			{
+				var timeOffset:Float = shiftStep * _i;
 				for (i in 0...copiedNotes.length)
 				{
 					if(copiedNotes[i] == null || copiedNotes[i].length < 3) continue;
-					// Create a new note array (copy)
-					var copiedNote:Array<Dynamic> = [copiedNotes[i][0], copiedNotes[i][1], copiedNotes[i][2]];
-					if(copiedNotes[i].length > 3) copiedNote.push(copiedNotes[i][3]);
-					copiedNote[0] += (stepperShiftSteps.value * _i) * (15000/Conductor.bpm);
-					sec.sectionNotes.push(copiedNote);
+
+					// Fast array copy
+					var copiedNote:Array<Dynamic> = copiedNotes[i].copy();
+					copiedNote[0] += timeOffset;
+					newNotes.push(copiedNote);
 				}
 			}
-			_cacheSections(); // Update section timings after adding notes
 
+			// Add all at once (much faster than individual pushes)
+			for (note in newNotes)
+			{
+				sec.sectionNotes.push(note);
+			}
+
+			trace('Added ' + newNotes.length + ' notes in ' + (haxe.Timer.stamp() - startTime) + ' seconds');
+
+			_cacheSections();
+
+			// Handle large note count - JUMP ONLY, no section creation
 			if(finalNoteCount > 30000)
 			{
-				// Ensure next section exists
-				if(curSec + 1 >= PlayState.SONG.notes.length)
-				{
-					// Create a new section
-					var lastSection = PlayState.SONG.notes[PlayState.SONG.notes.length - 1];
-					var beat:Float = Conductor.calculateCrochet(Conductor.bpm);
-					var sectionBeats:Float = lastSection != null ? lastSection.sectionBeats : 4;
-					PlayState.SONG.notes.push({
-						sectionNotes: [],
-						sectionBeats: sectionBeats,
-						mustHitSection: lastSection != null ? lastSection.mustHitSection : true,
-						bpm: Conductor.bpm,
-						changeBPM: false,
-						altAnim: lastSection != null ? lastSection.altAnim : false,
-						gfSection: lastSection != null ? lastSection.gfSection : false
-					});
-					_cacheSections();
-				}
+				showOutput('Section has ' + finalNoteCount + ' notes (>30,000). Jumped to next section.');
 
-				showOutput('Section has ' + finalNoteCount + ' notes (>30,000). Jumped to next section to prevent lag.');
+				// Full reload for large sections
+				reloadNotes();
 
-				// Update current section so user sees duplicated notes
-				updateCurrentSectionNotes();
-
-				// Jump to next section (following jumpSection button pattern)
 				var nextSection:Int = curSec + 1;
-				loadSection(nextSection);
-				Conductor.songPosition = FlxG.sound.music.time = cachedSectionTimes[nextSection] - Conductor.offset + 0.000001;
-				updateWaveform();
-
-				forceDataUpdate = true;
+				// Only jump if next section exists
+				if(nextSection < PlayState.SONG.notes.length)
+				{
+					loadSection(nextSection);
+					Conductor.songPosition = FlxG.sound.music.time = cachedSectionTimes[nextSection] - Conductor.offset + 0.000001;
+					updateWaveform();
+				}
 			}
 			else
 			{
-				// Normal case: just update current section
+				// Use fast update for small sections
 				updateCurrentSectionNotes();
 			}
+
+			forceDataUpdate = true;
+
+			// Re-enable GC
+			#if cpp
+			cpp.vm.Gc.enable(true);
+			#end
+
+			trace('Duplication complete');
 		});
 
 		tab_group.add(check_stackActive);
