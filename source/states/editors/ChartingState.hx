@@ -3924,13 +3924,10 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 			showOutput('Generating ' + totalNewNotes + ' notes...');
 
-			// Pre-allocate array with estimated size
-			var newNotes:Array<Array<Dynamic>> = [];
-			// Set capacity hint for better performance
-			if (newNotes.capacity != null) newNotes.capacity = totalNewNotes;
+			// Pre-allocate array by setting size with [for] comprehension (faster)
+			var newNotes:Array<Array<Dynamic>> = [for (i in 0...totalNewNotes) null];
 
 			var copyCount:Int = copiedNotes.length;
-			var chunkSize:Int = 2000;
 			var lastProgress:Int = 0;
 
 			// Generate all notes
@@ -3943,7 +3940,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 				var newNote:Array<Dynamic> = [original[0], original[1], original[2]];
 				if(original.length > 3) newNote.push(original[3]);
 				newNote[0] += shiftStep * offsetMultiplier;
-				newNotes.push(newNote);
+				newNotes[i] = newNote; // Assign to pre-allocated position
 
 				// Show progress every 10%
 				var percent:Int = Std.int((i / totalNewNotes) * 100);
@@ -3951,9 +3948,6 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 				{
 					lastProgress = percent;
 					showOutput('Duplicating... ' + percent + '%');
-
-					// Small pause to let UI breathe (every 10%)
-					Sys.sleep(0.001); // Only works on sys targets
 				}
 			}
 
