@@ -3891,17 +3891,15 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			var sec = getCurChartSection();
 			if(sec == null || sec.sectionNotes == null) return;
 
-			// Show loading message
 			showOutput('Preparing duplication...');
 
-			// Disable GC for massive operations
 			#if cpp
 			cpp.vm.Gc.enable(false);
 			#end
 
 			var startTime = haxe.Timer.stamp();
 
-			// Collect notes to duplicate (keep this small)
+			// Collect notes to duplicate
 			var copiedNotes:Array<Dynamic> = [];
 			var notesLength:Int = sec.sectionNotes.length;
 			for (i in 0...notesLength)
@@ -3925,78 +3923,66 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			showOutput('Generating ' + totalNewNotes + ' notes...');
 
 			var copyCount:Int = copiedNotes.length;
-			var lastProgress:Int = 0;
 
-			// CHUNKED PROCESSING - Process in smaller batches to avoid memory spikes
-			var chunkSize:Int = 2000; // Process 2000 notes at a time
-			var chunks:Int = Math.ceil(totalNewNotes / chunkSize);
-
-			for (chunk in 0...chunks)
+			// STORE ORIGINAL POSITIONS
+			var originalPositions:Array<Float> = [];
+			for (i in 0...copyCount)
 			{
-				var startIdx:Int = chunk * chunkSize;
-				var endIdx:Int = Std.int(Math.min(startIdx + chunkSize, totalNewNotes));
-				var chunkNotes:Array<Array<Dynamic>> = [];
+				originalPositions.push(copiedNotes[i][0]);
+			}
 
-				// Process this chunk
-				for (i in startIdx...endIdx)
+			// BUILD COMPLETE ARRAY FIRST (FASTER)
+			var allNewNotes:Array<Dynamic> = [];
+			// Pre-allocate by setting length
+			allNewNotes[totalNewNotes - 1] = null; // Hack to pre-allocate
+
+			var index:Int = 0;
+			for (offsetMultiplier in 1...duplicateAmount + 1)
+			{
+				var timeOffset:Float = shiftStep * offsetMultiplier;
+				for (copyIndex in 0...copyCount)
 				{
-					var copyIndex:Int = i % copyCount;
-					var offsetMultiplier:Int = Math.floor(i / copyCount) + 1;
-
 					var original = copiedNotes[copyIndex];
-					var newNote:Array<Dynamic> = [original[0], original[1], original[2]];
+					var exactTime:Float = originalPositions[copyIndex] + timeOffset;
+
+					// Fast array creation
+					var newNote:Array<Dynamic> = [exactTime, original[1], original[2]];
 					if(original.length > 3) newNote.push(original[3]);
-					newNote[0] += shiftStep * offsetMultiplier;
-					chunkNotes.push(newNote);
-				}
 
-				// Add chunk to section
-				for (note in chunkNotes)
-				{
-					sec.sectionNotes.push(note);
-				}
-
-				// Clear chunk reference immediately
-				chunkNotes = null;
-
-				// Force GC every few chunks if needed
-				if (chunk % 5 == 0 && chunk > 0)
-				{
-					#if cpp
-					cpp.vm.Gc.enable(true);
-					cpp.vm.Gc.enable(false);
-					#end
-				}
-
-				// Show progress
-				var percent:Int = Std.int(((endIdx) / totalNewNotes) * 100);
-				if (percent >= lastProgress + 5)
-				{
-					lastProgress = percent;
-					showOutput('Duplicating... ' + percent + '%');
+					allNewNotes[index++] = newNote;
 				}
 			}
 
-			// Clear copied notes reference
+			// ONE SINGLE OPERATION to add all notes
+			sec.sectionNotes = sec.sectionNotes.concat(allNewNotes);
+
+			// Clear references
 			copiedNotes = null;
+			originalPositions = null;
+			allNewNotes = null;
 
 			trace('Added ' + totalNewNotes + ' notes in ' + (haxe.Timer.stamp() - startTime) + ' seconds');
 
 			_cacheSections();
 
-			// Handle large note count - use incremental approach
+			// Sort once after all additions
+			sec.sectionNotes.sort(function(a, b) {
+				if(a[0] < b[0]) return -1;
+				if(a[0] > b[0]) return 1;
+				return 0;
+			});
+
+			// Handle large note count
 			if(finalNoteCount > 30000)
 			{
-				showOutput('Section has ' + finalNoteCount + ' notes (>30,000). Preparing to jump...');
+				showOutput('Section has ' + finalNoteCount + ' notes (>30,000). Jumping...');
 
-				// Force full GC before reload
 				#if cpp
 				cpp.vm.Gc.enable(true);
 				openfl.system.System.gc();
 				cpp.vm.Gc.enable(false);
 				#end
 
-				// Use incremental reload
 				reloadNotes();
 
 				var nextSection:Int = curSec + 1;
@@ -4014,13 +4000,12 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 			forceDataUpdate = true;
 
-			// Re-enable GC and force cleanup
 			#if cpp
 			cpp.vm.Gc.enable(true);
 			openfl.system.System.gc();
 			#end
 
-			showOutput('Successfully duplicated ' + totalNewNotes + ' notes!');
+			showOutput('Duplicated ' + totalNewNotes + ' notes!');
 		});
 
 		tab_group.add(check_stackActive);
