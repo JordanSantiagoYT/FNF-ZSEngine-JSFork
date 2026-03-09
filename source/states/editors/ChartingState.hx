@@ -3897,8 +3897,6 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			// Disable GC for massive operations
 			#if cpp
 			cpp.vm.Gc.enable(false);
-			// Set larger block size for big allocations
-			untyped __global__::hx::SetGCHandler(3); // Use big blocks handler
 			#end
 
 			var startTime = haxe.Timer.stamp();
@@ -3962,7 +3960,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 				chunkNotes = null;
 
 				// Force GC every few chunks if needed
-				if (chunk % 5 == 0)
+				if (chunk % 5 == 0 && chunk > 0)
 				{
 					#if cpp
 					cpp.vm.Gc.enable(true);
