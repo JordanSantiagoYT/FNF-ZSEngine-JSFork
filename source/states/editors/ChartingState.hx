@@ -3897,11 +3897,13 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			// Disable GC for massive operations
 			#if cpp
 			cpp.vm.Gc.enable(false);
+			// Set larger block size for big allocations
+			untyped __global__::hx::SetGCHandler(3); // Use big blocks handler
 			#end
 
 			var startTime = haxe.Timer.stamp();
 
-			// Collect notes to duplicate
+			// Collect notes to duplicate (keep this small)
 			var copiedNotes:Array<Dynamic> = [];
 			var notesLength:Int = sec.sectionNotes.length;
 			for (i in 0...notesLength)
@@ -3924,52 +3926,79 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 			showOutput('Generating ' + totalNewNotes + ' notes...');
 
-			// Pre-allocate array by setting size with [for] comprehension (faster)
-			var newNotes:Array<Array<Dynamic>> = [for (i in 0...totalNewNotes) null];
-
 			var copyCount:Int = copiedNotes.length;
 			var lastProgress:Int = 0;
 
-			// Generate all notes
-			for (i in 0...totalNewNotes)
+			// CHUNKED PROCESSING - Process in smaller batches to avoid memory spikes
+			var chunkSize:Int = 2000; // Process 2000 notes at a time
+			var chunks:Int = Math.ceil(totalNewNotes / chunkSize);
+
+			for (chunk in 0...chunks)
 			{
-				var copyIndex:Int = i % copyCount;
-				var offsetMultiplier:Int = Math.floor(i / copyCount) + 1;
+				var startIdx:Int = chunk * chunkSize;
+				var endIdx:Int = Std.int(Math.min(startIdx + chunkSize, totalNewNotes));
+				var chunkNotes:Array<Array<Dynamic>> = [];
 
-				var original = copiedNotes[copyIndex];
-				var newNote:Array<Dynamic> = [original[0], original[1], original[2]];
-				if(original.length > 3) newNote.push(original[3]);
-				newNote[0] += shiftStep * offsetMultiplier;
-				newNotes[i] = newNote; // Assign to pre-allocated position
+				// Process this chunk
+				for (i in startIdx...endIdx)
+				{
+					var copyIndex:Int = i % copyCount;
+					var offsetMultiplier:Int = Math.floor(i / copyCount) + 1;
 
-				// Show progress every 10%
-				var percent:Int = Std.int((i / totalNewNotes) * 100);
-				if (percent >= lastProgress + 10)
+					var original = copiedNotes[copyIndex];
+					var newNote:Array<Dynamic> = [original[0], original[1], original[2]];
+					if(original.length > 3) newNote.push(original[3]);
+					newNote[0] += shiftStep * offsetMultiplier;
+					chunkNotes.push(newNote);
+				}
+
+				// Add chunk to section
+				for (note in chunkNotes)
+				{
+					sec.sectionNotes.push(note);
+				}
+
+				// Clear chunk reference immediately
+				chunkNotes = null;
+
+				// Force GC every few chunks if needed
+				if (chunk % 5 == 0)
+				{
+					#if cpp
+					cpp.vm.Gc.enable(true);
+					cpp.vm.Gc.enable(false);
+					#end
+				}
+
+				// Show progress
+				var percent:Int = Std.int(((endIdx) / totalNewNotes) * 100);
+				if (percent >= lastProgress + 5)
 				{
 					lastProgress = percent;
 					showOutput('Duplicating... ' + percent + '%');
 				}
 			}
 
-			// Bulk add all at once
-			for (i in 0...newNotes.length)
-			{
-				sec.sectionNotes.push(newNotes[i]);
-			}
-
-			// Clear reference for GC
-			newNotes = null;
+			// Clear copied notes reference
+			copiedNotes = null;
 
 			trace('Added ' + totalNewNotes + ' notes in ' + (haxe.Timer.stamp() - startTime) + ' seconds');
 
 			_cacheSections();
 
-			// Handle large note count
+			// Handle large note count - use incremental approach
 			if(finalNoteCount > 30000)
 			{
-				showOutput('Section has ' + finalNoteCount + ' notes (>30,000). Jumping to next section...');
+				showOutput('Section has ' + finalNoteCount + ' notes (>30,000). Preparing to jump...');
 
-				// Full reload with GC still disabled
+				// Force full GC before reload
+				#if cpp
+				cpp.vm.Gc.enable(true);
+				openfl.system.System.gc();
+				cpp.vm.Gc.enable(false);
+				#end
+
+				// Use incremental reload
 				reloadNotes();
 
 				var nextSection:Int = curSec + 1;
@@ -3982,13 +4011,12 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			}
 			else
 			{
-				// Fast update for small sections
 				updateCurrentSectionNotes();
 			}
 
 			forceDataUpdate = true;
 
-			// Re-enable GC
+			// Re-enable GC and force cleanup
 			#if cpp
 			cpp.vm.Gc.enable(true);
 			openfl.system.System.gc();

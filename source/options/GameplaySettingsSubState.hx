@@ -45,6 +45,24 @@ class GameplaySettingsSubState extends BaseOptionsMenu
 			BOOL);
 		addOption(option);
 
+		var option:Option = new Option('Sustains as One Note',
+			"If checked, Hold Notes can't be pressed if you miss,\nand count as a single Hit/Miss.\nUncheck this if you prefer the old Input System.",
+			'guitarHeroSustains',
+			BOOL);
+		addOption(option);
+
+		var option:Option = new Option('Botplay Text Location: ',
+			'Change the Botplay Text Location.',
+			'botplayPlace',
+			STRING, ["Time Bar", "Health Bar",]);
+		addOption(option);
+
+		var option:Option = new Option('Use ZS Scripts',
+			'If checked, use ZS scripts. Otherwise they won\'t work',
+			'zsScript',
+			BOOL);
+		addOption(option);
+
 		var option:Option = new Option('Hitsound Volume',
 			'Funny notes does \"Tick!\" when you hit them.',
 			'hitsoundVolume',
@@ -108,12 +126,6 @@ class GameplaySettingsSubState extends BaseOptionsMenu
 		option.minValue = 2;
 		option.maxValue = 10;
 		option.changeValue = 0.1;
-		addOption(option);
-
-		var option:Option = new Option('Use ZS Scripts',
-			'If checked, use `.zs` script. Otherwise it won\'t work',
-			'zsScript',
-			BOOL);
 		addOption(option);
 
 		super();

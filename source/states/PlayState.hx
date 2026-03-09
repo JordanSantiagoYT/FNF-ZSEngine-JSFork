@@ -554,6 +554,7 @@ class PlayState extends MusicBeatState
 
 		maxHealth = ClientPrefs.data.maxHealth;
 		if (maxHealth > 2) health = maxHealth / 2;
+		else if (maxHealth < 2) maxHealth = 2;
 		healthBar = new Bar(0, FlxG.height * (!ClientPrefs.data.downScroll ? 0.89 : 0.11), 'healthBar', function() return health, 0, maxHealth);
 		healthBar.screenCenter(X);
 		healthBar.leftToRight = false;
@@ -584,9 +585,9 @@ class PlayState extends MusicBeatState
 
 		var botplayTxtY:Float = timeBar.y + (ClientPrefs.data.downScroll ? -80 : 55);
 		switch (ClientPrefs.data.botplayPlace) {
-			case "Near the Health Bar":
+			case "Health Bar":
 				botplayTxtY = healthBar.y + (ClientPrefs.data.downScroll ? -80 : 70);
-			case "Near the Time Bar": // Omitted because nothing has changed.
+			case "Time Bar": // Omitted because nothing has changed.
 		}
 
 		botplayTxt = new FlxText(400, botplayTxtY, FlxG.width - 800, Language.getPhrase("Botplay").toUpperCase(), 32);

@@ -133,7 +133,7 @@ class VisualsSettingsSubState extends BaseOptionsMenu
 		option.decimals = 4;
 		addOption(option);
 
-		var option:Option = new Option('Miss health',
+		var option:Option = new Option('Miss Health',
 			'Change default of the note miss amount (0.1 is default)',
 			'missHealth',
 			FLOAT);
@@ -191,12 +191,6 @@ class VisualsSettingsSubState extends BaseOptionsMenu
 			"If unchecked, Ratings and Combo won't stack, saving on System Memory and making them easier to read",
 			'comboStacking',
 			BOOL);
-		addOption(option);
-
-		var option:Option = new Option('Botplay Text Location: ',
-			'Change the Botplay Text Location.',
-			'botplayPlace',
-			STRING, ["Near the Time Bar", "Near the Health Bar",]);
 		addOption(option);
 
 		super();
