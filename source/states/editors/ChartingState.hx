@@ -3891,106 +3891,69 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			var sec = getCurChartSection();
 			if(sec == null || sec.sectionNotes == null) return;
 
-			showOutput('Preparing duplication...');
-
+			// Disable GC
 			#if cpp
 			cpp.vm.Gc.enable(false);
 			#end
 
-			var startTime = haxe.Timer.stamp();
-
-			// Collect notes to duplicate
-			var copiedNotes:Array<Dynamic> = [];
-			var notesLength:Int = sec.sectionNotes.length;
-			for (i in 0...notesLength)
+			// Get original notes (fast iteration)
+			var originalNotes:Array<Dynamic> = sec.sectionNotes;
+			var notesToCopy:Array<Dynamic> = [];
+			for (note in originalNotes)
 			{
-				var note = sec.sectionNotes[i];
-				if(note != null && note.length > 1 && note[1] >= 0) copiedNotes.push(note);
+				if(note != null && note.length > 1 && note[1] >= 0) notesToCopy.push(note);
 			}
 
-			if(copiedNotes.length == 0)
-			{
-				#if cpp cpp.vm.Gc.enable(true); #end
-				showOutput('No notes to duplicate!');
-				return;
-			}
+			if(notesToCopy.length == 0) return;
 
 			var duplicateAmount:Int = Std.int(stepperDuplicateAmount.value);
 			var shiftStep:Float = (stepperShiftSteps.value) * (15000/Conductor.bpm);
-			var finalNoteCount:Int = notesLength + (copiedNotes.length * duplicateAmount);
-			var totalNewNotes:Int = copiedNotes.length * duplicateAmount;
+			var totalNewNotes:Int = notesToCopy.length * duplicateAmount;
 
-			showOutput('Generating ' + totalNewNotes + ' notes...');
+			// Pre-allocate with exact size
+			var newNotes:Array<Dynamic> = [];
+			newNotes[totalNewNotes - 1] = null; // Force allocation
 
-			var copyCount:Int = copiedNotes.length;
-
-			// STORE ORIGINAL POSITIONS
-			var originalPositions:Array<Float> = [];
-			for (i in 0...copyCount)
-			{
-				originalPositions.push(copiedNotes[i][0]);
-			}
-
-			// BUILD COMPLETE ARRAY FIRST (FASTER)
-			var allNewNotes:Array<Dynamic> = [];
-			// Pre-allocate by setting length
-			allNewNotes[totalNewNotes - 1] = null; // Hack to pre-allocate
-
+			// Generate all notes with precise timing
 			var index:Int = 0;
-			for (offsetMultiplier in 1...duplicateAmount + 1)
+			var baseNotes:Array<Dynamic> = notesToCopy;
+			var baseLength:Int = baseNotes.length;
+
+			for (mult in 1...duplicateAmount + 1)
 			{
-				var timeOffset:Float = shiftStep * offsetMultiplier;
-				for (copyIndex in 0...copyCount)
+				var timeOffset:Float = shiftStep * mult;
+				for (i in 0...baseLength)
 				{
-					var original = copiedNotes[copyIndex];
-					var exactTime:Float = originalPositions[copyIndex] + timeOffset;
-
-					// Fast array creation
-					var newNote:Array<Dynamic> = [exactTime, original[1], original[2]];
-					if(original.length > 3) newNote.push(original[3]);
-
-					allNewNotes[index++] = newNote;
+					var original = baseNotes[i];
+					// Exact time calculation - NO ERROR ACCUMULATION
+					var newNote:Array<Dynamic> = [
+						original[0] + timeOffset, // Precise time
+						original[1],               // Note data
+						original[2]                 // Sustain length
+					];
+					if(original.length > 3) newNote.push(original[3]); // Note type
+					newNotes[index++] = newNote;
 				}
 			}
 
-			// ONE SINGLE OPERATION to add all notes
-			sec.sectionNotes = sec.sectionNotes.concat(allNewNotes);
+			// SINGLE OPERATION: Extend array (fastest method)
+			sec.sectionNotes = originalNotes.concat(newNotes);
 
-			// Clear references
-			copiedNotes = null;
-			originalPositions = null;
-			allNewNotes = null;
-
-			trace('Added ' + totalNewNotes + ' notes in ' + (haxe.Timer.stamp() - startTime) + ' seconds');
+			// Sort by time
+			sec.sectionNotes.sort(function(a, b) return Std.int(a[0] - b[0]));
 
 			_cacheSections();
 
-			// Sort once after all additions
-			sec.sectionNotes.sort(function(a, b) {
-				if(a[0] < b[0]) return -1;
-				if(a[0] > b[0]) return 1;
-				return 0;
-			});
-
-			// Handle large note count
-			if(finalNoteCount > 30000)
+			// Update display
+			var finalCount:Int = sec.sectionNotes.length;
+			if(finalCount > 30000)
 			{
-				showOutput('Section has ' + finalNoteCount + ' notes (>30,000). Jumping...');
-
-				#if cpp
-				cpp.vm.Gc.enable(true);
-				openfl.system.System.gc();
-				cpp.vm.Gc.enable(false);
-				#end
-
 				reloadNotes();
-
-				var nextSection:Int = curSec + 1;
-				if(nextSection < PlayState.SONG.notes.length)
+				var nextSec:Int = curSec + 1;
+				if(nextSec < PlayState.SONG.notes.length)
 				{
-					loadSection(nextSection);
-					Conductor.songPosition = FlxG.sound.music.time = cachedSectionTimes[nextSection] - Conductor.offset + 0.000001;
-					updateWaveform();
+					loadSection(nextSec);
+					Conductor.songPosition = FlxG.sound.music.time = cachedSectionTimes[nextSec] - Conductor.offset;
 				}
 			}
 			else
@@ -4000,12 +3963,12 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 			forceDataUpdate = true;
 
+			// Re-enable GC
 			#if cpp
 			cpp.vm.Gc.enable(true);
-			openfl.system.System.gc();
 			#end
 
-			showOutput('Duplicated ' + totalNewNotes + ' notes!');
+			showOutput('Duplicated ' + totalNewNotes + ' notes');
 		});
 
 		tab_group.add(check_stackActive);
