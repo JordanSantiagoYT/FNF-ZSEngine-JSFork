@@ -3905,24 +3905,27 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 				if(note != null && note.length > 1 && note[1] >= 0) copiedNotes.push(note);
 			}
 
+			if(copiedNotes.length == 0)
+			{
+				#if cpp cpp.vm.Gc.enable(true); #end
+				showOutput('No notes to duplicate!');
+				return;
+			}
+
 			var finalNoteCount:Int = sec.sectionNotes.length + (copiedNotes.length * Std.int(stepperDuplicateAmount.value));
 
-			// OPTIMIZATION 1: Pre-allocate array to avoid reallocations
-			var newNotes:Array<Dynamic> = [];
-			var estimatedSize:Int = copiedNotes.length * Std.int(stepperDuplicateAmount.value);
-			newNotes[estimatedSize - 1] = null; // Force allocation
-
-			// OPTIMIZATION 2: Cache values outside loop
+			// OPTIMIZATION: Cache values outside loop
 			var duplicateAmount:Int = Std.int(stepperDuplicateAmount.value);
 			var shiftAmount:Float = (stepperShiftSteps.value) * (15000/Conductor.bpm);
 			var copiedLength:Int = copiedNotes.length;
 
-			// OPTIMIZATION 3: Use while loops (faster than for)
-			var _i:Int = 1;
-			while(_i <= duplicateAmount)
+			// OPTIMIZATION: Pre-allocate array (safe way)
+			var newNotes:Array<Dynamic> = [];
+
+			// Use standard for loops (more reliable)
+			for (_i in 1...duplicateAmount + 1)
 			{
-				var i:Int = 0;
-				while(i < copiedLength)
+				for (i in 0...copiedLength)
 				{
 					if(copiedNotes[i] != null && copiedNotes[i].length >= 3)
 					{
@@ -3931,25 +3934,23 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 						copiedNote[0] += (stepperShiftSteps.value * _i) * (15000/Conductor.bpm);
 						newNotes.push(copiedNote);
 					}
-					i++;
 				}
-				_i++;
 			}
 
-			// OPTIMIZATION 4: Bulk add using array push
+			// Bulk add
 			for (note in newNotes)
 			{
 				sec.sectionNotes.push(note);
 			}
 
-			// Clear reference for GC
+			// Clear reference
 			newNotes = null;
 
 			trace('Duplication time: ' + (haxe.Timer.stamp() - startTime) + 's');
 
 			_cacheSections();
 
-			// --- HANDLE LARGE NOTE COUNT (JUMP ONLY, NO CREATION) ---
+			// --- HANDLE LARGE NOTE COUNT ---
 			if(finalNoteCount > 30000)
 			{
 				showOutput('Section has ' + finalNoteCount + ' notes (>30,000). Jumped to next section.');
