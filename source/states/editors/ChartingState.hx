@@ -3912,14 +3912,11 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 				return;
 			}
 
-			var finalNoteCount:Int = sec.sectionNotes.length + (copiedNotes.length * Std.int(stepperDuplicateAmount.value));
-
-			// Cache values
 			var duplicateAmount:Int = Std.int(stepperDuplicateAmount.value);
 			var shiftAmount:Float = (stepperShiftSteps.value) * (15000/Conductor.bpm);
 			var copiedLength:Int = copiedNotes.length;
+			var finalNoteCount:Int = sec.sectionNotes.length + (copiedLength * duplicateAmount);
 
-			// Generate all new notes into a single array
 			var allNewNotes:Array<Dynamic> = [];
 
 			for (_i in 1...duplicateAmount + 1)
@@ -3936,19 +3933,15 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 				}
 			}
 
-			// --- THE FIX: SINGLE OPERATION (NO LOOP) ---
-			// This concatenates the entire array in ONE operation
+			// FAST concat
 			sec.sectionNotes = sec.sectionNotes.concat(allNewNotes);
-
-			// Clear reference
 			allNewNotes = null;
 
-			trace('Generated ' + (copiedLength * duplicateAmount) + ' notes');
-			trace('Concat time: ' + (haxe.Timer.stamp() - startTime) + 's');
+			trace('Generation + Concat: ' + (haxe.Timer.stamp() - startTime) + 's');
 
+			// --- OPTIMIZED DISPLAY UPDATE ---
 			_cacheSections();
 
-			// --- Refresh display ---
 			if(finalNoteCount > 30000)
 			{
 				showOutput('Section has ' + finalNoteCount + ' notes (>30,000). Jumped to next section.');
@@ -3956,21 +3949,39 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 				var nextSection:Int = curSec + 1;
 				if(nextSection < PlayState.SONG.notes.length)
 				{
-					reloadNotes();
-					loadSection(nextSection);
+					// FAST PATH: Only update what's necessary
+					curSec = nextSection;
+
+					// Skip heavy reloadNotes() - just update the grid position
+					gridBg.y = cachedSectionRow[curSec] * GRID_SIZE * curZoom;
+					gridBg.rows = 4 * PlayState.SONG.notes[curSec].sectionBeats * curZoom;
+
+					// Quick note visibility update
+					var minTime:Float = cachedSectionTimes[curSec];
+					var maxTime:Float = cachedSectionTimes[curSec + 1];
+
+					for (note in notes)
+					{
+						if(note != null)
+							note.visible = (note.strumTime >= minTime && note.strumTime < maxTime);
+					}
+
 					Conductor.songPosition = FlxG.sound.music.time = cachedSectionTimes[nextSection] - Conductor.offset + 0.000001;
-					updateWaveform();
-				}
-				else
-				{
-					showOutput('Cannot jump: No next section exists!');
-					reloadNotes();
-					loadSection(curSec);
 				}
 			}
 			else
 			{
-				updateCurrentSectionNotes();
+				// FAST PATH for current section: Just update note positions
+				var minTime:Float = cachedSectionTimes[curSec];
+				var maxTime:Float = cachedSectionTimes[curSec + 1];
+
+				for (note in notes)
+				{
+					if(note != null && note.strumTime >= minTime && note.strumTime < maxTime)
+					{
+						positionNoteYOnTime(note, curSec);
+					}
+				}
 			}
 
 			forceDataUpdate = true;
