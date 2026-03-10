@@ -3936,18 +3936,15 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 				}
 			}
 
-			// --- ONE SINGLE OPERATION to add ALL notes ---
-			// This is MUCH faster than thousands of individual pushes
-			for (note in allNewNotes)
-			{
-				sec.sectionNotes.push(note);
-			}
+			// --- THE FIX: SINGLE OPERATION (NO LOOP) ---
+			// This concatenates the entire array in ONE operation
+			sec.sectionNotes = sec.sectionNotes.concat(allNewNotes);
 
 			// Clear reference
 			allNewNotes = null;
 
 			trace('Generated ' + (copiedLength * duplicateAmount) + ' notes');
-			trace('Push time: ' + (haxe.Timer.stamp() - startTime) + 's');
+			trace('Concat time: ' + (haxe.Timer.stamp() - startTime) + 's');
 
 			_cacheSections();
 
