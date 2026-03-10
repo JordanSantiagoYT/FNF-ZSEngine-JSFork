@@ -3914,15 +3914,14 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 			var finalNoteCount:Int = sec.sectionNotes.length + (copiedNotes.length * Std.int(stepperDuplicateAmount.value));
 
-			// OPTIMIZATION: Cache values outside loop
+			// Cache values
 			var duplicateAmount:Int = Std.int(stepperDuplicateAmount.value);
 			var shiftAmount:Float = (stepperShiftSteps.value) * (15000/Conductor.bpm);
 			var copiedLength:Int = copiedNotes.length;
 
-			// OPTIMIZATION: Pre-allocate array (safe way)
-			var newNotes:Array<Dynamic> = [];
+			// Generate all new notes into a single array
+			var allNewNotes:Array<Dynamic> = [];
 
-			// Use standard for loops (more reliable)
 			for (_i in 1...duplicateAmount + 1)
 			{
 				for (i in 0...copiedLength)
@@ -3932,25 +3931,27 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 						var copiedNote:Array<Dynamic> = [copiedNotes[i][0], copiedNotes[i][1], copiedNotes[i][2]];
 						if(copiedNotes[i].length > 3) copiedNote.push(copiedNotes[i][3]);
 						copiedNote[0] += (stepperShiftSteps.value * _i) * (15000/Conductor.bpm);
-						newNotes.push(copiedNote);
+						allNewNotes.push(copiedNote);
 					}
 				}
 			}
 
-			// Bulk add
-			for (note in newNotes)
+			// --- ONE SINGLE OPERATION to add ALL notes ---
+			// This is MUCH faster than thousands of individual pushes
+			for (note in allNewNotes)
 			{
 				sec.sectionNotes.push(note);
 			}
 
 			// Clear reference
-			newNotes = null;
+			allNewNotes = null;
 
-			trace('Duplication time: ' + (haxe.Timer.stamp() - startTime) + 's');
+			trace('Generated ' + (copiedLength * duplicateAmount) + ' notes');
+			trace('Push time: ' + (haxe.Timer.stamp() - startTime) + 's');
 
 			_cacheSections();
 
-			// --- HANDLE LARGE NOTE COUNT ---
+			// --- Refresh display ---
 			if(finalNoteCount > 30000)
 			{
 				showOutput('Section has ' + finalNoteCount + ' notes (>30,000). Jumped to next section.');
@@ -3958,21 +3959,26 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 				var nextSection:Int = curSec + 1;
 				if(nextSection < PlayState.SONG.notes.length)
 				{
+					reloadNotes();
 					loadSection(nextSection);
 					Conductor.songPosition = FlxG.sound.music.time = cachedSectionTimes[nextSection] - Conductor.offset + 0.000001;
 					updateWaveform();
-					forceDataUpdate = true;
 				}
 				else
 				{
 					showOutput('Cannot jump: No next section exists!');
-					updateCurrentSectionNotes();
+					reloadNotes();
+					loadSection(curSec);
 				}
 			}
 			else
 			{
 				updateCurrentSectionNotes();
 			}
+
+			forceDataUpdate = true;
+
+			trace('Total time: ' + (haxe.Timer.stamp() - startTime) + 's');
 
 			// Re-enable GC
 			#if cpp
