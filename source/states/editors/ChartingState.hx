@@ -3917,6 +3917,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			var copiedLength:Int = copiedNotes.length;
 			var finalNoteCount:Int = sec.sectionNotes.length + (copiedLength * duplicateAmount);
 
+			// Generate all new notes data
 			var allNewNotes:Array<Dynamic> = [];
 
 			for (_i in 1...duplicateAmount + 1)
@@ -3933,15 +3934,42 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 				}
 			}
 
-			// FAST concat
+			// Add to sectionNotes (data layer)
 			sec.sectionNotes = sec.sectionNotes.concat(allNewNotes);
+
+			// --- CREATE VISUAL NOTES FOR THE NEW DATA ---
+			var minTime:Float = cachedSectionTimes[curSec];
+			var maxTime:Float = cachedSectionTimes[curSec + 1];
+
+			for (noteData in allNewNotes)
+			{
+				// Create visual note for each new note
+				var newNote:MetaNote = createNote(noteData, curSec);
+
+				// Insert in correct position in notes array
+				var added:Bool = false;
+				for (j in 0...notes.length)
+				{
+					if (notes[j].strumTime > newNote.strumTime)
+					{
+						notes.insert(j, newNote);
+						added = true;
+						break;
+					}
+				}
+				if (!added) notes.push(newNote);
+
+				// Set visibility based on current section
+				newNote.visible = (newNote.strumTime >= minTime && newNote.strumTime < maxTime);
+			}
+
 			allNewNotes = null;
 
-			trace('Generation + Concat: ' + (haxe.Timer.stamp() - startTime) + 's');
+			trace('Generation + Visual creation: ' + (haxe.Timer.stamp() - startTime) + 's');
 
-			// --- OPTIMIZED DISPLAY UPDATE ---
 			_cacheSections();
 
+			// --- HANDLE SECTION JUMP ---
 			if(finalNoteCount > 30000)
 			{
 				showOutput('Section has ' + finalNoteCount + ' notes (>30,000). Jumped to next section.');
@@ -3949,21 +3977,20 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 				var nextSection:Int = curSec + 1;
 				if(nextSection < PlayState.SONG.notes.length)
 				{
-					// FAST PATH: Only update what's necessary
 					curSec = nextSection;
 
-					// Skip heavy reloadNotes() - just update the grid position
+					// Update grid position
 					gridBg.y = cachedSectionRow[curSec] * GRID_SIZE * curZoom;
 					gridBg.rows = 4 * PlayState.SONG.notes[curSec].sectionBeats * curZoom;
 
-					// Quick note visibility update
-					var minTime:Float = cachedSectionTimes[curSec];
-					var maxTime:Float = cachedSectionTimes[curSec + 1];
+					// Update note visibility for new section
+					var newMinTime:Float = cachedSectionTimes[curSec];
+					var newMaxTime:Float = cachedSectionTimes[curSec + 1];
 
 					for (note in notes)
 					{
 						if(note != null)
-							note.visible = (note.strumTime >= minTime && note.strumTime < maxTime);
+							note.visible = (note.strumTime >= newMinTime && note.strumTime < newMaxTime);
 					}
 
 					Conductor.songPosition = FlxG.sound.music.time = cachedSectionTimes[nextSection] - Conductor.offset + 0.000001;
@@ -3971,16 +3998,11 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			}
 			else
 			{
-				// FAST PATH for current section: Just update note positions
-				var minTime:Float = cachedSectionTimes[curSec];
-				var maxTime:Float = cachedSectionTimes[curSec + 1];
-
+				// Update positions for current section
 				for (note in notes)
 				{
-					if(note != null && note.strumTime >= minTime && note.strumTime < maxTime)
-					{
+					if(note != null && note.visible)
 						positionNoteYOnTime(note, curSec);
-					}
 				}
 			}
 
