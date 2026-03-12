@@ -457,10 +457,6 @@ class PlayState extends MusicBeatState
 		for (folder in Mods.directoriesWithFile(Paths.getSharedPath(), 'scripts/'))
 			for (file in FileSystem.readDirectory(folder))
 			{
-				#if ZS_ALLOWED
-				if (file.toLowerCase().endsWith('.zs') && zsScript) 
-					loadZSScript(folder + file);
-				#end
 				#if LUA_ALLOWED
 				if (file.toLowerCase().endsWith('.lua'))
 					new FunkinLua(folder + file);
@@ -468,6 +464,10 @@ class PlayState extends MusicBeatState
 				#if HSCRIPT_ALLOWED
 				if (file.toLowerCase().endsWith('.hx'))
 					initHScript(folder + file);
+				#end
+				#if ZS_ALLOWED
+				if (file.toLowerCase().endsWith('.zs') && zsScript) 
+					loadZSScript(folder + file);
 				#end
 			}
 		#end
@@ -634,10 +634,6 @@ class PlayState extends MusicBeatState
 		for (folder in Mods.directoriesWithFile(Paths.getSharedPath(), 'data/$songName/'))
 			for (file in FileSystem.readDirectory(folder))
 			{
-				#if ZS_ALLOWED
-				if (file.toLowerCase().endsWith('.zs') && zsScript) 
-					loadZSScript(folder + file);
-				#end
 				#if LUA_ALLOWED
 				if (file.toLowerCase().endsWith('.lua'))
 					new FunkinLua(folder + file);
@@ -646,7 +642,11 @@ class PlayState extends MusicBeatState
 				if (file.toLowerCase().endsWith('.hx'))
 					initHScript(folder + file);
 				#end
-			} 
+				#if ZS_ALLOWED
+				if (file.toLowerCase().endsWith('.zs') && zsScript) 
+					loadZSScript(folder + file);
+				#end
+			}
 		#end
 
 		if(eventNotes.length > 0)

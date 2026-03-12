@@ -1395,7 +1395,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 						if(selectedNotes.length == 1) onSelectNote();
 						forceDataUpdate = true;
 					}
-					else if(!holdingAlt && FlxG.mouse.y >= gridBg.y && FlxG.mouse.y < gridBg.y + gridBg.height)
+					else if(!holdingAlt && FlxG.mouse.y >= gridBg.y && FlxG.mouse.y < gridBg.y + gridBg.height) // Add note
 					{
 						var strumTime:Float = (diffY / GRID_SIZE * Conductor.stepCrochet / curZoom) + cachedSectionTimes[curSec];
 						if(noteData >= 0)
@@ -2178,103 +2178,150 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 	function updateCurrentSectionNotes()
 	{
-		// Lightweight update: only update notes for the current section from sectionNotes
-		// This is much faster than reloadNotes() for large note counts
 		var sec = getCurChartSection();
 		if(sec == null) return;
-		
+
 		var minTime:Float = getMinNoteTime(curSec);
 		var maxTime:Float = getMaxNoteTime(curSec);
-		
-		// Remove old notes from current section
-		var notesToRemove:Array<MetaNote> = [];
-		for (note in notes)
+
+		// OPTIMIZATION 1: Single-pass removal (backwards iteration)
+		var i:Int = notes.length - 1;
+		while(i >= 0)
 		{
+			var note = notes[i];
 			if(note != null && !note.isEvent && note.strumTime >= minTime && note.strumTime < maxTime)
-				notesToRemove.push(note);
-		}
-		for (note in notesToRemove)
-		{
-			notes.remove(note);
-			if(note != null) note.destroy();
-		}
-		
-		// Add new notes from sectionNotes for current section
-		for (noteData in sec.sectionNotes)
-		{
-			if(noteData != null && noteData.length >= 3 && noteData[1] >= 0) // Only actual notes, not events
 			{
-				var newNote = createNote(noteData, curSec);
-				notes.push(newNote);
+				notes.splice(i, 1); // Remove directly without separate array
+				note.destroy();
+			}
+			i--;
+		}
+
+		// OPTIMIZATION 2: Pre-allocate if many notes
+		var sectionNotes = sec.sectionNotes;
+		var newNotes:Array<MetaNote> = [];
+
+		// OPTIMIZATION 3: Batch create notes
+		for (noteData in sectionNotes)
+		{
+			if(noteData != null && noteData.length >= 3 && noteData[1] >= 0)
+			{
+				newNotes.push(createNote(noteData, curSec));
 			}
 		}
-		
-		notes.sort(PlayState.sortByTime);
-		softReloadNotes();
+
+		// OPTIMIZATION 4: Merge sorted arrays (faster than full sort)
+		if (newNotes.length > 0)
+		{
+			// If notes is empty, just assign
+			if (notes.length == 0)
+			{
+				notes = newNotes;
+			}
+			else
+			{
+				// Merge two sorted arrays
+				var merged:Array<MetaNote> = [];
+				var a:Int = 0, b:Int = 0;
+				while(a < notes.length && b < newNotes.length)
+				{
+					if(notes[a].strumTime < newNotes[b].strumTime)
+						merged.push(notes[a++]);
+					else
+						merged.push(newNotes[b++]);
+				}
+				while(a < notes.length) merged.push(notes[a++]);
+				while(b < newNotes.length) merged.push(newNotes[b++]);
+				notes = merged;
+			}
+		}
+
+		// OPTIMIZATION 5: Update positions for visible notes
+		for (note in notes)
+		{
+			if(note != null && note.visible)
+				positionNoteYOnTime(note, curSec);
+		}
+
 		forceDataUpdate = true;
 	}
 
 	function reloadNotes()
 	{
+		// Fast note count calculation
 		var totalNoteCount:Int = 0;
 		for (section in PlayState.SONG.notes)
 			totalNoteCount += section.sectionNotes.length;
-		
-		// Optimize GC for large note counts to reduce lag (matching JS-Engine-source behavior)
-		// Use higher threshold for very large charts (1M+ notes)
+
+		// GC control
 		#if cpp
-		if (totalNoteCount > 1000000)
-		{
-			cpp.vm.Gc.enable(false);
-		}
-		else if (totalNoteCount > 100000)
-		{
-			// For moderately large charts, still disable GC but re-enable sooner
-			cpp.vm.Gc.enable(false);
-		}
+		if (totalNoteCount > 100000) cpp.vm.Gc.enable(false);
 		#end
-		
+
+		var startTime = haxe.Timer.stamp();
+
+		// Clear existing notes (fast)
 		selectedNotes = [];
 		for (note in notes) if(note != null) note.destroy();
 		for (event in events) if(event != null) event.destroy();
 		notes = [];
 		events = [];
-		undoActions = [];
 
+		// OPTIMIZATION 1: Pre-allocate arrays
+		var estimatedNotes:Int = totalNoteCount;
+		var estimatedEvents:Int = PlayState.SONG.events.length;
+
+		if (estimatedNotes > 0) notes = [];
+		if (estimatedEvents > 0) events = [];
+
+		// OPTIMIZATION 2: Batch create notes
 		for (secNum => section in PlayState.SONG.notes)
-			for (note in section.sectionNotes)
+		{
+			var sectionNotes = section.sectionNotes;
+			var len:Int = sectionNotes.length;
+			for (i in 0...len)
+			{
+				var note = sectionNotes[i];
 				if(note != null)
 					notes.push(createNote(note, secNum));
+			}
+		}
 
-		for (eventNum => event in PlayState.SONG.events)
-			if(event != null && (cachedSectionTimes.length < 1 || event[0] < cachedSectionTimes[cachedSectionTimes.length-1])) //dont spawn events over the time limit
+		// OPTIMIZATION 3: Batch create events
+		var eventsLen:Int = PlayState.SONG.events.length;
+		var cachedLen:Int = cachedSectionTimes.length;
+		var lastTime:Float = (cachedLen > 0) ? cachedSectionTimes[cachedLen-1] : 0;
+
+		for (i in 0...eventsLen)
+		{
+			var event = PlayState.SONG.events[i];
+			if(event != null && (cachedLen < 1 || event[0] < lastTime))
 				events.push(createEvent(event));
+		}
 
+		// OPTIMIZATION 4: Use native sort with cached function
 		notes.sort(PlayState.sortByTime);
 		events.sort(PlayState.sortByTime);
+
+		// OPTIMIZATION 5: Only load section if needed
+		if (curSec >= 0 && curSec < PlayState.SONG.notes.length)
+			loadSection(curSec);
 
 		#if cpp
 		if (totalNoteCount > 100000)
 		{
 			cpp.vm.Gc.enable(true);
-			openfl.system.System.gc();
+			// Only GC if really needed
+			if (totalNoteCount > 500000)
+				openfl.system.System.gc();
 		}
 		#end
-		
-		if(totalNoteCount < 100000)
-		{
-			trace('Note count: ${notes.length}');
-			trace('Events count: ${events.length}');
-		}
-		else if(totalNoteCount < 1000000)
-		{
-			trace('Loaded ${FlxStringUtil.formatMoney(totalNoteCount, false)} notes (GC optimized)');
-		}
-		else
-		{
-			trace('Loaded ${FlxStringUtil.formatMoney(totalNoteCount, false)} notes (high-performance mode)');
-		}
-		loadSection();
+
+		forceDataUpdate = true;
+
+		// Debug timing
+		if (totalNoteCount > 50000)
+			trace('reloadNotes() processed ' + totalNoteCount + ' notes in ' + (haxe.Timer.stamp() - startTime) + 's');
 	}
 
 	function createNote(note:Dynamic, ?secNum:Null<Int> = null)
@@ -2354,7 +2401,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 			if(section.changeBPM) bpm = section.bpm;
 			var beat:Float = Conductor.calculateCrochet(bpm);
-				
+
 			cachedSectionRow.push(row);
 			cachedSectionTimes.push(time);
 			cachedSectionCrochets.push(beat);
@@ -2380,7 +2427,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 					{
 						PlayState.SONG.notes.pop();
 					}
-		
+
 					trace('breaking at section $secNum');
 					reachedLimit = true;
 					break;
@@ -2393,7 +2440,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			}
 		}
 
-		if(FlxG.sound.music != null && !reachedLimit)
+		if(FlxG.sound.music != null && !reachedLimit) //Created sections to fill blank space
 		{
 			var lastSection = PlayState.SONG.notes[PlayState.SONG.notes.length-1];
 			var beat:Float = Conductor.calculateCrochet(bpm);
@@ -2734,7 +2781,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		ignoreProgressCheckBox = new PsychUICheckBox(objX + 150, objY, 'Ignore Progress Warnings', 100, function() chartEditorSave.data.ignoreProgressWarns = ignoreProgressCheckBox.checked);
 		ignoreProgressCheckBox.checked = chartEditorSave.data.ignoreProgressWarns;
 
-		objY += 40;
+		objY += 50;
 		hidePreviousSectionCheckBox = new PsychUICheckBox(objX, objY, 'Hide Previous Section', 140, function()
 		{
 			chartEditorSave.data.hidePreviousSection = hidePreviousSectionCheckBox.checked;
@@ -2756,12 +2803,11 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		showNextSection = !hideNextSectionCheckBox.checked;
 
 		objY += 30;
-
 		hitsoundPlayerStepper = new PsychUINumericStepper(objX, objY, 0.2, 0, 0, 1, 1);
 		hitsoundOpponentStepper = new PsychUINumericStepper(objX + 100, objY, 0.2, 0, 0, 1, 1);
 		metronomeStepper = new PsychUINumericStepper(objX + 200, objY, 0.2, 0, 0, 1, 1);
 
-		objY += 50;
+		objY += 60;
 		instVolumeStepper = new PsychUINumericStepper(objX, objY, 0.1, 0.6, 0, 1, 1);
 		instVolumeStepper.onValueChange = updateAudioVolume;
 		playerVolumeStepper = new PsychUINumericStepper(objX + 100, objY, 0.1, 1, 0, 1, 1);
@@ -2769,7 +2815,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		opponentVolumeStepper = new PsychUINumericStepper(objX + 200, objY, 0.1, 1, 0, 1, 1);
 		opponentVolumeStepper.onValueChange = updateAudioVolume;
 
-		objY += 25;
+		objY += 35;
 		instMuteCheckBox = new PsychUICheckBox(objX, objY, 'Mute', 60, updateAudioVolume);
 		playerMuteCheckBox = new PsychUICheckBox(objX + 100, objY, 'Mute', 60, updateAudioVolume);
 		opponentMuteCheckBox = new PsychUICheckBox(objX + 200, objY, 'Mute', 60, updateAudioVolume);
@@ -2777,8 +2823,6 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		tab_group.add(playbackSlider);
 		tab_group.add(mouseSnapCheckBox);
 		tab_group.add(ignoreProgressCheckBox);
-		tab_group.add(hidePreviousSectionCheckBox);
-		tab_group.add(hideNextSectionCheckBox);
 		tab_group.add(hidePreviousSectionCheckBox);
 		tab_group.add(hideNextSectionCheckBox);
 
@@ -4296,7 +4340,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 					showOutput('You must save/load a Chart first to Reload it!', true);
 					return;
 				}
-	
+
 				var songName:String = Paths.formatToSongPath(PlayState.SONG.song);
 				var diff:String = Difficulty.list.length > 0 && Difficulty.list[PlayState.storyDifficulty] != null ? Difficulty.list[PlayState.storyDifficulty].toLowerCase() : Difficulty.getDefault().toLowerCase();
 				loadJson(songName, diff);
@@ -4307,7 +4351,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		}, btnWid);
 		btn.text.alignment = LEFT;
 		tab_group.add(btn);
-		
+
 		btnY += 20;
 		var btn:PsychUIButton = new PsychUIButton(btnX, btnY, '  Save old chart...', function()
 		{
@@ -4350,7 +4394,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		}, btnWid);
 		btn.text.alignment = LEFT;
 		tab_group.add(btn);
-		
+
 		btnY++;
 		btnY += 20;
 		var btn:PsychUIButton = new PsychUIButton(btnX, btnY, '  Save (V-Slice)...', function()
