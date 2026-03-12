@@ -2781,7 +2781,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		ignoreProgressCheckBox = new PsychUICheckBox(objX + 150, objY, 'Ignore Progress Warnings', 100, function() chartEditorSave.data.ignoreProgressWarns = ignoreProgressCheckBox.checked);
 		ignoreProgressCheckBox.checked = chartEditorSave.data.ignoreProgressWarns;
 
-		objY += 50;
+		objY += 40;
 		hidePreviousSectionCheckBox = new PsychUICheckBox(objX, objY, 'Hide Previous Section', 140, function()
 		{
 			chartEditorSave.data.hidePreviousSection = hidePreviousSectionCheckBox.checked;
@@ -2807,7 +2807,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		hitsoundOpponentStepper = new PsychUINumericStepper(objX + 100, objY, 0.2, 0, 0, 1, 1);
 		metronomeStepper = new PsychUINumericStepper(objX + 200, objY, 0.2, 0, 0, 1, 1);
 
-		objY += 60;
+		objY += 50;
 		instVolumeStepper = new PsychUINumericStepper(objX, objY, 0.1, 0.6, 0, 1, 1);
 		instVolumeStepper.onValueChange = updateAudioVolume;
 		playerVolumeStepper = new PsychUINumericStepper(objX + 100, objY, 0.1, 1, 0, 1, 1);
@@ -2815,7 +2815,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		opponentVolumeStepper = new PsychUINumericStepper(objX + 200, objY, 0.1, 1, 0, 1, 1);
 		opponentVolumeStepper.onValueChange = updateAudioVolume;
 
-		objY += 35;
+		objY += 25;
 		instMuteCheckBox = new PsychUICheckBox(objX, objY, 'Mute', 60, updateAudioVolume);
 		playerMuteCheckBox = new PsychUICheckBox(objX + 100, objY, 'Mute', 60, updateAudioVolume);
 		opponentMuteCheckBox = new PsychUICheckBox(objX + 200, objY, 'Mute', 60, updateAudioVolume);
