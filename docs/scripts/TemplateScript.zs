@@ -31,7 +31,7 @@ onUpdatePost<elapsed>:
 onStartCountdown:
 	-/ Countdown started, duh
 	-/ `halt` if you want to stop the countdown from happening (Can be used to trigger dialogues and stuff! You can trigger the countdown with startCountdown:)
-	proceed;
+	proceed
 
 onCountdownStarted:
 	-/ Called AFTER countdown started, if you want to stop it from starting, refer to the previous (onStartCountdown)
@@ -53,14 +53,14 @@ onSongStart:
 onSong:
 	-/ Song ed/starting transition (Will be delayed if you're unlocking an achievement)
 	-/ `halt` to stop the song from ing for playing a cutscene or something.
-	proceed;
+	proceed
 
 
 -/ Substate interactions
 onPause:
 	-/ Called when you press Pause while not on a cutscene/etc
 	-/ `halt` if you want to stop the player from pausing the game
-	proceed;
+	proceed
 
 onResume:
 	-/ Called after the game has been resumed from a pause (WARNING: Not necessarily from the pause screen, but most likely is!!!)
@@ -68,7 +68,7 @@ onResume:
 onGameOver:
 	-/ You died! Called every single frame your health is lower (or equal to) zero
 	-/ `halt` if you want to stop the player from going into the game over screen
-	proceed;
+	proceed
 
 onGameOverStart:
 	-/ Called when you have entered the game over screen and "onGameOver" wasn't stopped
@@ -151,7 +151,7 @@ preUpdateScore<miss>:
 	-/ Called before the score text updates
 	-/ "miss" will be true if you missed
 	-/ `halt` if you want to stop the score text from updating
-	proceed;
+	proceed
 
 onUpdateScore<miss>:
 	-/ Called after the score text updates
@@ -161,7 +161,7 @@ onRecalculateRating:
 	-/ `halt` if you want to do your own rating calculation,
 	-/ use setRatingPercent: to set the number on the calculation and setRatingString: to set the funny rating name
 	-/ NOTE: THIS IS CALLED BEFORE THE CALCULATION!!!
-	proceed;
+	proceed
 
 onMoveCamera<focus>:
 	-/Called when the camera focuses to a character
@@ -186,7 +186,7 @@ eventEarlyTrigger<name, value1, value2, strumTime>:
 	Here's a port of the Kill Henchmen early trigger but on Lua instead of Haxe:
 
 	if name == 'Kill Henchmen' then
-		return 280;
+		give 280;
 	
 	This makes the "Kill Henchmen" event be triggered 280 miliseconds earlier so that the kill sound is perfectly timed with the song
 	/-*

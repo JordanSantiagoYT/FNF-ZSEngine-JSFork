@@ -10,6 +10,10 @@ class ZSTranspiler {
         var lines = zsSource.split("\n");
         var directiveFound = false;
         var directiveLineIndex = -1;
+        var blockStack:Array<Int> = [0];
+        var currentIndent:Int = 0;
+        var expectingBlockContent:Bool = false;
+        var lastNonEmptyLine:Int = -1;
 
         for (i in 0...lines.length) {
             var line = StringTools.trim(lines[i]);
@@ -305,6 +309,53 @@ class ZSTranspiler {
                 trimmedLine = "elseif " + trimmedLine.substr(8);
             }
 
+            var isStarter = isBlockStarter(trimmedLine);
+
+            if (expectingBlockContent) {
+                var expectedMinIndent = blockStack[blockStack.length - 1] + 4;
+                if (originalIndent < expectedMinIndent) {
+                    errors.push('Error at line $currentLine: Expected indented block (at least $expectedMinIndent spaces, got $originalIndent)');
+                    errors.push('  → "$trimmedLine"');
+                    return null;
+                }
+                expectingBlockContent = false;
+            }
+
+            if (lastNonEmptyLine >= 0) {
+                if (originalIndent < currentIndent) {
+                    var matched = false;
+                    for (i in 0...blockStack.length) {
+                        if (blockStack[i] == originalIndent) {
+                            var levelsToClose = blockStack.length - i - 1;
+                            for (_ in 0...levelsToClose) {
+                                luaCode.add("end\n");
+                                blockStack.pop();
+                            }
+                            matched = true;
+                            break;
+                        }
+                    }
+                    if (!matched) {
+                        errors.push('Error at line $currentLine: Inconsistent indentation');
+                        errors.push('  → "$trimmedLine"');
+                        return null;
+                    }
+                } else if (originalIndent > currentIndent) {
+                    if (!isStarter && !expectingBlockContent) {
+                        errors.push('Error at line $currentLine: Unexpected indentation increase');
+                        errors.push('  → "$trimmedLine"');
+                        return null;
+                    }
+                }
+            }
+
+            currentIndent = originalIndent;
+            if (isStarter) {
+                blockStack.push(originalIndent);
+                expectingBlockContent = true;
+            }
+            lastNonEmptyLine = currentLine;
+
             try {
                 var luaLine = trimmedLine;
 
@@ -389,5 +440,16 @@ class ZSTranspiler {
         }
 
         return result;
+    }
+
+    static function isBlockStarter(line:String):Bool {
+        var l = StringTools.trim(line);
+        if (l.endsWith(":")) return true;
+        if (l.startsWith("if ") && (l.endsWith(":") || l.indexOf(" then") > -1)) return true;
+        if (l.startsWith("else if ") && (l.endsWith(":") || l.indexOf(" then") > -1)) return true;
+        if (l == "else" || l == "else:") return true;
+        if (l.startsWith("for ") && (l.endsWith(":") || l.indexOf(" do") > -1)) return true;
+        if (l.startsWith("while ") && (l.endsWith(":") || l.indexOf(" do") > -1)) return true;
+        return false;
     }
 }
