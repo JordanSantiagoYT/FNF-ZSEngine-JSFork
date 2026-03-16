@@ -2552,27 +2552,26 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 		var minTime:Float = getMinNoteTime(curSec);
 		var maxTime:Float = getMaxNoteTime(curSec);
-		function curSecFilter(note:MetaNote)
+		inline function curSecFilter(note:MetaNote)
 		{
 			return (note.strumTime >= minTime && note.strumTime < maxTime);
 		}
 
 		var sec = getCurChartSection();
 		var noteCount:Int = (sec != null) ? sec.sectionNotes.length : 0;
-		var skipFullRender:Bool = (noteCount > 10000); // Skip full rendering for sections with more than 10k notes to prevent lag
+		var skipFullRender:Bool = (noteCount > 10000);
 
 		var firstNote:Bool = false;
 		var firstEvent:Bool = false;
 		sectionFirstNoteID = 0;
 		sectionFirstEventID = 0;
-		
+
 		if(skipFullRender)
 		{
-			// For large sections, only render notes near the current song position to reduce lag
-			var visibleTimeRange:Float = 5000; // 5 seconds before and after current position
+			var visibleTimeRange:Float = 5000;
 			var minVisibleTime:Float = Conductor.songPosition - visibleTimeRange;
 			var maxVisibleTime:Float = Conductor.songPosition + visibleTimeRange;
-			
+
 			for (num => note in notes)
 			{
 				if(note != null && curSecFilter(note))
@@ -2586,7 +2585,6 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 					}
 					else
 					{
-						// Hide notes outside visible range
 						note.alpha = 0;
 					}
 				}
@@ -2594,7 +2592,6 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		}
 		else
 		{
-			// Normal rendering for smaller sections
 			for (num => note in notes)
 			{
 				if(note != null && curSecFilter(note))
@@ -2629,26 +2626,36 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 				var prevMaxTime:Float = getMaxNoteTime(curSec-1);
 				var nextMinTime:Float = getMinNoteTime(curSec+1);
 				var nextMaxTime:Float = getMaxNoteTime(curSec+1);
-				function otherSecFilter(note:MetaNote)
+
+				// FIX: Replace .filter() with manual loops
+				for (note in notes)
 				{
-					return (prevGridBg.visible && (note.strumTime >= prevMinTime && note.strumTime < prevMaxTime)) ||
-						(nextGridBg.visible && (note.strumTime >= nextMinTime && note.strumTime < nextMaxTime));
-				}
-	
-				for(note in notes.filter(otherSecFilter))
-				{
-					behindRenderedNotes.add(note);
-					note.alpha = 0.4;
-					if(note.hasSustain) note.updateSustainToZoom(cachedSectionCrochets[curSec] / 4, curZoom);
+					if (note == null) continue;
+					var inPrev = prevGridBg.visible && (note.strumTime >= prevMinTime && note.strumTime < prevMaxTime);
+					var inNext = nextGridBg.visible && (note.strumTime >= nextMinTime && note.strumTime < nextMaxTime);
+					
+					if (inPrev || inNext)
+					{
+						behindRenderedNotes.add(note);
+						note.alpha = 0.4;
+						if(note.hasSustain) note.updateSustainToZoom(cachedSectionCrochets[curSec] / 4, curZoom);
+					}
 				}
 
 				if(SHOW_EVENT_COLUMN)
 				{
-					for(event in events.filter(otherSecFilter))
+					for (event in events)
 					{
-						behindRenderedNotes.add(event);
-						event.alpha = 0.4;
-						event.eventText.visible = false;
+						if (event == null) continue;
+						var inPrev = prevGridBg.visible && (event.strumTime >= prevMinTime && event.strumTime < prevMaxTime);
+						var inNext = nextGridBg.visible && (event.strumTime >= nextMinTime && event.strumTime < nextMaxTime);
+						
+						if (inPrev || inNext)
+						{
+							behindRenderedNotes.add(event);
+							event.alpha = 0.4;
+							event.eventText.visible = false;
+						}
 					}
 				}
 			}
@@ -2781,7 +2788,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		ignoreProgressCheckBox = new PsychUICheckBox(objX + 150, objY, 'Ignore Progress Warnings', 100, function() chartEditorSave.data.ignoreProgressWarns = ignoreProgressCheckBox.checked);
 		ignoreProgressCheckBox.checked = chartEditorSave.data.ignoreProgressWarns;
 
-		objY += 40;
+		objY += 50;
 		hidePreviousSectionCheckBox = new PsychUICheckBox(objX, objY, 'Hide Previous Section', 140, function()
 		{
 			chartEditorSave.data.hidePreviousSection = hidePreviousSectionCheckBox.checked;
