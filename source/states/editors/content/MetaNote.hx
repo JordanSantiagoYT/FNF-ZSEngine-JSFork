@@ -15,14 +15,7 @@ class MetaNote extends Note
 
 	public function new(time:Float, data:Int, songData:Array<Dynamic>)
 	{
-		// Save original state and enable charting mode
-		var oldCharting = Note.CHARTING_MODE;
-		Note.CHARTING_MODE = true;
-
 		super(time, data, null, false, true);
-
-		// Restore original state
-		Note.CHARTING_MODE = oldCharting;
 
 		this.songData = songData;
 		this.strumTime = time;

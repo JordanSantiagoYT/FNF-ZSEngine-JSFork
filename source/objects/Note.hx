@@ -97,7 +97,6 @@ class Note extends FlxSprite
 	public static var swagWidth:Float = 160 * 0.7;
 	public static var colArray:Array<String> = ['purple', 'blue', 'green', 'red'];
 	public static var defaultNoteSkin(default, never):String = 'noteSkins/NOTE_assets';
-	public static var CHARTING_MODE:Bool = false;
 
 	public var noteSplashData:NoteSplashData = {
 		disabled: false,
@@ -268,7 +267,7 @@ class Note extends FlxSprite
 			if(!isSustainNote && noteData < colArray.length) { //Doing this 'if' check to fix the warnings on Senpai songs
 				var animToPlay:String = '';
 				animToPlay = colArray[noteData % colArray.length];
-				if (!CHARTING_MODE) animation.play(animToPlay + 'Scroll');
+				animation.play(animToPlay + 'Scroll');
 			}
 		}
 
@@ -287,7 +286,7 @@ class Note extends FlxSprite
 			offsetX += width / 2;
 			copyAngle = false;
 
-			if (!CHARTING_MODE) animation.play(colArray[noteData % colArray.length] + 'holdend');
+			animation.play(colArray[noteData % colArray.length] + 'holdend');
 
 			updateHitbox();
 
@@ -298,19 +297,17 @@ class Note extends FlxSprite
 
 			if (prevNote.isSustainNote)
 			{
-				if (!CHARTING_MODE) {
-					prevNote.animation.play(colArray[prevNote.noteData % colArray.length] + 'hold');
+				prevNote.animation.play(colArray[prevNote.noteData % colArray.length] + 'hold');
 
-					prevNote.scale.y *= Conductor.stepCrochet / 100 * 1.05;
-					if(createdFrom != null && createdFrom.songSpeed != null) prevNote.scale.y *= createdFrom.songSpeed;
+				prevNote.scale.y *= Conductor.stepCrochet / 100 * 1.05;
+				if(createdFrom != null && createdFrom.songSpeed != null) prevNote.scale.y *= createdFrom.songSpeed;
 
-					if(PlayState.isPixelStage) {
-						prevNote.scale.y *= 1.19;
-						prevNote.scale.y *= (6 / height); //Auto adjust note size
-					}
-					prevNote.updateHitbox();
-					// prevNote.setGraphicSize();
+				if(PlayState.isPixelStage) {
+					prevNote.scale.y *= 1.19;
+					prevNote.scale.y *= (6 / height); //Auto adjust note size
 				}
+				prevNote.updateHitbox();
+				// prevNote.setGraphicSize();
 			}
 
 			if(PlayState.isPixelStage)
