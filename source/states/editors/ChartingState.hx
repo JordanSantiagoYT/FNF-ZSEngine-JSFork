@@ -3824,7 +3824,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		check_stackActive = new PsychUICheckBox(objX, objY, "Enable Note Spamming");
 		check_stackActive.name = 'check_stackActive';
 
-		stepperStackNum = new PsychUINumericStepper(objX, objY + 30, 1, 1, 0, 999999, 4);
+		stepperStackNum = new PsychUINumericStepper(objX * 2, objY + 30, 1, 1, 0, 999999, 4, 120);
 		stepperStackNum.name = 'stack_count';
 
 		var doubleSpamNum:PsychUIButton = new PsychUIButton(stepperStackNum.x, stepperStackNum.y + 20, 'x2 Amount', function()
@@ -3841,7 +3841,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		halfSpamNum.normalStyle.bgColor = FlxColor.RED;
 		halfSpamNum.normalStyle.textColor = FlxColor.WHITE;
 
-		stepperStackOffset = new PsychUINumericStepper(objX, objY + 80, 1, 1, 0, 999999, 4);
+		stepperStackOffset = new PsychUINumericStepper(objX * 2, objY + 80, 1, 1, 0, 999999, 4, 120);
 		stepperStackOffset.name = 'stack_offset';
 
 		var doubleSpamMult:PsychUIButton = new PsychUIButton(stepperStackOffset.x, stepperStackOffset.y + 20, 'x2 SM', function()
@@ -3861,7 +3861,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		stepperStackSideOffset = new PsychUINumericStepper(objX, objY + 140, 1, 0, -9999, 9999);
 		stepperStackSideOffset.name = 'stack_sideways';
 
-		stepperShrinkAmount = new PsychUINumericStepper(objX, objY + 190, 1, 1, 0, 8192, 4);
+		stepperShrinkAmount = new PsychUINumericStepper(objX * 2, objY + 190, 1, 1, 0, 8192, 4, 120);
 		stepperShrinkAmount.name = 'shrinker_amount';
 
 		var doubleShrinker:PsychUIButton = new PsychUIButton(stepperShrinkAmount.x, stepperShrinkAmount.y + 20, 'x2 SH', function()
@@ -3911,7 +3911,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			sec.sectionNotes.length <= 30000 ? updateCurrentSectionNotes() : loadSection(curSec + 1);
 		});
 
-		stepperShiftSteps = new PsychUINumericStepper(objX, shrinkNotesButton.y + 30, 1, 1, -8192, 8192, 4);
+		stepperShiftSteps = new PsychUINumericStepper(objX * 2, shrinkNotesButton.y + 30, 1, 1, -8192, 8192, 4, 120);
 		stepperShiftSteps.name = 'shifter_amount';
 
 		var shiftNotesButton:PsychUIButton = new PsychUIButton(objX, stepperShiftSteps.y + 20, "Shift Notes", function()
@@ -3933,7 +3933,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			sec.sectionNotes.length <= 30000 ? updateCurrentSectionNotes() : loadSection(curSec + 1);
 		});
 
-		stepperDuplicateAmount = new PsychUINumericStepper(objX, shiftNotesButton.y + 30, 1, 1, 0, 32, 4);
+		stepperDuplicateAmount = new PsychUINumericStepper(objX * 2, shiftNotesButton.y + 30, 1, 1, 0, 32, 4, 120);
 		stepperDuplicateAmount.name = 'duplicater_amount';
 
 		var dupeNotesButton:PsychUIButton = new PsychUIButton(objX, stepperDuplicateAmount.y + 20, "Duplicate Notes", function()
@@ -4040,7 +4040,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		tab_group.add(shiftNotesButton);
 		tab_group.add(dupeNotesButton);
 		
-		tab_group.add(new FlxText(100, stepperStackNum.y, 0, "Spam Length"));
+		tab_group.add(new FlxText(100, stepperStackNum.y, 0, "Spam Height"));
 		tab_group.add(new FlxText(100, stepperStackOffset.y, 0, "Spam Multiplier"));
 		tab_group.add(new FlxText(100, stepperStackSideOffset.y, 0, "Spam Scroll Amount"));
 		tab_group.add(new FlxText(100, stepperShrinkAmount.y, 0, "Stretch Amount"));

@@ -61,8 +61,7 @@ class ZSTranspiler {
                     errors.push('  → Use curly quotes “ and ” instead');
                     errors.push('  Found: "$trimmedLine"');
                     return null;
-                }
-                if (codeToCheck.indexOf("'") > -1) {
+                } else if (codeToCheck.indexOf("'") > -1) {
                     errors.push('Error at line $currentLine: Straight single quotes \' are not allowed in ZS');
                     errors.push('  → Use curly quotes ‘ and ’ instead');
                     errors.push('  Found: "$trimmedLine"');
@@ -74,108 +73,81 @@ class ZSTranspiler {
                     errors.push('  → Use "≠" instead');
                     errors.push('  Found: "$trimmedLine"');
                     return null;
-                }
-                if (codeToCheck.indexOf("<=") > -1) {
+                } else if (codeToCheck.indexOf("<=") > -1) {
                     errors.push('Error at line $currentLine: Lua operator "<=" is not allowed in ZS');
                     errors.push('  → Use "≤" instead');
                     errors.push('  Found: "$trimmedLine"');
                     return null;
-                }
-                if (codeToCheck.indexOf(">=") > -1) {
+                } else if (codeToCheck.indexOf(">=") > -1) {
                     errors.push('Error at line $currentLine: Lua operator ">=" is not allowed in ZS');
                     errors.push('  → Use "≥" instead');
                     errors.push('  Found: "$trimmedLine"');
                     return null;
-                }
-                if (codeToCheck.indexOf("-=") > -1) {
+                } else if (codeToCheck.indexOf("-=") > -1) {
                     errors.push('Error at line $currentLine: Lua operator "-=" is not allowed in ZS');
                     errors.push('  → Use "−=" instead');
                     errors.push('  Found: "$trimmedLine"');
                     return null;
-                }
-                if (codeToCheck.indexOf("*=") > -1) {
+                } else if (codeToCheck.indexOf("*=") > -1) {
                     errors.push('Error at line $currentLine: Lua operator "*=" is not allowed in ZS');
                     errors.push('  → Use "×=" instead');
                     errors.push('  Found: "$trimmedLine"');
                     return null;
-                }
-                if (codeToCheck.indexOf("/=") > -1) {
+                } else if (codeToCheck.indexOf("/=") > -1) {
                     errors.push('Error at line $currentLine: Lua operator "/=" is not allowed in ZS');
                     errors.push('  → Use "÷=" instead');
                     errors.push('  Found: "$trimmedLine"');
                     return null;
                 }
-                if (~/[0-9] *- *[0-9]/.match(codeToCheck)) {
-                    errors.push('Error at line $currentLine: Hyphen "-" between numbers is not allowed for subtraction');
-                    errors.push('  → Use "−" (minus sign) instead');
-                    errors.push('  Found: "$trimmedLine"');
-                    return null;
-                }
-                if (~/[0-9]-[0-9]/.match(codeToCheck)) {
-                    errors.push('Error at line $currentLine: Hyphen "-" between numbers is not allowed for subtraction');
-                    errors.push('  → Use "−" (minus sign) instead');
-                    errors.push('  Found: "$trimmedLine"');
-                    return null;
-                }
-                if (~/[0-9] *-[0-9]/.match(codeToCheck)) {
-                    errors.push('Error at line $currentLine: Hyphen "-" between numbers is not allowed for subtraction');
-                    errors.push('  → Use "−" (minus sign) instead');
-                    errors.push('  Found: "$trimmedLine"');
-                    return null;
-                }
-                if (~/[0-9]- *[0-9]/.match(codeToCheck)) {
-                    errors.push('Error at line $currentLine: Hyphen "-" between numbers is not allowed for subtraction');
-                    errors.push('  → Use "−" (minus sign) instead');
-                    errors.push('  Found: "$trimmedLine"');
-                    return null;
-                }
-                if (~/[0-9] *\* *[0-9]/.match(codeToCheck)) {
-                    errors.push('Error at line $currentLine: Hyphen "-" between numbers is not allowed for subtraction');
-                    errors.push('  → Use "−" (minus sign) instead');
-                    errors.push('  Found: "$trimmedLine"');
-                    return null;
-                }
-                if (~/[0-9]\*[0-9]/.match(codeToCheck)) {
-                    errors.push('Error at line $currentLine: Hyphen "-" between numbers is not allowed for subtraction');
-                    errors.push('  → Use "−" (minus sign) instead');
-                    errors.push('  Found: "$trimmedLine"');
-                    return null;
-                }
-                if (~/[0-9] *\*[0-9]/.match(codeToCheck)) {
-                    errors.push('Error at line $currentLine: Hyphen "-" between numbers is not allowed for subtraction');
-                    errors.push('  → Use "−" (minus sign) instead');
-                    errors.push('  Found: "$trimmedLine"');
-                    return null;
-                }
-                if (~/[0-9]\* *[0-9]/.match(codeToCheck)) {
-                    errors.push('Error at line $currentLine: Hyphen "-" between numbers is not allowed for subtraction');
-                    errors.push('  → Use "−" (minus sign) instead');
-                    errors.push('  Found: "$trimmedLine"');
-                    return null;
-                }
-                if (~/[0-9] *\/ *[0-9]/.match(codeToCheck)) {
-                    errors.push('Error at line $currentLine: Hyphen "-" between numbers is not allowed for subtraction');
-                    errors.push('  → Use "−" (minus sign) instead');
-                    errors.push('  Found: "$trimmedLine"');
-                    return null;
-                }
-                if (~/[0-9]\/[0-9]/.match(codeToCheck)) {
-                    errors.push('Error at line $currentLine: Hyphen "-" between numbers is not allowed for subtraction');
-                    errors.push('  → Use "−" (minus sign) instead');
-                    errors.push('  Found: "$trimmedLine"');
-                    return null;
-                }
-                if (~/[0-9] *\/[0-9]/.match(codeToCheck)) {
-                    errors.push('Error at line $currentLine: Hyphen "-" between numbers is not allowed for subtraction');
-                    errors.push('  → Use "−" (minus sign) instead');
-                    errors.push('  Found: "$trimmedLine"');
-                    return null;
-                }
-                if (~/[0-9]\/ *[0-9]/.match(codeToCheck)) {
-                    errors.push('Error at line $currentLine: Hyphen "-" between numbers is not allowed for subtraction');
-                    errors.push('  → Use "−" (minus sign) instead');
-                    errors.push('  Found: "$trimmedLine"');
-                    return null;
+
+                var patterns = [
+                    // Standard numbers
+                    ~/[0-9] *- *[0-9]/,
+                    ~/[0-9]-[0-9]/,
+                    ~/[0-9] *-[0-9]/,
+                    ~/[0-9]- *[0-9]/,
+
+                    // Variables with noun symbols
+                    ~/> *- *</,           // <x> - <y>
+                    ~/>-</,               // <x>-<y>
+                    ~/> *-</,             // <x> -<y>
+                    ~/>- *</,             // <x>- <y>
+
+                    // Mixed numbers and variables
+                    ~/[0-9] *- *</,       // 5 - <y>
+                    ~/[0-9]- *</,         // 5- <y>
+                    ~/[0-9] *-</,         // 5 -<y>
+                    ~/> *- *[0-9]/,       // <x> - 3
+                    ~/>- *[0-9]/,         // <x>- 3
+                    ~/> *-[0-9]/,         // <x> -3
+
+                    // Multiplication with nouns
+                    ~/> *\* *</,
+                    ~/>\*</,
+                    ~/> *\*</,
+                    ~/>\* *</,
+
+                    // Division with nouns
+                    ~/> *\/ *</,
+                    ~/>\/</,
+                    ~/> *\/</,
+                    ~/>\/ *</
+                ];
+
+                for (pattern in patterns) {
+                    if (pattern.match(codeToCheck)) {
+                        var operator = "operator";
+                        if (pattern.toString().indexOf("-") > -1) operator = "subtraction";
+                        else if (pattern.toString().indexOf("*") > -1) operator = "multiplication";
+                        else if (pattern.toString().indexOf("/") > -1) operator = "division";
+
+                        var correctSymbol = operator == "subtraction" ? "−" : (operator == "multiplication" ? "×" : "÷");
+
+                        errors.push('Error at line $currentLine: Hyphen "$operator" between values is not allowed');
+                        errors.push('  → Use "$correctSymbol" instead');
+                        errors.push('  Found: "$trimmedLine"');
+                        return null;
+                    }
                 }
             }
 
@@ -430,9 +402,17 @@ class ZSTranspiler {
     }
 
     static function fixMinusSigns(line:String):String {
-        var subtractionRegex = ~/([0-9\)\]\} ]) *- *([0-9\(\[\{])/g;
+        // Handle subtraction with numbers and noun variables
+        // Pattern: number - number, <var> - number, number - <var>, <var> - <var>
+        var subtractionRegex = ~/([0-9>][^ ]*) *- *([0-9<][^ ]*)/g;
         line = subtractionRegex.replace(line, "$1 − $2");
-        var negativeRegex = ~/(^|[=\(\{,;+*\/÷−]) *- *([0-9])/g;
+
+        // Also catch cases without spaces: 5-3, <x>-<y>, 5-<y>, <x>-3
+        var subtractionNoSpaceRegex = ~/([0-9>][^ ]*)-([0-9<][^ ]*)/g;
+        line = subtractionNoSpaceRegex.replace(line, "$1 − $2");
+
+        // Pattern for negative sign: -number or -<var> at start or after operators
+        var negativeRegex = ~/(^|[=\(\{,;+*\/÷−]) *- *([0-9<][^ ]*)/g;
         line = negativeRegex.replace(line, "$1 -$2");
 
         return line;
