@@ -137,9 +137,13 @@ class ZSTranspiler {
                 for (pattern in patterns) {
                     if (pattern.match(codeToCheck)) {
                         var opType = "operator";
-                        if (pattern.toString().indexOf("-") > -1) opType = "subtraction";
-                        else if (pattern.toString().indexOf("*") > -1) opType = "multiplication";
-                        else if (pattern.toString().indexOf("/") > -1) opType = "division";
+                        if (trimmedLine.indexOf("-") > -1 && trimmedLine.indexOf("*") == -1 && trimmedLine.indexOf("/") == -1) {
+                            opType = "subtraction";
+                        } else if (trimmedLine.indexOf("*") > -1) {
+                            opType = "multiplication";
+                        } else if (trimmedLine.indexOf("/") > -1) {
+                            opType = "division";
+                        }
 
                         var correctSymbol = opType == "subtraction" ? "−" : (opType == "multiplication" ? "×" : "÷");
 

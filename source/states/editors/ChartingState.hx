@@ -3112,7 +3112,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 	var check_stackActive:PsychUICheckBox;
 	var stepperStackNum:PsychUINumericStepper;
-	var stepperStackOffset:PsychUINumericStepper;
+	var stepperStackOffset:ZSUINumericStepper;
 	var stepperStackSideOffset:PsychUINumericStepper;
 	var stepperShrinkAmount:PsychUINumericStepper;
 	var stepperShiftSteps:PsychUINumericStepper;
