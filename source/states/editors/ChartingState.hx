@@ -3841,7 +3841,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		halfSpamNum.normalStyle.bgColor = FlxColor.RED;
 		halfSpamNum.normalStyle.textColor = FlxColor.WHITE;
 
-		stepperStackOffset = new PsychUINumericStepper(objX * 2, objY + 80, 1, 1, 0, 999999, 4, 120);
+		stepperStackOffset = new ZSUINumericStepper(objX * 2, objY + 80, 1, 1, 0, 999999, 4, 120, false, true, false);
 		stepperStackOffset.name = 'stack_offset';
 
 		var doubleSpamMult:PsychUIButton = new PsychUIButton(stepperStackOffset.x, stepperStackOffset.y + 20, 'x2 SM', function()

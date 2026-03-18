@@ -99,6 +99,7 @@ class ZSTranspiler {
                     return null;
                 }
 
+                // Check for hyphen subtraction with numbers AND noun variables
                 var patterns = [
                     // Standard numbers
                     ~/[0-9] *- *[0-9]/,
@@ -135,14 +136,14 @@ class ZSTranspiler {
 
                 for (pattern in patterns) {
                     if (pattern.match(codeToCheck)) {
-                        var operator = "operator";
-                        if (pattern.toString().indexOf("-") > -1) operator = "subtraction";
-                        else if (pattern.toString().indexOf("*") > -1) operator = "multiplication";
-                        else if (pattern.toString().indexOf("/") > -1) operator = "division";
+                        var opType = "operator";
+                        if (pattern.toString().indexOf("-") > -1) opType = "subtraction";
+                        else if (pattern.toString().indexOf("*") > -1) opType = "multiplication";
+                        else if (pattern.toString().indexOf("/") > -1) opType = "division";
 
-                        var correctSymbol = operator == "subtraction" ? "−" : (operator == "multiplication" ? "×" : "÷");
+                        var correctSymbol = opType == "subtraction" ? "−" : (opType == "multiplication" ? "×" : "÷");
 
-                        errors.push('Error at line $currentLine: Hyphen "$operator" between values is not allowed');
+                        errors.push('Error at line $currentLine: Hyphen "$opType" between values is not allowed');
                         errors.push('  → Use "$correctSymbol" instead');
                         errors.push('  Found: "$trimmedLine"');
                         return null;
