@@ -265,6 +265,11 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		showPreviousSection = !chartEditorSave.data.hidePreviousSection;
 		showNextSection = !chartEditorSave.data.hideNextSection;
 
+		if(chartEditorSave.data.deletePlayer == null) chartEditorSave.data.deletePlayer = true;
+		if(chartEditorSave.data.deleteOpponent == null) chartEditorSave.data.deleteOpponent = true;
+		deletePlayerNotes = !chartEditorSave.data.deletePlayer;
+		deleteOpponentNotes = !chartEditorSave.data.deleteOpponent;
+
 		if(chartEditorSave.data.customBgColor == null) chartEditorSave.data.customBgColor = '303030';
 		if(chartEditorSave.data.customGridColors == null || chartEditorSave.data.customGridColors.length < 2)
 			chartEditorSave.data.customGridColors = ['DFDFDF', 'BFBFBF'];
@@ -3210,6 +3215,14 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 	var changeBpmStepper:PsychUINumericStepper;
 	var beatsPerSecStepper:PsychUINumericStepper;
 
+	var deleteSectionStart:ZSUINumericStepper;
+	var deleteSectionEnd:ZSUINumericStepper;
+	var deleteSections:PsychUIButton;
+	var deletePlayerCheckBox:PsychUICheckBox;
+	var deleteOpponentCheckBox:PsychUICheckBox;
+	var deletePlayerNotes:Bool = true;
+	var deleteOpponentNotes:Bool = true;
+
 	function addSectionTab()
 	{
 		var affectNotes:PsychUICheckBox = null;
@@ -3513,9 +3526,9 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		tab_group.add(mirrorNotesButton);
 
 		objY += 40;
-		var stepperSectionJump:PsychUINumericStepper = new PsychUINumericStepper(objX, objY, 1, 0, 0, 999999, 0);
+		var stepperSectionJump:ZSUINumericStepper = new ZSUINumericStepper(objX, objY, 1, 0, 0, 999999, 0, 60, false, true, false);
 		stepperSectionJump.name = 'section_jump';
-		
+
 		var jumpSectionButton:PsychUIButton = new PsychUIButton(objX + 100, objY, "Jump Section", function()
 		{
 			var value:Int = Std.int(stepperSectionJump.value);
@@ -3533,9 +3546,69 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		jumpSectionButton.normalStyle.bgColor = FlxColor.CYAN;
 		jumpSectionButton.normalStyle.textColor = FlxColor.WHITE;
 
+		objY += 40;
+		var deleteSectionStart = new ZSUINumericStepper(objX, objY, 1, 0, 0, 999999, 0, 60, false, true, false);
+		deleteSectionStart.name = 'section_start';
+
+		var deleteSectionEnd = new ZSUINumericStepper(objX, objY + 20, 1, 0, 0, 999999, 0, 60, false, true, false);
+		deleteSectionEnd.name = 'section_end';
+
+		var deletePlayerCheckBox = new PsychUICheckBox(objX + 20, objY, 'Delete Player', 60, function()
+		{
+			chartEditorSave.data.deletePlayer = deletePlayerCheckBox.checked;
+			chartEditorSave.flush();
+			deletePlayerNotes = deletePlayerCheckBox.checked;
+		});
+		deletePlayerCheckBox.checked = (chartEditorSave.data.deletePlayer == true);
+		deletePlayerNotes = deletePlayerCheckBox.checked;
+
+		var deleteOpponentCheckBox = new PsychUICheckBox(objX + 20, objY + 20, 'Delete Opponent', 60, function()
+		{
+			chartEditorSave.data.deleteOpponent = deleteOpponentCheckBox.checked;
+			chartEditorSave.flush();
+			deleteOpponentNotes = deleteOpponentCheckBox.checked;
+		});
+		deleteOpponentCheckBox.checked = (chartEditorSave.data.deleteOpponent == true);
+		deleteOpponentNotes = deleteOpponentCheckBox.checked;
+
+		var deleteSections = new PsychUIButton(objX + 120, objY + 10, "Delete Section " + Std.int(deleteSectionStart.value) + " to " + Std.int(deleteSectionEnd.value), function()
+		{
+			var sectionStart:Int = Std.int(deleteSectionStart.value);
+			var sectionEnd:Int = Std.int(deleteSectionEnd.value);
+			var sectionsToDelete:Int = sectionEnd - sectionStart;
+			var sec = getCurChartSection();
+
+			if (sectionsToDelete < 0) return;
+
+			for (i in 0...sectionsToDelete)
+			{
+				if (sec[sectionStart + i].sectionNotes != null) if (!deletePlayerNotes && !deleteOpponentNotes) sec[sectionStart + i].sectionNotes = [];
+				else
+				{
+					var b = sec[sectionStart + i].sectionNotes.length - 1;
+					while (b >= 0)
+					{
+						var note = sec[sectionStart + i].sectionNotes[b];
+						if (note != null && deletePlayerNotes && (note[1] < 4 ? sec[sectionStart + i].mustHitSection : !sec[sectionStart + i].mustHitSection))
+							sec[sectionStart + i].sectionNotes.remove(note);
+						else if (note != null && deleteOpponentNotes && (note[1] < 4 ? !sec[sectionStart + i].mustHitSection : sec[sectionStart + i].mustHitSection))
+							sec[sectionStart + i].sectionNotes.remove(note);
+						b--;
+					}
+				}
+			}
+		}, 100, 40);
+		deleteSections.normalStyle.bgColor = FlxColor.YELLOW;
+		deleteSections.normalStyle.textColor = FlxColor.WHITE;
+
 		tab_group.add(stepperSectionJump);
 		tab_group.add(jumpSectionButton);
 		tab_group.add(new FlxText(objX, objY - 15, 0, 'Jump to Section:'));
+		tab_group.add(deleteSectionStart);
+		tab_group.add(deleteSectionEnd);
+		tab_group.add(deletePlayerCheckBox);
+		tab_group.add(deleteOpponentCheckBox);
+		tab_group.add(deleteSections);
 	}
 
 	function reloadNotesDropdowns()
