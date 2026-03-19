@@ -267,8 +267,8 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 		if(chartEditorSave.data.deletePlayer == null) chartEditorSave.data.deletePlayer = true;
 		if(chartEditorSave.data.deleteOpponent == null) chartEditorSave.data.deleteOpponent = true;
-		deletePlayerNotes = !chartEditorSave.data.deletePlayer;
-		deleteOpponentNotes = !chartEditorSave.data.deleteOpponent;
+		deletePlayerNotes = chartEditorSave.data.deletePlayer;
+		deleteOpponentNotes = chartEditorSave.data.deleteOpponent;
 
 		if(chartEditorSave.data.customBgColor == null) chartEditorSave.data.customBgColor = '303030';
 		if(chartEditorSave.data.customGridColors == null || chartEditorSave.data.customGridColors.length < 2)
