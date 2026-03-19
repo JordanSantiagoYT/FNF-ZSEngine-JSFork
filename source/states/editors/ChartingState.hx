@@ -3547,13 +3547,13 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		jumpSectionButton.normalStyle.textColor = FlxColor.WHITE;
 
 		objY += 40;
-		var deleteSectionStart = new ZSUINumericStepper(objX, objY, 1, 0, 0, 999999, 0, 60, false, true, false);
+		deleteSectionStart = new ZSUINumericStepper(objX, objY, 1, 0, 0, 999999, 0, 60, false, true, false);
 		deleteSectionStart.name = 'section_start';
 
-		var deleteSectionEnd = new ZSUINumericStepper(objX, objY + 20, 1, 0, 0, 999999, 0, 60, false, true, false);
+		deleteSectionEnd = new ZSUINumericStepper(objX, objY + 20, 1, 0, 0, 999999, 0, 60, false, true, false);
 		deleteSectionEnd.name = 'section_end';
 
-		var deletePlayerCheckBox = new PsychUICheckBox(objX + 20, objY, 'Delete Player', 60, function()
+		deletePlayerCheckBox = new PsychUICheckBox(objX + 20, objY, 'Delete Player', 60, function()
 		{
 			chartEditorSave.data.deletePlayer = deletePlayerCheckBox.checked;
 			chartEditorSave.flush();
@@ -3562,7 +3562,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		deletePlayerCheckBox.checked = (chartEditorSave.data.deletePlayer == true);
 		deletePlayerNotes = deletePlayerCheckBox.checked;
 
-		var deleteOpponentCheckBox = new PsychUICheckBox(objX + 20, objY + 20, 'Delete Opponent', 60, function()
+		deleteOpponentCheckBox = new PsychUICheckBox(objX + 20, objY + 20, 'Delete Opponent', 60, function()
 		{
 			chartEditorSave.data.deleteOpponent = deleteOpponentCheckBox.checked;
 			chartEditorSave.flush();
@@ -3571,32 +3571,59 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		deleteOpponentCheckBox.checked = (chartEditorSave.data.deleteOpponent == true);
 		deleteOpponentNotes = deleteOpponentCheckBox.checked;
 
-		var deleteSections = new PsychUIButton(objX + 120, objY + 10, "Delete Section " + Std.int(deleteSectionStart.value) + " to " + Std.int(deleteSectionEnd.value), function()
+		deleteSections = new PsychUIButton(objX + 120, objY + 10, "Delete Section " + Std.int(deleteSectionStart.value) + " to " + Std.int(deleteSectionEnd.value), function()
 		{
 			var sectionStart:Int = Std.int(deleteSectionStart.value);
 			var sectionEnd:Int = Std.int(deleteSectionEnd.value);
-			var sectionsToDelete:Int = sectionEnd - sectionStart;
-			var sec = getCurChartSection();
 
-			if (sectionsToDelete < 0) return;
-
-			for (i in 0...sectionsToDelete)
+			if (sectionStart < 0 || sectionEnd >= PlayState.SONG.notes.length || sectionStart > sectionEnd)
 			{
-				if (sec[sectionStart + i].sectionNotes != null) if (!deletePlayerNotes && !deleteOpponentNotes) sec[sectionStart + i].sectionNotes = [];
-				else
+				showOutput('Invalid section range!', true);
+				return;
+			}
+
+			for (sectionIndex in sectionStart...sectionEnd + 1)
+			{
+				var currentSection = PlayState.SONG.notes[sectionIndex];
+				if (currentSection == null) continue;
+
+				if (!deletePlayerNotes && !deleteOpponentNotes)
 				{
-					var b = sec[sectionStart + i].sectionNotes.length - 1;
-					while (b >= 0)
+					currentSection.sectionNotes = [];
+					continue;
+				}
+
+				var i:Int = currentSection.sectionNotes.length - 1;
+				while (i >= 0)
+				{
+					var note = currentSection.sectionNotes[i];
+					if (note == null || note.length < 2)
 					{
-						var note = sec[sectionStart + i].sectionNotes[b];
-						if (note != null && deletePlayerNotes && (note[1] < 4 ? sec[sectionStart + i].mustHitSection : !sec[sectionStart + i].mustHitSection))
-							sec[sectionStart + i].sectionNotes.remove(note);
-						else if (note != null && deleteOpponentNotes && (note[1] < 4 ? !sec[sectionStart + i].mustHitSection : sec[sectionStart + i].mustHitSection))
-							sec[sectionStart + i].sectionNotes.remove(note);
-						b--;
+						i--;
+						continue;
 					}
+
+					var noteData:Int = Std.int(note[1]);
+					var isPlayerNote:Bool = (noteData < 4) ? currentSection.mustHitSection : !currentSection.mustHitSection;
+
+					if (deletePlayerNotes && isPlayerNote)
+					{
+						currentSection.sectionNotes.splice(i, 1);
+					}
+					else if (deleteOpponentNotes && !isPlayerNote)
+					{
+						currentSection.sectionNotes.splice(i, 1);
+					}
+					i--;
 				}
 			}
+
+			_cacheSections();
+			reloadNotes();
+			loadSection(curSec);
+			forceDataUpdate = true;
+
+			showOutput('Deleted sections ' + sectionStart + ' to ' + sectionEnd);
 		}, 100, 40);
 		deleteSections.normalStyle.bgColor = FlxColor.YELLOW;
 		deleteSections.normalStyle.textColor = FlxColor.WHITE;
