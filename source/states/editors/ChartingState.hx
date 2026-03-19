@@ -4040,8 +4040,8 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		tab_group.add(shiftNotesButton);
 		tab_group.add(dupeNotesButton);
 		
-		tab_group.add(new FlxText(120, stepperStackNum.y, 0, "Spam Height"));
-		tab_group.add(new FlxText(200, stepperStackOffset.y, 0, "Spam Multiplier"));
+		tab_group.add(new FlxText(100, stepperStackNum.y, 0, "Spam Height"));
+		tab_group.add(new FlxText(140, stepperStackOffset.y, 0, "Spam Multiplier"));
 		tab_group.add(new FlxText(100, stepperStackSideOffset.y, 0, "Spam Scroll Amount"));
 		tab_group.add(new FlxText(100, stepperShrinkAmount.y, 0, "Stretch Amount"));
 		tab_group.add(new FlxText(100, stepperShiftSteps.y, 0, "Steps to Shift By"));

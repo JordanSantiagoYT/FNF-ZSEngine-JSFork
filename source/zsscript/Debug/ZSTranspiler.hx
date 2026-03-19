@@ -100,55 +100,74 @@ class ZSTranspiler {
                     return null;
                 }
 
-                // Check for hyphen subtraction with numbers AND noun variables
+                // Check for operators with numbers AND noun variables
                 var patterns = [
-                    // Standard numbers
+                    // Subtraction patterns
                     ~/[0-9] *- *[0-9]/,
                     ~/[0-9]-[0-9]/,
                     ~/[0-9] *-[0-9]/,
                     ~/[0-9]- *[0-9]/,
+                    ~/> *- *</,
+                    ~/>-</,
+                    ~/> *-</,
+                    ~/>- *</,
+                    ~/[0-9] *- *</,
+                    ~/[0-9]-</,
+                    ~/[0-9]- *</,
+                    ~/[0-9] *-</,
+                    ~/> *- *[0-9]/,
+                    ~/>-[0-9]/,
+                    ~/>- *[0-9]/,
+                    ~/> *-[0-9]/,
 
-                    // Variables with noun symbols
-                    ~/> *- *</,           // <x> - <y>
-                    ~/>-</,               // <x>-<y>
-                    ~/> *-</,             // <x> -<y>
-                    ~/>- *</,             // <x>- <y>
-
-                    // Mixed numbers and variables
-                    ~/[0-9] *- *</,       // 5 - <y>
-                    ~/[0-9]- *</,         // 5- <y>
-                    ~/[0-9] *-</,         // 5 -<y>
-                    ~/> *- *[0-9]/,       // <x> - 3
-                    ~/>- *[0-9]/,         // <x>- 3
-                    ~/> *-[0-9]/,         // <x> -3
-
-                    // Multiplication with nouns
+                    // Multiplication patterns
+                    ~/[0-9] *\* *[0-9]/,
+                    ~/[0-9]\*[0-9]/,
+                    ~/[0-9] *\*[0-9]/,
+                    ~/[0-9]\* *[0-9]/,
                     ~/> *\* *</,
                     ~/>\*</,
                     ~/> *\*</,
                     ~/>\* *</,
+                    ~/[0-9] *\* *</,
+                    ~/[0-9]\* *</,
+                    ~/[0-9]\*</,
+                    ~/[0-9] *\*</,
+                    ~/> *\* *[0-9]/,
+                    ~/>\*[0-9]/,
+                    ~/>\* *[0-9]/,
+                    ~/> *\*[0-9]/,
 
-                    // Division with nouns
+                    // Division patterns
+                    ~/[0-9] *\/ *[0-9]/,
+                    ~/[0-9]\/[0-9]/,
+                    ~/[0-9] *\/[0-9]/,
+                    ~/[0-9]\/ *[0-9]/,
                     ~/> *\/ *</,
                     ~/>\/</,
                     ~/> *\/</,
-                    ~/>\/ *</
+                    ~/>\/ *</,
+                    ~/[0-9] *\/ *</,
+                    ~/[0-9]\/ *</,
+                    ~/[0-9]\/</,
+                    ~/[0-9] *\/</,
+                    ~/> *\/ *[0-9]/,
+                    ~/>\/[0-9]/,
+                    ~/>\/ *[0-9]/,
+                    ~/> *\/[0-9]/
                 ];
 
                 for (pattern in patterns) {
                     if (pattern.match(codeToCheck)) {
+                        // Determine operator type
                         var opType = "operator";
-                        if (trimmedLine.indexOf("-") > -1 && trimmedLine.indexOf("*") == -1 && trimmedLine.indexOf("/") == -1) {
-                            opType = "subtraction";
-                        } else if (trimmedLine.indexOf("*") > -1) {
-                            opType = "multiplication";
-                        } else if (trimmedLine.indexOf("/") > -1) {
-                            opType = "division";
-                        }
+                        if (trimmedLine.indexOf("-") > -1) opType = "subtraction";
+                        else if (trimmedLine.indexOf("*") > -1) opType = "multiplication";
+                        else if (trimmedLine.indexOf("/") > -1) opType = "division";
 
                         var correctSymbol = opType == "subtraction" ? "−" : (opType == "multiplication" ? "×" : "÷");
 
-                        errors.push('Error at line $currentLine: Hyphen "$opType" between values is not allowed');
+                        errors.push('Error at line $currentLine: "$opType" operator "${opType == "subtraction" ? "-" : (opType == "multiplication" ? "*" : "/")}" is not allowed');
                         errors.push('  → Use "$correctSymbol" instead');
                         errors.push('  Found: "$trimmedLine"');
                         return null;
