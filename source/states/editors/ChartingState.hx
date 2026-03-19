@@ -2793,8 +2793,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		ignoreProgressCheckBox = new PsychUICheckBox(objX + 150, objY, 'Ignore Progress Warnings', 100, function() chartEditorSave.data.ignoreProgressWarns = ignoreProgressCheckBox.checked);
 		ignoreProgressCheckBox.checked = chartEditorSave.data.ignoreProgressWarns;
 
-		objY += 30;
-		hidePreviousSectionCheckBox = new PsychUICheckBox(objX, objY, 'Hide Previous Section', 140, function()
+		hidePreviousSectionCheckBox = new PsychUICheckBox(objX, objY + 30, 'Hide Previous Section', 140, function()
 		{
 			chartEditorSave.data.hidePreviousSection = hidePreviousSectionCheckBox.checked;
 			chartEditorSave.flush();
@@ -2804,7 +2803,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		hidePreviousSectionCheckBox.checked = (chartEditorSave.data.hidePreviousSection == true);
 		showPreviousSection = !hidePreviousSectionCheckBox.checked;
 
-		hideNextSectionCheckBox = new PsychUICheckBox(objX + 150, objY, 'Hide Next Section', 140, function()
+		hideNextSectionCheckBox = new PsychUICheckBox(objX + 150, objY + 30, 'Hide Next Section', 140, function()
 		{
 			chartEditorSave.data.hideNextSection = hideNextSectionCheckBox.checked;
 			chartEditorSave.flush();
@@ -3215,6 +3214,9 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 	var changeBpmStepper:PsychUINumericStepper;
 	var beatsPerSecStepper:PsychUINumericStepper;
 
+	var clearLeftButton:PsychUIButton;
+	var clearRightButton:PsychUIButton;
+
 	var deleteSectionStart:ZSUINumericStepper;
 	var deleteSectionEnd:ZSUINumericStepper;
 	var deleteSections:PsychUIButton;
@@ -3415,6 +3417,110 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		clearButton.normalStyle.bgColor = FlxColor.RED;
 		clearButton.normalStyle.textColor = FlxColor.WHITE;
 
+		clearLeftButton = new PsychUIButton(objX + 200, objY + 40, 'Clear Left Side', function()
+		{
+			var currentSection = getCurChartSection();
+			if(currentSection == null) return;
+
+			var minTime:Float = cachedSectionTimes[curSec];
+			var maxTime:Float = cachedSectionTimes[curSec + 1];
+			var isPlayerSide:Bool = currentSection.mustHitSection; // Left side = player side
+
+			// Remove from sectionNotes data
+			var i:Int = currentSection.sectionNotes.length - 1;
+			while(i >= 0)
+			{
+				var note = currentSection.sectionNotes[i];
+				if(note != null && note.length > 1 && note[1] >= 0)
+				{
+					var noteData:Int = Std.int(note[1]);
+					var isLeftSide:Bool = (noteData < 4) ? isPlayerSide : !isPlayerSide;
+
+					if(isLeftSide)
+						currentSection.sectionNotes.splice(i, 1);
+				}
+				i--;
+			}
+
+			// Remove visual notes for left side
+			var notesToRemove:Array<MetaNote> = [];
+			for (note in notes)
+			{
+				if(note == null || note.isEvent) continue;
+				if(note.strumTime >= minTime && note.strumTime < maxTime)
+				{
+					var isLeftSide:Bool = (note.noteData < 4) ? isPlayerSide : !isPlayerSide;
+					if(isLeftSide)
+						notesToRemove.push(note);
+				}
+			}
+
+			for (note in notesToRemove)
+			{
+				notes.remove(note);
+				selectedNotes.remove(note);
+				note.destroy();
+			}
+
+			updateCurrentSectionNotes();
+			forceDataUpdate = true;
+		});
+
+		clearRightButton = new PsychUIButton(objX + 200, objY + 80, 'Clear Right Side', function()
+		{
+			var currentSection = getCurChartSection();
+			if(currentSection == null) return;
+
+			var minTime:Float = cachedSectionTimes[curSec];
+			var maxTime:Float = cachedSectionTimes[curSec + 1];
+			var isPlayerSide:Bool = currentSection.mustHitSection; // Right side = opponent side
+
+			// Remove from sectionNotes data
+			var i:Int = currentSection.sectionNotes.length - 1;
+			while(i >= 0)
+			{
+				var note = currentSection.sectionNotes[i];
+				if(note != null && note.length > 1 && note[1] >= 0)
+				{
+					var noteData:Int = Std.int(note[1]);
+					var isRightSide:Bool = (noteData < 4) ? !isPlayerSide : isPlayerSide;
+
+					if(isRightSide)
+						currentSection.sectionNotes.splice(i, 1);
+				}
+				i--;
+			}
+
+			// Remove visual notes for right side
+			var notesToRemove:Array<MetaNote> = [];
+			for (note in notes)
+			{
+				if(note == null || note.isEvent) continue;
+				if(note.strumTime >= minTime && note.strumTime < maxTime)
+				{
+					var isRightSide:Bool = (note.noteData < 4) ? !isPlayerSide : isPlayerSide;
+					if(isRightSide)
+						notesToRemove.push(note);
+				}
+			}
+
+			for (note in notesToRemove)
+			{
+				notes.remove(note);
+				selectedNotes.remove(note);
+				note.destroy();
+			}
+
+			updateCurrentSectionNotes();
+			forceDataUpdate = true;
+		});
+
+		// Style them differently if you want
+		clearLeftButton.normalStyle.bgColor = FlxColor.RED;
+		clearLeftButton.normalStyle.textColor = FlxColor.WHITE;
+		clearRightButton.normalStyle.bgColor = FlxColor.RED;
+		clearRightButton.normalStyle.textColor = FlxColor.WHITE;
+
 		objY += 25;
 		affectNotes = new PsychUICheckBox(objX, objY, 'Notes', 60);
 		affectNotes.checked = true;
@@ -3515,6 +3621,8 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		tab_group.add(copyButton);
 		tab_group.add(pasteButton);
 		tab_group.add(clearButton);
+		tab_group.add(clearLeftButton);
+		tab_group.add(clearRightButton);
 		tab_group.add(affectNotes);
 		tab_group.add(affectEvents);
 
@@ -3546,14 +3654,13 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		jumpSectionButton.normalStyle.bgColor = FlxColor.CYAN;
 		jumpSectionButton.normalStyle.textColor = FlxColor.WHITE;
 
-		objY += 40;
-		deleteSectionStart = new ZSUINumericStepper(objX, objY, 1, 0, 0, 999999, 0, 60, false, true, false);
+		deleteSectionStart = new ZSUINumericStepper(objX, objY + 40, 1, 0, 0, 999999, 0, 60, false, true, false);
 		deleteSectionStart.name = 'section_start';
 
-		deleteSectionEnd = new ZSUINumericStepper(objX, objY + 20, 1, 0, 0, 999999, 0, 60, false, true, false);
+		deleteSectionEnd = new ZSUINumericStepper(objX, objY + 60, 1, 0, 0, 999999, 0, 60, false, true, false);
 		deleteSectionEnd.name = 'section_end';
 
-		deletePlayerCheckBox = new PsychUICheckBox(objX + 20, objY, 'Delete Player', 60, function()
+		deletePlayerCheckBox = new PsychUICheckBox(objX + 100, objY + 40, 'Delete Player', 60, function()
 		{
 			chartEditorSave.data.deletePlayer = deletePlayerCheckBox.checked;
 			chartEditorSave.flush();
@@ -3562,7 +3669,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		deletePlayerCheckBox.checked = (chartEditorSave.data.deletePlayer == true);
 		deletePlayerNotes = deletePlayerCheckBox.checked;
 
-		deleteOpponentCheckBox = new PsychUICheckBox(objX + 20, objY + 20, 'Delete Opponent', 60, function()
+		deleteOpponentCheckBox = new PsychUICheckBox(objX + 100, objY + 60, 'Delete Opponent', 60, function()
 		{
 			chartEditorSave.data.deleteOpponent = deleteOpponentCheckBox.checked;
 			chartEditorSave.flush();
@@ -3571,7 +3678,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		deleteOpponentCheckBox.checked = (chartEditorSave.data.deleteOpponent == true);
 		deleteOpponentNotes = deleteOpponentCheckBox.checked;
 
-		deleteSections = new PsychUIButton(objX + 120, objY + 10, "Delete Section " + Std.int(deleteSectionStart.value) + " to " + Std.int(deleteSectionEnd.value), function()
+		deleteSections = new PsychUIButton(objX + 80, objY + 50, "Delete Section " + Std.int(deleteSectionStart.value) + " to " + Std.int(deleteSectionEnd.value), function()
 		{
 			var sectionStart:Int = Std.int(deleteSectionStart.value);
 			var sectionEnd:Int = Std.int(deleteSectionEnd.value);
@@ -3624,7 +3731,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			forceDataUpdate = true;
 
 			showOutput('Deleted sections ' + sectionStart + ' to ' + sectionEnd);
-		}, 100, 40);
+		}, 120, 20);
 		deleteSections.normalStyle.bgColor = FlxColor.YELLOW;
 		deleteSections.normalStyle.textColor = FlxColor.WHITE;
 
