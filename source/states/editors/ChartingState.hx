@@ -3683,23 +3683,30 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			var sectionStart:Int = Std.int(deleteSectionStart.value);
 			var sectionEnd:Int = Std.int(deleteSectionEnd.value);
 
+			// Validate section range
 			if (sectionStart < 0 || sectionEnd >= PlayState.SONG.notes.length || sectionStart > sectionEnd)
 			{
 				showOutput('Invalid section range!', true);
 				return;
 			}
 
+			var deletedCount:Int = 0;
+
+			// Loop through each section in the range
 			for (sectionIndex in sectionStart...sectionEnd + 1)
 			{
 				var currentSection = PlayState.SONG.notes[sectionIndex];
 				if (currentSection == null) continue;
 
+				// Case 1: Delete ALL notes (both checkboxes unchecked)
 				if (!deletePlayerNotes && !deleteOpponentNotes)
 				{
+					deletedCount += currentSection.sectionNotes.length;
 					currentSection.sectionNotes = [];
 					continue;
 				}
 
+				// Case 2: Delete only selected sides
 				var i:Int = currentSection.sectionNotes.length - 1;
 				while (i >= 0)
 				{
@@ -3713,24 +3720,28 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 					var noteData:Int = Std.int(note[1]);
 					var isPlayerNote:Bool = (noteData < 4) ? currentSection.mustHitSection : !currentSection.mustHitSection;
 
+					// Check both checkboxes to determine if this note should be deleted
 					if (deletePlayerNotes && isPlayerNote)
 					{
 						currentSection.sectionNotes.splice(i, 1);
+						deletedCount++;
 					}
 					else if (deleteOpponentNotes && !isPlayerNote)
 					{
 						currentSection.sectionNotes.splice(i, 1);
+						deletedCount++;
 					}
 					i--;
 				}
 			}
 
+			// Update the chart display
 			_cacheSections();
 			reloadNotes();
 			loadSection(curSec);
 			forceDataUpdate = true;
 
-			showOutput('Deleted sections ' + sectionStart + ' to ' + sectionEnd);
+			showOutput('Deleted ' + deletedCount + ' notes from sections ' + sectionStart + ' to ' + sectionEnd);
 		}, 120, 20);
 		deleteSections.normalStyle.bgColor = FlxColor.YELLOW;
 		deleteSections.normalStyle.textColor = FlxColor.WHITE;
