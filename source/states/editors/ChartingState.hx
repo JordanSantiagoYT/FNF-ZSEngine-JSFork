@@ -3226,7 +3226,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 	{
 		if(deleteSections != null)
 		{
-			deleteSections.label.text = "Delete Section " + Std.int(deleteSectionStart.value) + " to " + Std.int(deleteSectionEnd.value);
+			(cast deleteSections.label).text = "Delete Section " + Std.int(deleteSectionStart.value) + " to " + Std.int(deleteSectionEnd.value);
 		}
 	}
 
