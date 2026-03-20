@@ -3226,7 +3226,9 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 	{
 		if(deleteSections != null)
 		{
-			deleteSections.text = "Delete Section " + Std.int(deleteSectionStart.value) + " to " + Std.int(deleteSectionEnd.value);
+			deleteSections.label.text = "Delete Section " + Std.int(deleteSectionStart.value) + " to " + Std.int(deleteSectionEnd.value);
+			deleteSections.label.fieldWidth = 0;
+			deleteSections.label.updateAlign();
 		}
 	}
 
@@ -3693,15 +3695,11 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		deleteSectionEnd.name = 'section_end';
 		deleteSectionEnd.onValueChange = updateDeleteButtonText;
 
-		deleteSectionStart.unfocus = function() {
-			deleteSectionStart._updateValue();
-			deleteSectionStart._internalOnChange();
+		deleteSectionStart.onFocusLost = function() {
 			updateDeleteButtonText();
 		};
 
-		deleteSectionEnd.unfocus = function() {
-			deleteSectionEnd._updateValue();
-			deleteSectionEnd._internalOnChange();
+		deleteSectionEnd.onFocusLost = function() {
 			updateDeleteButtonText();
 		};
 
