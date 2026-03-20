@@ -2813,12 +2813,12 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		hideNextSectionCheckBox.checked = (chartEditorSave.data.hideNextSection == true);
 		showNextSection = !hideNextSectionCheckBox.checked;
 
-		objY += 60;
+		objY += 70;
 		hitsoundPlayerStepper = new PsychUINumericStepper(objX, objY, 0.2, 0, 0, 1, 1);
 		hitsoundOpponentStepper = new PsychUINumericStepper(objX + 100, objY, 0.2, 0, 0, 1, 1);
 		metronomeStepper = new PsychUINumericStepper(objX + 200, objY, 0.2, 0, 0, 1, 1);
 
-		objY += 70;
+		objY += 50;
 		instVolumeStepper = new PsychUINumericStepper(objX, objY, 0.1, 0.6, 0, 1, 1);
 		instVolumeStepper.onValueChange = updateAudioVolume;
 		playerVolumeStepper = new PsychUINumericStepper(objX + 100, objY, 0.1, 1, 0, 1, 1);
@@ -2826,7 +2826,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		opponentVolumeStepper = new PsychUINumericStepper(objX + 200, objY, 0.1, 1, 0, 1, 1);
 		opponentVolumeStepper.onValueChange = updateAudioVolume;
 
-		objY += 45;
+		objY += 25;
 		instMuteCheckBox = new PsychUICheckBox(objX, objY, 'Mute', 60, updateAudioVolume);
 		playerMuteCheckBox = new PsychUICheckBox(objX + 100, objY, 'Mute', 60, updateAudioVolume);
 		opponentMuteCheckBox = new PsychUICheckBox(objX + 200, objY, 'Mute', 60, updateAudioVolume);
@@ -3206,6 +3206,22 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		tab_group.add(noteTypeDropDown);
 	}
 
+	function syncNotesWithSection():Void
+	{
+		var sec = getCurChartSection();
+		if(sec == null) return;
+
+		if(sec.sectionNotes.length == 0 && notes.length > 0)
+		{
+			trace('Desync detected: Rebuilding sectionNotes from visual notes');
+			for(note in notes)
+			{
+				if(note != null && !note.isEvent)
+					sec.sectionNotes.push(note.songData);
+			}
+		}
+	}
+
 	var mustHitCheckBox:PsychUICheckBox;
 	var gfSectionCheckBox:PsychUICheckBox;
 	var altAnimSectionCheckBox:PsychUICheckBox;
@@ -3419,6 +3435,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 		clearLeftButton = new PsychUIButton(objX + 200, objY + 30, 'Clear Left Side', function()
 		{
+			syncNotesWithSection();
 			trace('=== CLEAR LEFT SIDE STARTED ===');
 			trace('Current section: ' + curSec);
 
@@ -3495,6 +3512,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 		clearRightButton = new PsychUIButton(objX + 200, objY + 60, 'Clear Right Side', function()
 		{
+			syncNotesWithSection();
 			trace('=== CLEAR RIGHT SIDE STARTED ===');
 			trace('Current section: ' + curSec);
 
@@ -3737,6 +3755,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 		deleteSections = new PsychUIButton(objX, objY + 80, "Delete Section " + Std.int(deleteSectionStart.value) + " to " + Std.int(deleteSectionEnd.value), function()
 		{
+			syncNotesWithSection();
 			trace('=== DELETE SECTIONS STARTED ===');
 
 			var sectionStart:Int = Std.int(deleteSectionStart.value);
@@ -3819,7 +3838,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			trace('=== DELETE SECTIONS FINISHED ===');
 		}, 120, 20);
 		deleteSections.normalStyle.bgColor = FlxColor.YELLOW;
-		deleteSections.normalStyle.textColor = FlxColor.WHITE;
+		deleteSections.normalStyle.textColor = FlxColor.BLACK;
 
 		tab_group.add(stepperSectionJump);
 		tab_group.add(jumpSectionButton);
