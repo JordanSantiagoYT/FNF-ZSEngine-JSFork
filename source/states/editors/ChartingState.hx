@@ -2813,12 +2813,12 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		hideNextSectionCheckBox.checked = (chartEditorSave.data.hideNextSection == true);
 		showNextSection = !hideNextSectionCheckBox.checked;
 
-		objY += 30;
+		objY += 60;
 		hitsoundPlayerStepper = new PsychUINumericStepper(objX, objY, 0.2, 0, 0, 1, 1);
 		hitsoundOpponentStepper = new PsychUINumericStepper(objX + 100, objY, 0.2, 0, 0, 1, 1);
 		metronomeStepper = new PsychUINumericStepper(objX + 200, objY, 0.2, 0, 0, 1, 1);
 
-		objY += 50;
+		objY += 70;
 		instVolumeStepper = new PsychUINumericStepper(objX, objY, 0.1, 0.6, 0, 1, 1);
 		instVolumeStepper.onValueChange = updateAudioVolume;
 		playerVolumeStepper = new PsychUINumericStepper(objX + 100, objY, 0.1, 1, 0, 1, 1);
@@ -2826,7 +2826,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		opponentVolumeStepper = new PsychUINumericStepper(objX + 200, objY, 0.1, 1, 0, 1, 1);
 		opponentVolumeStepper.onValueChange = updateAudioVolume;
 
-		objY += 25;
+		objY += 45;
 		instMuteCheckBox = new PsychUICheckBox(objX, objY, 'Mute', 60, updateAudioVolume);
 		playerMuteCheckBox = new PsychUICheckBox(objX + 100, objY, 'Mute', 60, updateAudioVolume);
 		opponentMuteCheckBox = new PsychUICheckBox(objX + 200, objY, 'Mute', 60, updateAudioVolume);
@@ -3417,105 +3417,158 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		clearButton.normalStyle.bgColor = FlxColor.RED;
 		clearButton.normalStyle.textColor = FlxColor.WHITE;
 
-		clearLeftButton = new PsychUIButton(objX + 200, objY + 40, 'Clear Left Side', function()
+		clearLeftButton = new PsychUIButton(objX + 200, objY + 30, 'Clear Left Side', function()
 		{
+			trace('=== CLEAR LEFT SIDE STARTED ===');
+			trace('Current section: ' + curSec);
+
 			var currentSection = getCurChartSection();
-			if(currentSection == null) return;
+			if(currentSection == null) 
+			{
+				trace('ERROR: No current section');
+				return;
+			}
+
+			trace('Section exists, mustHitSection = ' + currentSection.mustHitSection);
+			trace('Total notes in section: ' + currentSection.sectionNotes.length);
 
 			var minTime:Float = cachedSectionTimes[curSec];
 			var maxTime:Float = cachedSectionTimes[curSec + 1];
-			var isPlayerSide:Bool = currentSection.mustHitSection; // Left side = player side
+			var removeThese:Array<Dynamic> = [];
+			var removeCount:Int = 0;
 
-			// Remove from sectionNotes data
-			var i:Int = currentSection.sectionNotes.length - 1;
-			while(i >= 0)
+			// Find notes to remove (left side = noteData < 4)
+			for (i in 0...currentSection.sectionNotes.length)
 			{
 				var note = currentSection.sectionNotes[i];
-				if(note != null && note.length > 1 && note[1] >= 0)
-				{
-					var noteData:Int = Std.int(note[1]);
-					var isLeftSide:Bool = (noteData < 4) ? isPlayerSide : !isPlayerSide;
+				if(note == null || note.length < 2) continue;
 
-					if(isLeftSide)
-						currentSection.sectionNotes.splice(i, 1);
+				var noteData:Int = Std.int(note[1]);
+				trace('Note ' + i + ': data=' + noteData + ', time=' + note[0]);
+
+				if (noteData < 4)  // Left side
+				{
+					removeThese.push(note);
+					trace('  -> Marked for removal (LEFT SIDE)');
 				}
-				i--;
 			}
 
-			// Remove visual notes for left side
-			var notesToRemove:Array<MetaNote> = [];
+			trace('Found ' + removeThese.length + ' notes to remove');
+
+			// Remove them
+			for (note in removeThese)
+			{
+				currentSection.sectionNotes.remove(note);
+				removeCount++;
+			}
+
+			trace('Removed ' + removeCount + ' notes from sectionNotes');
+
+			// Update visual notes
+			var visualRemove:Array<MetaNote> = [];
 			for (note in notes)
 			{
 				if(note == null || note.isEvent) continue;
 				if(note.strumTime >= minTime && note.strumTime < maxTime)
 				{
-					var isLeftSide:Bool = (note.noteData < 4) ? isPlayerSide : !isPlayerSide;
-					if(isLeftSide)
-						notesToRemove.push(note);
+					if (note.noteData < 4)  // Left side
+					{
+						visualRemove.push(note);
+					}
 				}
 			}
 
-			for (note in notesToRemove)
+			for (note in visualRemove)
 			{
 				notes.remove(note);
 				selectedNotes.remove(note);
 				note.destroy();
 			}
 
+			trace('Removed ' + visualRemove.length + ' visual notes');
+
 			updateCurrentSectionNotes();
 			forceDataUpdate = true;
+
+			trace('=== CLEAR LEFT SIDE FINISHED ===');
 		});
 
-		clearRightButton = new PsychUIButton(objX + 200, objY + 80, 'Clear Right Side', function()
+		clearRightButton = new PsychUIButton(objX + 200, objY + 60, 'Clear Right Side', function()
 		{
+			trace('=== CLEAR RIGHT SIDE STARTED ===');
+			trace('Current section: ' + curSec);
+
 			var currentSection = getCurChartSection();
-			if(currentSection == null) return;
+			if(currentSection == null) 
+			{
+				trace('ERROR: No current section');
+				return;
+			}
+
+			trace('Section exists, mustHitSection = ' + currentSection.mustHitSection);
+			trace('Total notes in section: ' + currentSection.sectionNotes.length);
 
 			var minTime:Float = cachedSectionTimes[curSec];
 			var maxTime:Float = cachedSectionTimes[curSec + 1];
-			var isPlayerSide:Bool = currentSection.mustHitSection; // Right side = opponent side
+			var removeThese:Array<Dynamic> = [];
+			var removeCount:Int = 0;
 
-			// Remove from sectionNotes data
-			var i:Int = currentSection.sectionNotes.length - 1;
-			while(i >= 0)
+			// Find notes to remove (right side = noteData >= 4)
+			for (i in 0...currentSection.sectionNotes.length)
 			{
 				var note = currentSection.sectionNotes[i];
-				if(note != null && note.length > 1 && note[1] >= 0)
-				{
-					var noteData:Int = Std.int(note[1]);
-					var isRightSide:Bool = (noteData < 4) ? !isPlayerSide : isPlayerSide;
+				if(note == null || note.length < 2) continue;
 
-					if(isRightSide)
-						currentSection.sectionNotes.splice(i, 1);
+				var noteData:Int = Std.int(note[1]);
+				trace('Note ' + i + ': data=' + noteData + ', time=' + note[0]);
+
+				if (noteData >= 4)  // Right side
+				{
+					removeThese.push(note);
+					trace('  -> Marked for removal (RIGHT SIDE)');
 				}
-				i--;
 			}
 
-			// Remove visual notes for right side
-			var notesToRemove:Array<MetaNote> = [];
+			trace('Found ' + removeThese.length + ' notes to remove');
+
+			// Remove them
+			for (note in removeThese)
+			{
+				currentSection.sectionNotes.remove(note);
+				removeCount++;
+			}
+
+			trace('Removed ' + removeCount + ' notes from sectionNotes');
+
+			// Update visual notes
+			var visualRemove:Array<MetaNote> = [];
 			for (note in notes)
 			{
 				if(note == null || note.isEvent) continue;
 				if(note.strumTime >= minTime && note.strumTime < maxTime)
 				{
-					var isRightSide:Bool = (note.noteData < 4) ? !isPlayerSide : isPlayerSide;
-					if(isRightSide)
-						notesToRemove.push(note);
+					if (note.noteData >= 4)  // Right side
+					{
+						visualRemove.push(note);
+					}
 				}
 			}
 
-			for (note in notesToRemove)
+			for (note in visualRemove)
 			{
 				notes.remove(note);
 				selectedNotes.remove(note);
 				note.destroy();
 			}
 
+			trace('Removed ' + visualRemove.length + ' visual notes');
+
 			updateCurrentSectionNotes();
 			forceDataUpdate = true;
+
+			trace('=== CLEAR RIGHT SIDE FINISHED ===');
 		});
 
-		// Style them differently if you want
 		clearLeftButton.normalStyle.bgColor = FlxColor.RED;
 		clearLeftButton.normalStyle.textColor = FlxColor.WHITE;
 		clearRightButton.normalStyle.bgColor = FlxColor.RED;
@@ -3662,51 +3715,68 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 		deletePlayerCheckBox = new PsychUICheckBox(objX + 100, objY + 40, 'Delete Player', 60, function()
 		{
+			trace('Player checkbox clicked: ' + deletePlayerCheckBox.checked);
 			chartEditorSave.data.deletePlayer = deletePlayerCheckBox.checked;
 			chartEditorSave.flush();
 			deletePlayerNotes = deletePlayerCheckBox.checked;
+			trace('deletePlayerNotes is now: ' + deletePlayerNotes);
 		});
 		deletePlayerCheckBox.checked = (chartEditorSave.data.deletePlayer == true);
 		deletePlayerNotes = deletePlayerCheckBox.checked;
 
 		deleteOpponentCheckBox = new PsychUICheckBox(objX + 100, objY + 60, 'Delete Opponent', 60, function()
 		{
+			trace('Opponent checkbox clicked: ' + deleteOpponentCheckBox.checked);
 			chartEditorSave.data.deleteOpponent = deleteOpponentCheckBox.checked;
 			chartEditorSave.flush();
 			deleteOpponentNotes = deleteOpponentCheckBox.checked;
+			trace('deleteOpponentNotes is now: ' + deleteOpponentNotes);
 		});
 		deleteOpponentCheckBox.checked = (chartEditorSave.data.deleteOpponent == true);
 		deleteOpponentNotes = deleteOpponentCheckBox.checked;
 
-		deleteSections = new PsychUIButton(objX + 80, objY + 50, "Delete Section " + Std.int(deleteSectionStart.value) + " to " + Std.int(deleteSectionEnd.value), function()
+		deleteSections = new PsychUIButton(objX, objY + 80, "Delete Section " + Std.int(deleteSectionStart.value) + " to " + Std.int(deleteSectionEnd.value), function()
 		{
+			trace('=== DELETE SECTIONS STARTED ===');
+
 			var sectionStart:Int = Std.int(deleteSectionStart.value);
 			var sectionEnd:Int = Std.int(deleteSectionEnd.value);
 
-			// Validate section range
+			trace('Deleting sections ' + sectionStart + ' to ' + sectionEnd);
+			trace('deletePlayerNotes = ' + deletePlayerNotes);
+			trace('deleteOpponentNotes = ' + deleteOpponentNotes);
+
 			if (sectionStart < 0 || sectionEnd >= PlayState.SONG.notes.length || sectionStart > sectionEnd)
 			{
+				trace('ERROR: Invalid section range');
 				showOutput('Invalid section range!', true);
 				return;
 			}
 
-			var deletedCount:Int = 0;
+			var totalDeleted:Int = 0;
 
-			// Loop through each section in the range
 			for (sectionIndex in sectionStart...sectionEnd + 1)
 			{
 				var currentSection = PlayState.SONG.notes[sectionIndex];
-				if (currentSection == null) continue;
+				if (currentSection == null) 
+				{
+					trace('Section ' + sectionIndex + ' is null, skipping');
+					continue;
+				}
 
-				// Case 1: Delete ALL notes (both checkboxes unchecked)
+				trace('Processing section ' + sectionIndex + ' with ' + currentSection.sectionNotes.length + ' notes');
+				trace('  mustHitSection = ' + currentSection.mustHitSection);
+
+				// If both false, delete ALL notes
 				if (!deletePlayerNotes && !deleteOpponentNotes)
 				{
-					deletedCount += currentSection.sectionNotes.length;
+					trace('  Both false - deleting ALL notes in section ' + sectionIndex);
+					totalDeleted += currentSection.sectionNotes.length;
 					currentSection.sectionNotes = [];
 					continue;
 				}
 
-				// Case 2: Delete only selected sides
+				// Delete selectively
 				var i:Int = currentSection.sectionNotes.length - 1;
 				while (i >= 0)
 				{
@@ -3720,28 +3790,33 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 					var noteData:Int = Std.int(note[1]);
 					var isPlayerNote:Bool = (noteData < 4) ? currentSection.mustHitSection : !currentSection.mustHitSection;
 
-					// Check both checkboxes to determine if this note should be deleted
+					trace('  Note ' + i + ': data=' + noteData + ', isPlayerNote=' + isPlayerNote);
+
 					if (deletePlayerNotes && isPlayerNote)
 					{
+						trace('    Deleting PLAYER note');
 						currentSection.sectionNotes.splice(i, 1);
-						deletedCount++;
+						totalDeleted++;
 					}
 					else if (deleteOpponentNotes && !isPlayerNote)
 					{
+						trace('    Deleting OPPONENT note');
 						currentSection.sectionNotes.splice(i, 1);
-						deletedCount++;
+						totalDeleted++;
 					}
 					i--;
 				}
 			}
 
-			// Update the chart display
+			trace('Total deleted notes: ' + totalDeleted);
+
 			_cacheSections();
 			reloadNotes();
 			loadSection(curSec);
 			forceDataUpdate = true;
 
-			showOutput('Deleted ' + deletedCount + ' notes from sections ' + sectionStart + ' to ' + sectionEnd);
+			showOutput('Deleted sections ' + sectionStart + ' to ' + sectionEnd);
+			trace('=== DELETE SECTIONS FINISHED ===');
 		}, 120, 20);
 		deleteSections.normalStyle.bgColor = FlxColor.YELLOW;
 		deleteSections.normalStyle.textColor = FlxColor.WHITE;
