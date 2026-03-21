@@ -3388,55 +3388,18 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		});
 		var clearButton:PsychUIButton = new PsychUIButton(objX + 200, objY, 'Clear', function()
 		{
-			var currentSection = getCurChartSection();
-			if(currentSection == null) return;
-
-			var minTime:Float = cachedSectionTimes[curSec];
-			var maxTime:Float = cachedSectionTimes[curSec + 1];
-
-			// Clear ONLY the current section's notes
-			if(affectNotes.checked)
+			for (note in curRenderedNotes)
 			{
-				// Clear sectionNotes data
-				currentSection.sectionNotes = [];
+				if(note == null) continue;
 
-				// Remove visual notes for current section
-				var notesToRemove:Array<MetaNote> = [];
-				for (note in notes)
-				{
-					if(note != null && !note.isEvent && note.strumTime >= minTime && note.strumTime < maxTime)
-						notesToRemove.push(note);
-				}
-
-				for (note in notesToRemove)
-				{
+				if(!note.isEvent && affectNotes.checked)
 					notes.remove(note);
-					selectedNotes.remove(note);
-					if(note != null) note.destroy();
-				}
+				if(note.isEvent && affectEvents.checked)
+					events.remove(cast (note, EventMetaNote));
+
+				selectedNotes.remove(note);
 			}
-
-			if(affectEvents.checked)
-			{
-				// Clear events for current section if needed
-				var eventsToRemove:Array<EventMetaNote> = [];
-				for (event in events)
-				{
-					if(event != null && event.strumTime >= minTime && event.strumTime < maxTime)
-						eventsToRemove.push(event);
-				}
-
-				for (event in eventsToRemove)
-				{
-					events.remove(event);
-					selectedNotes.remove(event);
-					if(event != null) event.destroy();
-				}
-			}
-
-			// Update display
-			updateCurrentSectionNotes();
-			forceDataUpdate = true;
+			softReloadNotes(true);
 		});
 		clearButton.normalStyle.bgColor = FlxColor.RED;
 		clearButton.normalStyle.textColor = FlxColor.WHITE;
@@ -3448,49 +3411,37 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 			var minTime:Float = cachedSectionTimes[curSec];
 			var maxTime:Float = cachedSectionTimes[curSec + 1];
-			var isPlayerSide:Bool = currentSection.mustHitSection;
 
-			// Remove from sectionNotes data FIRST
-			var i:Int = currentSection.sectionNotes.length - 1;
-			while(i >= 0)
-			{
-				var note = currentSection.sectionNotes[i];
-				if(note != null && note.length > 1 && note[1] >= 0)
-				{
-					var noteData:Int = Std.int(note[1]);
-					var isLeftSide:Bool = (noteData < 4) ? isPlayerSide : !isPlayerSide;
-
-					if(isLeftSide)
-						currentSection.sectionNotes.splice(i, 1);
-				}
-				i--;
-			}
-
-			// Then remove visual notes
-			var notesToRemove:Array<MetaNote> = [];
+			// Remove visual notes for left side
 			for (note in notes)
 			{
 				if(note == null || note.isEvent) continue;
 				if(note.strumTime >= minTime && note.strumTime < maxTime)
 				{
-					var noteData:Int = note.noteData;
-					var isLeftSide:Bool = (noteData < 4) ? isPlayerSide : !isPlayerSide;
-
-					if(isLeftSide)
-						notesToRemove.push(note);
+					if (note.noteData < 4) // Left side
+					{
+						notes.remove(note);
+						selectedNotes.remove(note);
+						note.destroy();
+					}
 				}
 			}
 
-			for (note in notesToRemove)
+			// Remove from sectionNotes data for left side
+			var i:Int = currentSection.sectionNotes.length - 1;
+			while(i >= 0)
 			{
-				notes.remove(note);
-				selectedNotes.remove(note);
-				note.destroy();
+				var note = currentSection.sectionNotes[i];
+				if(note != null && note.length > 1)
+				{
+					var noteData:Int = Std.int(note[1]);
+					if (noteData < 4) // Left side
+						currentSection.sectionNotes.splice(i, 1);
+				}
+				i--;
 			}
 
-			// Force complete reload to ensure visual sync
-			reloadNotes();
-			loadSection(curSec);
+			softReloadNotes(true); // Same as original Clear button
 			forceDataUpdate = true;
 		});
 
@@ -3501,49 +3452,37 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 			var minTime:Float = cachedSectionTimes[curSec];
 			var maxTime:Float = cachedSectionTimes[curSec + 1];
-			var isPlayerSide:Bool = currentSection.mustHitSection;
 
-			// Remove from sectionNotes data FIRST
-			var i:Int = currentSection.sectionNotes.length - 1;
-			while(i >= 0)
-			{
-				var note = currentSection.sectionNotes[i];
-				if(note != null && note.length > 1 && note[1] >= 0)
-				{
-					var noteData:Int = Std.int(note[1]);
-					var isLeftSide:Bool = (noteData >= 4) ? !isPlayerSide : isPlayerSide;
-
-					if(isLeftSide)
-						currentSection.sectionNotes.splice(i, 1);
-				}
-				i--;
-			}
-
-			// Then remove visual notes
-			var notesToRemove:Array<MetaNote> = [];
+			// Remove visual notes for right side
 			for (note in notes)
 			{
 				if(note == null || note.isEvent) continue;
 				if(note.strumTime >= minTime && note.strumTime < maxTime)
 				{
-					var noteData:Int = note.noteData;
-					var isLeftSide:Bool = (noteData < 4) ? isPlayerSide : !isPlayerSide;
-
-					if(isLeftSide)
-						notesToRemove.push(note);
+					if (note.noteData >= 4) // Right side
+					{
+						notes.remove(note);
+						selectedNotes.remove(note);
+						note.destroy();
+					}
 				}
 			}
 
-			for (note in notesToRemove)
+			// Remove from sectionNotes data for right side
+			var i:Int = currentSection.sectionNotes.length - 1;
+			while(i >= 0)
 			{
-				notes.remove(note);
-				selectedNotes.remove(note);
-				note.destroy();
+				var note = currentSection.sectionNotes[i];
+				if(note != null && note.length > 1)
+				{
+					var noteData:Int = Std.int(note[1]);
+					if (noteData >= 4) // Right side
+						currentSection.sectionNotes.splice(i, 1);
+				}
+				i--;
 			}
 
-			// Force complete reload to ensure visual sync
-			reloadNotes();
-			loadSection(curSec);
+			softReloadNotes(true); // Same as original Clear button
 			forceDataUpdate = true;
 		});
 
@@ -3726,14 +3665,6 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			var sectionStart:Int = Std.int(deleteSectionStart.value);
 			var sectionEnd:Int = Std.int(deleteSectionEnd.value);
 
-			// Read CURRENT checkbox values
-			var shouldDeletePlayer:Bool = deletePlayerCheckBox.checked;
-			var shouldDeleteOpponent:Bool = deleteOpponentCheckBox.checked;
-
-			trace('Deleting sections ' + sectionStart + ' to ' + sectionEnd);
-			trace('deletePlayerNotes = ' + shouldDeletePlayer);
-			trace('deleteOpponentNotes = ' + shouldDeleteOpponent);
-
 			if (sectionStart < 0 || sectionEnd >= PlayState.SONG.notes.length || sectionStart > sectionEnd)
 			{
 				showOutput('Invalid section range!', true);
@@ -3745,16 +3676,12 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 				var currentSection = PlayState.SONG.notes[sectionIndex];
 				if (currentSection == null) continue;
 
-				trace('Processing section ' + sectionIndex + ' with ' + currentSection.sectionNotes.length + ' notes');
-
-				// If both false, delete NOTHING (changed from deleting ALL)
-				if (!shouldDeletePlayer && !shouldDeleteOpponent)
+				// If both false, delete NOTHING
+				if (!deletePlayerNotes && !deleteOpponentNotes)
 				{
-					trace('  Both false - skipping section ' + sectionIndex);
 					continue;
 				}
 
-				// Delete selectively
 				var i:Int = currentSection.sectionNotes.length - 1;
 				while (i >= 0)
 				{
@@ -3768,11 +3695,11 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 					var noteData:Int = Std.int(note[1]);
 					var isPlayerNote:Bool = (noteData < 4) ? currentSection.mustHitSection : !currentSection.mustHitSection;
 
-					if (shouldDeletePlayer && isPlayerNote)
+					if (deletePlayerNotes && isPlayerNote)
 					{
 						currentSection.sectionNotes.splice(i, 1);
 					}
-					else if (shouldDeleteOpponent && !isPlayerNote)
+					else if (deleteOpponentNotes && !isPlayerNote)
 					{
 						currentSection.sectionNotes.splice(i, 1);
 					}
@@ -3781,8 +3708,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			}
 
 			_cacheSections();
-			reloadNotes();
-			loadSection(curSec);
+			softReloadNotes(true); // Same as original Clear button
 			forceDataUpdate = true;
 
 			showOutput('Deleted sections ' + sectionStart + ' to ' + sectionEnd);
