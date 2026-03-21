@@ -3412,28 +3412,21 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			var minTime:Float = cachedSectionTimes[curSec];
 			var maxTime:Float = cachedSectionTimes[curSec + 1];
 
-			// Remove visual notes for left side
-			var notesToRemove:Array<MetaNote> = [];
-			for (note in notes)
+			// Remove visual notes (using curRenderedNotes like original Clear button)
+			for (note in curRenderedNotes)
 			{
-				if(note == null || note.isEvent) continue;
-				if(note.strumTime >= minTime && note.strumTime < maxTime)
+				if(note == null) continue;
+				if(!note.isEvent && note.strumTime >= minTime && note.strumTime < maxTime)
 				{
 					if (note.noteData < 4) // Left side
 					{
-						notesToRemove.push(note);
+						notes.remove(note);
+						selectedNotes.remove(note);
 					}
 				}
 			}
 
-			for (note in notesToRemove)
-			{
-				notes.remove(note);
-				selectedNotes.remove(note);
-				note.destroy();
-			}
-
-			// Remove from sectionNotes data for left side
+			// Remove from sectionNotes data
 			var i:Int = currentSection.sectionNotes.length - 1;
 			while(i >= 0)
 			{
@@ -3459,28 +3452,21 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			var minTime:Float = cachedSectionTimes[curSec];
 			var maxTime:Float = cachedSectionTimes[curSec + 1];
 
-			// Remove visual notes for right side
-			var notesToRemove:Array<MetaNote> = [];
-			for (note in notes)
+			// Remove visual notes (using curRenderedNotes like original Clear button)
+			for (note in curRenderedNotes)
 			{
-				if(note == null || note.isEvent) continue;
-				if(note.strumTime >= minTime && note.strumTime < maxTime)
+				if(note == null) continue;
+				if(!note.isEvent && note.strumTime >= minTime && note.strumTime < maxTime)
 				{
 					if (note.noteData >= 4) // Right side
 					{
-						notesToRemove.push(note);
+						notes.remove(note);
+						selectedNotes.remove(note);
 					}
 				}
 			}
 
-			for (note in notesToRemove)
-			{
-				notes.remove(note);
-				selectedNotes.remove(note);
-				note.destroy();
-			}
-
-			// Remove from sectionNotes data for right side
+			// Remove from sectionNotes data
 			var i:Int = currentSection.sectionNotes.length - 1;
 			while(i >= 0)
 			{
@@ -3690,7 +3676,21 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 				var currentSection = PlayState.SONG.notes[sectionIndex];
 				if (currentSection == null) continue;
 
-				// Delete ALL notes in the section
+				// Remove visual notes for this section range
+				var minTime:Float = cachedSectionTimes[sectionIndex];
+				var maxTime:Float = cachedSectionTimes[sectionIndex + 1];
+
+				for (note in curRenderedNotes)
+				{
+					if(note == null) continue;
+					if(!note.isEvent && note.strumTime >= minTime && note.strumTime < maxTime)
+					{
+						notes.remove(note);
+						selectedNotes.remove(note);
+					}
+				}
+
+				// Clear sectionNotes data
 				currentSection.sectionNotes = [];
 			}
 
