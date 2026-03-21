@@ -3708,8 +3708,8 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		tab_group.add(new FlxText(objX, objY - 15, 0, 'Jump to Section:'));
 		tab_group.add(deleteSectionStart);
 		tab_group.add(deleteSectionEnd);
-		tab_group.add(deletePlayerCheckBox);
-		tab_group.add(deleteOpponentCheckBox);
+		// tab_group.add(deletePlayerCheckBox);
+		// tab_group.add(deleteOpponentCheckBox);
 		tab_group.add(deleteSections);
 	}
 
