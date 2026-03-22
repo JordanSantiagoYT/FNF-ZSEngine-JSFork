@@ -3402,7 +3402,9 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 				selectedNotes.remove(note);
 			}
-			softReloadNotes(true);
+			reloadNotes();
+			loadSection(curSec);
+			forceDataUpdate = true;
 		});
 		clearButton.normalStyle.bgColor = FlxColor.RED;
 		clearButton.normalStyle.textColor = FlxColor.WHITE;
@@ -3646,15 +3648,11 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		deleteSectionEnd.name = 'section_end';
 		deleteSectionEnd.onValueChange = updateDeleteButtonText;
 
-		deleteSectionStart.unfocus = function() {
-			deleteSectionStart.value = deleteSectionStart.value;
-			updateDeleteButtonText();
-		};
+		deleteSectionStart.onValueChange = updateDeleteButtonText;
+		deleteSectionStart.onChange = updateDeleteButtonText;
 
-		deleteSectionEnd.unfocus = function() {
-			deleteSectionEnd.value = deleteSectionEnd.value;
-			updateDeleteButtonText();
-		};
+		deleteSectionEnd.onValueChange = updateDeleteButtonText;
+		deleteSectionEnd.onChange = updateDeleteButtonText;
 
 		/*
 		deletePlayerCheckBox = new PsychUICheckBox(objX + 100, objY + 40, 'Delete Player', 60, function()
