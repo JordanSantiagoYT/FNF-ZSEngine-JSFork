@@ -13,7 +13,7 @@ jobs:
 
       - uses: krdlab/setup-haxe@master
         with:
-          haxe-version: latest
+          haxe-version: 4.3.4
       - name: Install Haxelib
         run: |
           sudo apt-get install libvlc-dev
@@ -48,7 +48,7 @@ jobs:
 
       - uses: krdlab/setup-haxe@master
         with:
-          haxe-version: latest
+          haxe-version: 4.3.4
           haxelib-version: 'latest'
       - name: Install Haxelib
         run: |
@@ -84,7 +84,7 @@ jobs:
 
       - uses: krdlab/setup-haxe@master
         with:
-          haxe-version: latest
+          haxe-version: 4.3.4
       - name: Install Haxelib
         run: |
           haxelib setup ~/haxelib
