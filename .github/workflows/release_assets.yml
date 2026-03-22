@@ -20,7 +20,6 @@ jobs:
           sudo apt-get install libvlccore-dev
           haxelib setup ~/haxelib
           haxelib install hxcpp > /dev/null --quiet
-          haxelib install flixel-addons 3.2.2
           chmod +x ./setup/unix.sh
           sh ./setup/unix.sh
       - name: Skip SScript setup mode
@@ -55,7 +54,6 @@ jobs:
         run: |
           haxelib setup C:/haxelib
           haxelib install hxcpp > /dev/null --quiet
-          haxelib install flixel-addons 3.2.2
           echo "HAXELIB_PATH=$HOME/haxe/lib" >> $env:GITHUB_ENV
           .\"setup/windows.bat"
         shell: cmd
@@ -91,7 +89,6 @@ jobs:
         run: |
           haxelib setup ~/haxelib
           haxelib install hxcpp > /dev/null --quiet
-          haxelib install flixel-addons 3.2.2
           chmod +x ./setup/unix.sh
           sh ./setup/unix.sh
       - name: Skip SScript setup mode
