@@ -3649,10 +3649,14 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		deleteSectionEnd.onValueChange = updateDeleteButtonText;
 
 		deleteSectionStart.onValueChange = updateDeleteButtonText;
-		deleteSectionStart.onChange = updateDeleteButtonText;
+		deleteSectionStart.onChange = function(oldValue:String, newValue:String) {
+			updateDeleteButtonText();
+		};
 
 		deleteSectionEnd.onValueChange = updateDeleteButtonText;
-		deleteSectionEnd.onChange = updateDeleteButtonText;
+		deleteSectionEnd.onChange = function(oldValue:String, newValue:String) {
+			updateDeleteButtonText();
+		};
 
 		/*
 		deletePlayerCheckBox = new PsychUICheckBox(objX + 100, objY + 40, 'Delete Player', 60, function()
