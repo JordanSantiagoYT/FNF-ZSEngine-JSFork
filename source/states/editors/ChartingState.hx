@@ -4287,7 +4287,10 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 				// Check the new section
 				var newSec = getCurChartSection();
-				trace('New section notes count: ' + (newSec != null ? newSec.sectionNotes.length : 'null'));
+				if (newSec != null)
+    				trace('New section notes count: ' + newSec.sectionNotes.length);
+				else
+    				trace('New section notes count: null');
 			}
 			else
 			{
