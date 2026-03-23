@@ -3725,35 +3725,67 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 		deleteSections = new PsychUIButton(objX, objY + 80, "Delete Section " + Std.int(deleteSectionStart.value) + " to " + Std.int(deleteSectionEnd.value), function()
 		{
+			trace('=== DELETE SECTIONS START ===');
+
 			var sectionStart:Int = Std.int(deleteSectionStart.value);
 			var sectionEnd:Int = Std.int(deleteSectionEnd.value);
 
-			trace('Delete Sections - Range: ' + sectionStart + ' to ' + sectionEnd);
+			trace('Range: ' + sectionStart + ' to ' + sectionEnd);
 			trace('Current section before: ' + curSec);
+			trace('Total sections: ' + PlayState.SONG.notes.length);
 
 			if (sectionStart < 0 || sectionEnd >= PlayState.SONG.notes.length || sectionStart > sectionEnd)
 			{
+				trace('ERROR: Invalid range');
 				showOutput('Invalid section range!', true);
 				return;
 			}
+
+			// Trace cachedSectionTimes
+			trace('cachedSectionTimes length: ' + cachedSectionTimes.length);
+			for (i in 0...cachedSectionTimes.length)
+			{
+				trace('cachedSectionTimes[' + i + '] = ' + cachedSectionTimes[i]);
+			}
+
+			// Trace notes before deletion
+			var notesBySection:Array<Int> = [];
+			for (i in 0...PlayState.SONG.notes.length)
+			{
+				notesBySection.push(PlayState.SONG.notes[i].sectionNotes.length);
+			}
+			trace('Notes per section before: ' + notesBySection);
 
 			for (sectionIndex in sectionStart...sectionEnd + 1)
 			{
 				trace('Clearing section: ' + sectionIndex);
 				var currentSection = PlayState.SONG.notes[sectionIndex];
-				if (currentSection == null) continue;
+				if (currentSection == null) 
+				{
+					trace('  Section ' + sectionIndex + ' is null');
+					continue;
+				}
+
+				trace('  Section ' + sectionIndex + ' had ' + currentSection.sectionNotes.length + ' notes');
 
 				var minTime:Float = cachedSectionTimes[sectionIndex];
 				var maxTime:Float = cachedSectionTimes[sectionIndex + 1];
 
+				trace('  Time range: ' + minTime + ' to ' + maxTime);
+
+				// Clear sectionNotes data
 				currentSection.sectionNotes = [];
 
+				// Remove visual notes for this section
 				var visualRemove:Array<MetaNote> = [];
 				for (note in notes)
 				{
 					if(note == null || note.isEvent) continue;
 					if(note.strumTime >= minTime && note.strumTime < maxTime)
+					{
+						trace('  Removing visual note at time: ' + note.strumTime);
 						visualRemove.push(note);
+					}
 				}
 				for (note in visualRemove)
 				{
@@ -3761,13 +3793,24 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 					selectedNotes.remove(note);
 					note.destroy();
 				}
+				trace('  Removed ' + visualRemove.length + ' visual notes');
 			}
+
+			// Trace notes after deletion
+			var notesBySectionAfter:Array<Int> = [];
+			for (i in 0...PlayState.SONG.notes.length)
+			{
+				notesBySectionAfter.push(PlayState.SONG.notes[i].sectionNotes.length);
+			}
+			trace('Notes per section after: ' + notesBySectionAfter);
 
 			_cacheSections();
 			updateCurrentSectionNotes();
 			forceDataUpdate = true;
 
 			trace('Current section after: ' + curSec);
+			trace('=== DELETE SECTIONS END ===');
+
 			showOutput('Deleted sections ' + sectionStart + ' to ' + sectionEnd);
 		}, 120, 20);
 		deleteSections.normalStyle.bgColor = FlxColor.YELLOW;
@@ -4181,8 +4224,18 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 		var dupeNotesButton:PsychUIButton = new PsychUIButton(objX, stepperDuplicateAmount.y + 20, "Duplicate Notes", function()
 		{
+			trace('=== dupeNotes START ===');
+			updateChartData();
+
 			var sec = getCurChartSection();
-			if(sec == null || sec.sectionNotes == null) return;
+			if(sec == null || sec.sectionNotes == null) 
+			{
+				trace('ERROR: sec or sectionNotes is null');
+				return;
+			}
+
+			trace('Current section: ' + curSec);
+			trace('Current section notes count before: ' + sec.sectionNotes.length);
 
 			var copiedNotes:Array<Dynamic> = [];
 			for (i in 0...sec.sectionNotes.length)
@@ -4191,11 +4244,20 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 				if(note != null && note.length > 1 && note[1] >= 0) copiedNotes.push(note);
 			}
 
-			if(copiedNotes.length == 0) return;
+			trace('Notes to copy: ' + copiedNotes.length);
+
+			if(copiedNotes.length == 0) 
+			{
+				trace('No notes to copy');
+				return;
+			}
 
 			var duplicateAmount:Int = Std.int(stepperDuplicateAmount.value);
 			var shiftAmount:Float = (stepperShiftSteps.value) * (15000/Conductor.bpm);
 			var copiedLength:Int = copiedNotes.length;
+
+			trace('Duplicate amount: ' + duplicateAmount);
+			trace('Shift amount: ' + shiftAmount);
 
 			for (_i in 1...duplicateAmount + 1)
 			{
@@ -4210,12 +4272,31 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 				}
 			}
 
+			trace('Current section notes count after: ' + sec.sectionNotes.length);
+
 			_cacheSections();
 
-			sec.sectionNotes.length <= 30000 ? updateCurrentSectionNotes() : jumpNextSection();
+			trace('Checking if > 30000: ' + (sec.sectionNotes.length > 30000));
+
+			if(sec.sectionNotes.length > 30000)
+			{
+				trace('Jumping to next section');
+				trace('Current curSec before jump: ' + curSec);
+				jumpNextSection();
+				trace('Current curSec after jump: ' + curSec);
+
+				// Check the new section
+				var newSec = getCurChartSection();
+				trace('New section notes count: ' + (newSec != null ? newSec.sectionNotes.length : 'null'));
+			}
+			else
+			{
+				trace('Updating current section notes');
+				updateCurrentSectionNotes();
+			}
 
 			forceDataUpdate = true;
-			showOutput('Duplicated ' + (copiedLength * duplicateAmount) + ' notes');
+			trace('=== dupeNotes END ===');
 		});
 
 		tab_group.add(check_stackActive);
