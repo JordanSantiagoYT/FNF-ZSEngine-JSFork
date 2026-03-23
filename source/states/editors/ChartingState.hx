@@ -3404,8 +3404,6 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			var minTime:Float = cachedSectionTimes[curSec];
 			var maxTime:Float = cachedSectionTimes[curSec + 1];
 
-			trace('Clear - curSec: ' + curSec + ', minTime: ' + minTime + ', maxTime: ' + maxTime);
-
 			var currentSection = getCurChartSection();
 			if(currentSection == null) return;
 
@@ -3450,8 +3448,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			}
 
 			_cacheSections();
-			reloadNotes();
-			loadSection(curSec);
+			updateCurrentSectionNotes();
 			forceDataUpdate = true;
 		});
 		clearButton.normalStyle.bgColor = FlxColor.RED;
@@ -3739,18 +3736,35 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 			for (sectionIndex in sectionStart...sectionEnd + 1)
 			{
-				var minTime:Float = cachedSectionTimes[sectionIndex];
-				var maxTime:Float = cachedSectionTimes[sectionIndex + 1];
-				trace('Delete Section - sectionIndex: ' + sectionIndex + ', minTime: ' + minTime + ', maxTime: ' + maxTime);
 				var currentSection = PlayState.SONG.notes[sectionIndex];
 				if (currentSection == null) continue;
+
+				var minTime:Float = cachedSectionTimes[sectionIndex];
+				var maxTime:Float = cachedSectionTimes[sectionIndex + 1];
+
+				// Clear sectionNotes data
 				currentSection.sectionNotes = [];
+
+				// Remove visual notes for this section
+				var visualRemove:Array<MetaNote> = [];
+				for (note in notes)
+				{
+					if(note == null || note.isEvent) continue;
+					if(note.strumTime >= minTime && note.strumTime < maxTime)
+						visualRemove.push(note);
+				}
+				for (note in visualRemove)
+				{
+					notes.remove(note);
+					selectedNotes.remove(note);
+					note.destroy();
+				}
 			}
 
 			_cacheSections();
-			reloadNotes();
-			loadSection(curSec);
+			updateCurrentSectionNotes();
 			forceDataUpdate = true;
+
 			showOutput('Deleted sections ' + sectionStart + ' to ' + sectionEnd);
 		}, 120, 20);
 		deleteSections.normalStyle.bgColor = FlxColor.YELLOW;
@@ -4168,14 +4182,6 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			var sec = getCurChartSection();
 			if(sec == null || sec.sectionNotes == null) return;
 
-			// Disable GC
-			#if cpp
-			cpp.vm.Gc.enable(false);
-			#end
-
-			var startTime = haxe.Timer.stamp();
-
-			// Copy notes
 			var copiedNotes:Array<Dynamic> = [];
 			for (i in 0...sec.sectionNotes.length)
 			{
@@ -4183,45 +4189,60 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 				if(note != null && note.length > 1 && note[1] >= 0) copiedNotes.push(note);
 			}
 
-			if(copiedNotes.length == 0)
-			{
-				#if cpp cpp.vm.Gc.enable(true); #end
-				showOutput('No notes to duplicate!');
-				return;
-			}
+			if(copiedNotes.length == 0) return;
 
 			var duplicateAmount:Int = Std.int(stepperDuplicateAmount.value);
 			var shiftAmount:Float = (stepperShiftSteps.value) * (15000/Conductor.bpm);
 			var copiedLength:Int = copiedNotes.length;
+			var currentSection = sec;
+			var currentSectionIndex = curSec;
+			var notesAdded:Int = 0;
 
-			// Generate and add notes directly
 			for (_i in 1...duplicateAmount + 1)
 			{
-				var timeOffset:Float = shiftAmount * _i;
 				for (i in 0...copiedLength)
 				{
 					if(copiedNotes[i] == null || copiedNotes[i].length < 3) continue;
 
 					var copiedNote:Array<Dynamic> = [copiedNotes[i][0], copiedNotes[i][1], copiedNotes[i][2]];
 					if(copiedNotes[i].length > 3) copiedNote.push(copiedNotes[i][3]);
-					copiedNote[0] += timeOffset;
-					sec.sectionNotes.push(copiedNote);
+					copiedNote[0] += shiftAmount * _i;
+
+					// Check if this note would exceed 30,000 in current section
+					if (currentSection.sectionNotes.length + 1 > 30000)
+					{
+						// Move to next section (must exist)
+						currentSectionIndex++;
+						if (currentSectionIndex >= PlayState.SONG.notes.length)
+						{
+							// Stop adding notes, no more sections available
+							showOutput('Reached end of chart! Could not add all notes.');
+							break;
+						}
+						currentSection = PlayState.SONG.notes[currentSectionIndex];
+					}
+
+					currentSection.sectionNotes.push(copiedNote);
+					notesAdded++;
 				}
 			}
 
-			trace('Duplication time: ' + (haxe.Timer.stamp() - startTime) + 's');
-
 			_cacheSections();
 
-			// Handle large note count
-			sec.sectionNotes.length <= 30000 ? updateCurrentSectionNotes() : jumpNextSection();
+			// Jump to the last section where notes were added
+			if (currentSectionIndex != curSec)
+			{
+				curSec = currentSectionIndex;
+				loadSection(curSec);
+				Conductor.songPosition = FlxG.sound.music.time = cachedSectionTimes[curSec] - Conductor.offset + 0.000001;
+			}
+			else
+			{
+				sec.sectionNotes.length <= 30000 ? updateCurrentSectionNotes() : jumpNextSection();
+			}
 
 			forceDataUpdate = true;
-
-			// Re-enable GC
-			#if cpp
-			cpp.vm.Gc.enable(true);
-			#end
+			showOutput('Duplicated ' + notesAdded + ' notes');
 		});
 
 		tab_group.add(check_stackActive);
