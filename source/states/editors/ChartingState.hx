@@ -3728,6 +3728,9 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			var sectionStart:Int = Std.int(deleteSectionStart.value);
 			var sectionEnd:Int = Std.int(deleteSectionEnd.value);
 
+			trace('Delete Sections - Range: ' + sectionStart + ' to ' + sectionEnd);
+			trace('Current section before: ' + curSec);
+
 			if (sectionStart < 0 || sectionEnd >= PlayState.SONG.notes.length || sectionStart > sectionEnd)
 			{
 				showOutput('Invalid section range!', true);
@@ -3736,16 +3739,15 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 			for (sectionIndex in sectionStart...sectionEnd + 1)
 			{
+				trace('Clearing section: ' + sectionIndex);
 				var currentSection = PlayState.SONG.notes[sectionIndex];
 				if (currentSection == null) continue;
 
 				var minTime:Float = cachedSectionTimes[sectionIndex];
 				var maxTime:Float = cachedSectionTimes[sectionIndex + 1];
 
-				// Clear sectionNotes data
 				currentSection.sectionNotes = [];
 
-				// Remove visual notes for this section
 				var visualRemove:Array<MetaNote> = [];
 				for (note in notes)
 				{
@@ -3765,6 +3767,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			updateCurrentSectionNotes();
 			forceDataUpdate = true;
 
+			trace('Current section after: ' + curSec);
 			showOutput('Deleted sections ' + sectionStart + ' to ' + sectionEnd);
 		}, 120, 20);
 		deleteSections.normalStyle.bgColor = FlxColor.YELLOW;
@@ -4178,7 +4181,6 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 		var dupeNotesButton:PsychUIButton = new PsychUIButton(objX, stepperDuplicateAmount.y + 20, "Duplicate Notes", function()
 		{
-			updateChartData();
 			var sec = getCurChartSection();
 			if(sec == null || sec.sectionNotes == null) return;
 
@@ -4194,9 +4196,6 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			var duplicateAmount:Int = Std.int(stepperDuplicateAmount.value);
 			var shiftAmount:Float = (stepperShiftSteps.value) * (15000/Conductor.bpm);
 			var copiedLength:Int = copiedNotes.length;
-			var currentSection = sec;
-			var currentSectionIndex = curSec;
-			var notesAdded:Int = 0;
 
 			for (_i in 1...duplicateAmount + 1)
 			{
@@ -4207,42 +4206,16 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 					var copiedNote:Array<Dynamic> = [copiedNotes[i][0], copiedNotes[i][1], copiedNotes[i][2]];
 					if(copiedNotes[i].length > 3) copiedNote.push(copiedNotes[i][3]);
 					copiedNote[0] += shiftAmount * _i;
-
-					// Check if this note would exceed 30,000 in current section
-					if (currentSection.sectionNotes.length + 1 > 30000)
-					{
-						// Move to next section (must exist)
-						currentSectionIndex++;
-						if (currentSectionIndex >= PlayState.SONG.notes.length)
-						{
-							// Stop adding notes, no more sections available
-							showOutput('Reached end of chart! Could not add all notes.');
-							break;
-						}
-						currentSection = PlayState.SONG.notes[currentSectionIndex];
-					}
-
-					currentSection.sectionNotes.push(copiedNote);
-					notesAdded++;
+					sec.sectionNotes.push(copiedNote);
 				}
 			}
 
 			_cacheSections();
 
-			// Jump to the last section where notes were added
-			if (currentSectionIndex != curSec)
-			{
-				curSec = currentSectionIndex;
-				loadSection(curSec);
-				Conductor.songPosition = FlxG.sound.music.time = cachedSectionTimes[curSec] - Conductor.offset + 0.000001;
-			}
-			else
-			{
-				sec.sectionNotes.length <= 30000 ? updateCurrentSectionNotes() : jumpNextSection();
-			}
+			sec.sectionNotes.length <= 30000 ? updateCurrentSectionNotes() : jumpNextSection();
 
 			forceDataUpdate = true;
-			showOutput('Duplicated ' + notesAdded + ' notes');
+			showOutput('Duplicated ' + (copiedLength * duplicateAmount) + ' notes');
 		});
 
 		tab_group.add(check_stackActive);
