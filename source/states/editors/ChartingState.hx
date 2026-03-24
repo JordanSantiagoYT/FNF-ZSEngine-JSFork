@@ -2186,66 +2186,21 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		var sec = getCurChartSection();
 		if(sec == null) return;
 
-		var minTime:Float = getMinNoteTime(curSec);
-		var maxTime:Float = getMaxNoteTime(curSec);
+		var minTime:Float = cachedSectionTimes[curSec];
+		var maxTime:Float = cachedSectionTimes[curSec + 1];
 
-		// OPTIMIZATION 1: Single-pass removal (backwards iteration)
-		var i:Int = notes.length - 1;
-		while(i >= 0)
-		{
-			var note = notes[i];
-			if(note != null && !note.isEvent && note.strumTime >= minTime && note.strumTime < maxTime)
-			{
-				notes.splice(i, 1); // Remove directly without separate array
-				note.destroy();
-			}
-			i--;
-		}
-
-		// OPTIMIZATION 2: Pre-allocate if many notes
-		var sectionNotes = sec.sectionNotes;
-		var newNotes:Array<MetaNote> = [];
-
-		// OPTIMIZATION 3: Batch create notes
-		for (noteData in sectionNotes)
-		{
-			if(noteData != null && noteData.length >= 3 && noteData[1] >= 0)
-			{
-				newNotes.push(createNote(noteData, curSec));
-			}
-		}
-
-		// OPTIMIZATION 4: Merge sorted arrays (faster than full sort)
-		if (newNotes.length > 0)
-		{
-			// If notes is empty, just assign
-			if (notes.length == 0)
-			{
-				notes = newNotes;
-			}
-			else
-			{
-				// Merge two sorted arrays
-				var merged:Array<MetaNote> = [];
-				var a:Int = 0, b:Int = 0;
-				while(a < notes.length && b < newNotes.length)
-				{
-					if(notes[a].strumTime < newNotes[b].strumTime)
-						merged.push(notes[a++]);
-					else
-						merged.push(newNotes[b++]);
-				}
-				while(a < notes.length) merged.push(notes[a++]);
-				while(b < newNotes.length) merged.push(newNotes[b++]);
-				notes = merged;
-			}
-		}
-
-		// OPTIMIZATION 5: Update positions for visible notes
+		// Update visibility and position for all notes in current section
 		for (note in notes)
 		{
-			if(note != null && note.visible)
+			if(note == null) continue;
+			
+			var inCurrentSection = (note.strumTime >= minTime && note.strumTime < maxTime);
+			note.visible = inCurrentSection;
+			
+			if (inCurrentSection && !note.isEvent)
+			{
 				positionNoteYOnTime(note, curSec);
+			}
 		}
 
 		forceDataUpdate = true;
@@ -2357,12 +2312,6 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		swagNote.active = false;
 		positionNoteXByData(swagNote);
 		positionNoteYOnTime(swagNote, secNum);
-
-		// Add note to sectionNotes
-		section.sectionNotes.push(note);
-
-		// Trace
-		trace('createNote - Added note to section ' + secNum + ', time: ' + note[0] + ', sectionNotes now has: ' + section.sectionNotes.length);
 
 		return swagNote;
 	}
@@ -2677,18 +2626,13 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 	function jumpNextSection()
 	{
 		var nextSection:Int = curSec + 1;
-		trace('jumpNextSection - Current: ' + curSec + ', Next: ' + nextSection);
 
 		if(nextSection < PlayState.SONG.notes.length)
 		{
-			trace('jumpNextSection - Loading section ' + nextSection);
 			loadSection(nextSection);
 			Conductor.songPosition = FlxG.sound.music.time = cachedSectionTimes[nextSection] - Conductor.offset + 0.000001;
 
-			trace('jumpNextSection - Updating visual notes for section ' + nextSection);
 			updateCurrentSectionNotes();
-
-			trace('jumpNextSection - Complete');
 		}
 		else
 		{
@@ -3753,30 +3697,41 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 				return;
 			}
 
+			// Track which notes to remove
+			var notesToRemove:Array<MetaNote> = [];
+
 			for (sectionIndex in sectionStart...sectionEnd + 1)
 			{
-				var currentSection = PlayState.SONG.notes[sectionIndex];
-				if (currentSection == null) continue;
-
 				var minTime:Float = cachedSectionTimes[sectionIndex];
 				var maxTime:Float = cachedSectionTimes[sectionIndex + 1];
 
-				// Clear sectionNotes data
-				currentSection.sectionNotes = [];
-
-				// Remove visual notes for this section
-				var visualRemove:Array<MetaNote> = [];
+				// Find visual notes in this time range
 				for (note in notes)
 				{
-					if(note == null || note.isEvent) continue;
-					if(note.strumTime >= minTime && note.strumTime < maxTime)
-						visualRemove.push(note);
+					if (note == null || note.isEvent) continue;
+					if (note.strumTime >= minTime && note.strumTime < maxTime)
+					{
+						if (notesToRemove.indexOf(note) == -1)
+							notesToRemove.push(note);
+					}
 				}
-				for (note in visualRemove)
+			}
+
+			// Remove all found notes
+			for (note in notesToRemove)
+			{
+				notes.remove(note);
+				selectedNotes.remove(note);
+				note.destroy();
+			}
+
+			// Also clear sectionNotes for these sections to maintain consistency
+			for (sectionIndex in sectionStart...sectionEnd + 1)
+			{
+				var currentSection = PlayState.SONG.notes[sectionIndex];
+				if (currentSection != null)
 				{
-					notes.remove(note);
-					selectedNotes.remove(note);
-					note.destroy();
+					currentSection.sectionNotes = [];
 				}
 			}
 
