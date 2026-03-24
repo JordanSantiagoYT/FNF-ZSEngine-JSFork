@@ -2251,6 +2251,30 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		forceDataUpdate = true;
 	}
 
+	function updateCurrentSectionNotesNoSectionNotes()
+	{
+		var sec = getCurChartSection();
+		if(sec == null) return;
+
+		var minTime:Float = cachedSectionTimes[curSec];
+		var maxTime:Float = cachedSectionTimes[curSec + 1];
+
+		for (note in notes)
+		{
+			if(note == null) continue;
+
+			var inCurrentSection = (note.strumTime >= minTime && note.strumTime < maxTime);
+			note.visible = inCurrentSection;
+
+			if (inCurrentSection && !note.isEvent)
+			{
+				positionNoteYOnTime(note, curSec);
+			}
+		}
+
+		forceDataUpdate = true;
+	}
+
 	function reloadNotes()
 	{
 		// Fast note count calculation
@@ -2670,18 +2694,14 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 	function jumpNextSection()
 	{
-		var nextSection:Int = curSec + 1;
+		// Update current section notes BEFORE jumping
+		updateCurrentSectionNotes();
 
+		var nextSection:Int = curSec + 1;
 		if(nextSection < PlayState.SONG.notes.length)
 		{
 			loadSection(nextSection);
 			Conductor.songPosition = FlxG.sound.music.time = cachedSectionTimes[nextSection] - Conductor.offset + 0.000001;
-
-			updateCurrentSectionNotes();
-		}
-		else
-		{
-			trace('jumpNextSection - No next section exists!');
 		}
 	}
 
@@ -3781,7 +3801,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			}
 
 			_cacheSections();
-			updateCurrentSectionNotes();
+			updateCurrentSectionNotesNoSectionNotes();
 			forceDataUpdate = true;
 
 			showOutput('Deleted sections ' + sectionStart + ' to ' + sectionEnd);
