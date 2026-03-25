@@ -7,6 +7,7 @@ import objects.Note;
 
 typedef SwagSong =
 {
+	> PlayState.SONG,
 	var song:String;
 	var notes:Array<SwagSection>;
 	var events:Array<Dynamic>;
@@ -30,6 +31,8 @@ typedef SwagSong =
 
 	@:optional var arrowSkin:String;
 	@:optional var splashSkin:String;
+	@:optional var __db:Dynamic;
+    @:optional var __dbPath:String;
 }
 
 typedef SwagSection =
@@ -63,6 +66,8 @@ class Song
 	public var player2:String = 'dad';
 	public var gfVersion:String = 'gf';
 	public var format:String = 'psych_v1';
+
+	public var originalLoading:Bool = false;
 
 	public static function convert(songJson:Dynamic) // Convert old charts to psych_v1 format
 	{
@@ -121,16 +126,137 @@ class Song
 
 	public static var chartPath:String;
 	public static var loadedSongName:String;
+	public static function loadFromJsonStreaming(jsonInput:String, ?folder:String, onProgress:Float->Void = null):SwagSong
+	{
+		if(folder == null) folder = jsonInput;
+
+		var filePath:String = '';
+		#if MODS_ALLOWED
+		if(FileSystem.exists(Paths.modsJson(folder + '/' + jsonInput)))
+			filePath = Paths.modsJson(folder + '/' + jsonInput);
+		else if(FileSystem.exists(Paths.json(folder + '/' + jsonInput)))
+			filePath = Paths.json(folder + '/' + jsonInput);
+		#else
+		if(OpenFlAssets.exists(Paths.json(folder + '/' + jsonInput)))
+			filePath = Paths.json(folder + '/' + jsonInput);
+		#end
+
+		if(filePath == '')
+		{
+			trace('Chart not found: ' + jsonInput);
+			return null;
+		}
+
+		// Use streaming parser for large files
+		var file = sys.io.File.read(filePath);
+		var parser = new haxe.format.JsonParser(new haxe.io.BytesInput(file.readAll()));
+
+		try
+		{
+			var obj = parser.parse();
+			var song:SwagSong = cast obj;
+
+			#if cpp
+			var totalNotes:Int = 0;
+			for (sec in song.notes) totalNotes += sec.sectionNotes.length;
+
+			if (totalNotes > 300000 && onProgress != null)
+			{
+				onProgress(0);
+			}
+
+			// Process notes in chunks
+			var chunkSize:Int = 5000;
+			var processedNotes:Int = 0;
+			var processedSections:Int = 0;
+
+			for (section in song.notes)
+			{
+				var originalNotes = section.sectionNotes;
+				var newNotes:Array<Dynamic> = [];
+
+				for (i in 0...Std.int(Math.ceil(originalNotes.length / chunkSize)))
+				{
+					var start = i * chunkSize;
+					var end = Std.int(Math.min(start + chunkSize, originalNotes.length));
+
+					for (j in start...end)
+					{
+						newNotes.push(originalNotes[j]);
+						processedNotes++;
+					}
+
+					if (onProgress != null && totalNotes > 0)
+					{
+						onProgress(processedNotes / totalNotes);
+					}
+
+					// Force GC periodically
+					if (processedNotes % 100000 == 0)
+					{
+						#if cpp
+						cpp.vm.Gc.enable(true);
+						cpp.vm.Gc.enable(false);
+						#end
+						Sys.sleep(0.001);
+					}
+				}
+				section.sectionNotes = newNotes;
+				processedSections++;
+			}
+
+			trace('Loaded ' + processedNotes + ' notes from ' + filePath);
+			#end
+
+			PlayState.SONG = song;
+			loadedSongName = folder;
+			chartPath = _lastPath;
+
+			#if windows
+			chartPath = chartPath.replace('/', '\\');
+			#end
+
+			StageData.loadDirectory(PlayState.SONG);
+			return PlayState.SONG;
+		}
+		catch(e:Dynamic)
+		{
+			trace('Error parsing JSON: ' + e);
+			return null;
+		}
+		finally
+		{
+			file.close();
+		}
+	}
+
 	public static function loadFromJson(jsonInput:String, ?folder:String):SwagSong
 	{
 		if(folder == null) folder = jsonInput;
-		PlayState.SONG = getChart(jsonInput, folder);
-		loadedSongName = folder;
-		chartPath = _lastPath;
+
+		if (!originalLoading)
+		{
+			// Try streaming parser first (handles large files better)
+			var song = loadFromJsonStreaming(jsonInput, folder);
+			if (song != null)
+			{
+				loadedSongName = folder;
+				StageData.loadDirectory(song);
+				return song;
+			}
+		}
+		else
+		{
+			// Ultimate fallback to original parser
+			PlayState.SONG = getChart(jsonInput, folder);
+			loadedSongName = folder;
+			chartPath = _lastPath;
+		}
+
 		#if windows
-		// prevent any saving errors by fixing the path on Windows (being the only OS to ever use backslashes instead of forward slashes for paths)
 		chartPath = chartPath.replace('/', '\\');
 		#end
+
 		StageData.loadDirectory(PlayState.SONG);
 		return PlayState.SONG;
 	}

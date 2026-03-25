@@ -270,6 +270,13 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		// deletePlayerNotes = chartEditorSave.data.deletePlayer;
 		// deleteOpponentNotes = chartEditorSave.data.deleteOpponent;
 
+		if(chartEditorSave.data.useBinary == null) chartEditorSave.data.useBinary = false;
+		if(chartEditorSave.data.useThreaded == null) chartEditorSave.data.useThreaded = false;
+		if(chartEditorSave.data.originalLoadingChart == null) chartEditorSave.data.originalLoadingChart = false;
+		ChartLoader.useBinary = chartEditorSave.data.useBinary;
+		ChartLoader.useThreaded = chartEditorSave.data.useThreaded;
+		Song.originalLoading = chartEditorSave.data.originalLoadingChart;
+
 		if(chartEditorSave.data.customBgColor == null) chartEditorSave.data.customBgColor = '303030';
 		if(chartEditorSave.data.customGridColors == null || chartEditorSave.data.customGridColors.length < 2)
 			chartEditorSave.data.customGridColors = ['DFDFDF', 'BFBFBF'];
@@ -1994,55 +2001,49 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 	function loadJson(song:String, ?diff:String = ''):Void
 	{
-		var songName:String = Paths.formatToSongPath(PlayState.SONG.song);
-		var jsonExists:Bool = false;
-		var diffJsonExists:Bool = false;
-		
-		#if MODS_ALLOWED
-		jsonExists = FileSystem.exists(Paths.json(songName + '/' + songName)) || FileSystem.exists(Paths.modsJson(songName + '/' + songName));
-		diffJsonExists = FileSystem.exists(Paths.json(songName + '/' + songName + '-$diff')) || FileSystem.exists(Paths.modsJson(songName + '/' + songName + '-$diff'));
-		#else
-		jsonExists = OpenFlAssets.exists(Paths.json(songName + '/' + songName));
-		diffJsonExists = OpenFlAssets.exists(Paths.json(songName + '/' + songName + '-$diff'));
-		#end
-		
-		if(jsonExists || diffJsonExists)
+		var songName:String = Paths.formatToSongPath(song);
+		var basePath = Paths.json(songName + '/' + songName);
+		var diffSuffix = (diff != null && diff.length > 0 && diff != Difficulty.getDefault().toLowerCase()) ? "-" + diff : "";
+		var chartPath = basePath + diffSuffix;
+
+		var loadedChart:SwagSong = null;
+
+		// Try fast formats first
+		if (ChartLoader.useBinary && FileSystem.exists(chartPath + ".bin"))
 		{
-			var loadedChart:SwagSong = null;
-			if (diff != null && diff.length > 0 && diff != Difficulty.getDefault().toLowerCase()) {
-				#if MODS_ALLOWED
-				if(!diffJsonExists || (Difficulty.list.length > 0 && Difficulty.list[PlayState.storyDifficulty] == null)){
-					loadedChart = Song.loadFromJson(songName.toLowerCase(), songName.toLowerCase());
-				}else{
-					loadedChart = Song.loadFromJson(songName.toLowerCase() + "-" + diff, songName.toLowerCase());
-				}
-				#else
-				if(!diffJsonExists){
-					loadedChart = Song.loadFromJson(songName.toLowerCase(), songName.toLowerCase());
-				}else{
-					loadedChart = Song.loadFromJson(songName.toLowerCase() + "-" + diff, songName.toLowerCase());
-				}
-				#end
-			}else{
-				loadedChart = Song.loadFromJson(songName.toLowerCase(), songName.toLowerCase());
-			}
-			
-			if(loadedChart != null && Reflect.hasField(loadedChart, 'song'))
-			{
-				loadChart(loadedChart);
-				reloadNotesDropdowns();
-				prepareReload();
-				showOutput('Reloaded chart "${songName}" successfully!');
-			}
-			else
-			{
-				showOutput('Error: Failed to load chart "${songName}"', true);
-			}
+			trace("Loading binary chart...");
+			loadedChart = ChartLoader.loadBinary(chartPath + ".bin");
+		}
+		else if (ChartLoader.useSQLite && FileSystem.exists(chartPath + ".db"))
+		{
+			trace("Loading SQLite chart...");
+			loadedChart = ChartLoader.loadFromSQLite(chartPath + ".db");
+		}
+		else if (ChartLoader.useThreaded)
+		{
+			trace("Loading chart in background...");
+			ChartLoader.loadAsync(songName, function(chart) { loadChartComplete(chart); }, function(error) { showOutput('Error: ' + error, true); });
+			return;
 		}
 		else
 		{
-			showOutput('Error: Chart "${songName}" does not exist!', true);
+			// Fallback to original loading (which now uses streaming parser first)
+			trace("Loading JSON chart...");
+			loadedChart = Song.loadFromJson(songName.toLowerCase() + diffSuffix, songName.toLowerCase());
 		}
+
+		if (loadedChart != null)
+			loadChartComplete(loadedChart);
+		else
+        	showOutput('Error: Failed to load chart "${songName}"', true);
+	}
+
+	function loadChartComplete(chart:SwagSong):Void
+	{
+		loadChart(chart);
+		reloadNotesDropdowns();
+		prepareReload();
+		showOutput('Loaded chart "${chart.song}" successfully!');
 	}
 
 	function loadMusic(?killAudio:Bool = false)
@@ -2182,6 +2183,40 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 	}
 
 	function updateCurrentSectionNotes()
+	{
+		var sec = getCurChartSection();
+		if(sec == null) return;
+
+		var minTime:Float = getMinNoteTime(curSec);
+		var maxTime:Float = getMaxNoteTime(curSec);
+
+		var notesToRemove:Array<MetaNote> = [];
+		for (note in notes)
+		{
+			if(note != null && !note.isEvent && note.strumTime >= minTime && note.strumTime < maxTime)
+				notesToRemove.push(note);
+		}
+		for (note in notesToRemove)
+		{
+			notes.remove(note);
+			if(note != null) note.destroy();
+		}
+
+		for (noteData in sec.sectionNotes)
+		{
+			if(noteData != null && noteData.length >= 3 && noteData[1] >= 0) // Only actual notes, not events
+			{
+				var newNote = createNote(noteData, curSec);
+				notes.push(newNote);
+			}
+		}
+
+		notes.sort(PlayState.sortByTime);
+		softReloadNotes();
+		forceDataUpdate = true;
+	}
+
+	function updateCurrentSectionNotesOptimized()
 	{
 		var sec = getCurChartSection();
 		if(sec == null) return;
@@ -2695,7 +2730,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 	function jumpNextSection()
 	{
 		// Update current section notes BEFORE jumping
-		updateCurrentSectionNotes();
+		updateCurrentSectionNotesOptimized();
 
 		var nextSection:Int = curSec + 1;
 		if(nextSection < PlayState.SONG.notes.length)
@@ -3968,7 +4003,11 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 	var playerDropDown:PsychUIDropDownMenu;
 	var opponentDropDown:PsychUIDropDownMenu;
 	var girlfriendDropDown:PsychUIDropDownMenu;
-	
+
+	var useBinaryCheckbox:PsychUICheckBox;
+	var useThreadedCheckbox:PsychUICheckBox;
+	var originalLoadingCheckbox:PsychUICheckBox;
+
 	function addSongTab()
 	{
 		var tab_group = mainBox.getTab('Song').menu;
@@ -4094,6 +4133,35 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		tab_group.add(girlfriendDropDown);
 		tab_group.add(opponentDropDown);
 		tab_group.add(playerDropDown);
+
+		var useBinaryCheckbox:PsychUICheckBox = new PsychUICheckBox(objX, objY + 120, 'Use Binary Format', 120, function()
+		{
+			chartEditorSave.data.useBinary = useBinaryCheckbox.checked;
+			chartEditorSave.flush();
+			ChartLoader.useBinary = useBinaryCheckbox.checked;
+		});
+
+		useThreadedCheckbox = new PsychUICheckBox(objX + 40, objY + 120, 'Use Threaded Loading', 120, function()
+		{
+			chartEditorSave.data.useThreaded = useThreadedCheckbox.checked;
+			chartEditorSave.flush();
+			ChartLoader.useThreaded = useThreadedCheckbox.checked;
+		});
+
+		originalLoadingCheckbox = new PsychUICheckBox(objX + 80, objY + 120, 'Use Original Loading', 120, function()
+		{
+			chartEditorSave.data.originalLoadingChart = originalLoadingCheckbox.checked;
+			chartEditorSave.flush();
+			Song.originalLoading = originalLoadingCheckbox.checked;
+		});
+
+		useBinaryCheckbox.checked = chartEditorSave.data.useBinary;
+		useThreadedCheckbox.checked = chartEditorSave.data.useThreaded;
+		originalLoadingCheckbox.checked = chartEditorSave.data.originalLoadingChart;
+
+		tab_group.add(useBinaryCheckbox);
+		tab_group.add(useThreadedCheckbox);
+		tab_group.add(originalLoadingCheckbox);
 	}
 
 	function addNoteSpammingTab()
@@ -4316,24 +4384,23 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 				try
 				{
 					var filePath:String = fileDialog.path.replace('\\', '/');
-					var loadedChart:SwagSong = Song.parseJSON(fileDialog.data, filePath.substr(filePath.lastIndexOf('/')));
-					if(loadedChart == null || !Reflect.hasField(loadedChart, 'song')) //Check if chart is ACTUALLY a chart and valid
-					{
-						showOutput('Error: File loaded is not a Psych Engine/FNF 0.2.x.x chart.', true);
-						return;
-					}
+					var fileName:String = filePath.substr(filePath.lastIndexOf('/') + 1);
+					var songName:String = fileName.substr(0, fileName.lastIndexOf('.'));
+					var diff:String = Difficulty.list.length > 0 && Difficulty.list[PlayState.storyDifficulty] != null ? Difficulty.list[PlayState.storyDifficulty].toLowerCase() : Difficulty.getDefault().toLowerCase();
 
-					var func:Void->Void = function()
-					{
-						loadChart(loadedChart);
-						Song.chartPath = fileDialog.path;
-						reloadNotesDropdowns();
-						prepareReload();
-						showOutput('Opened chart "${Song.chartPath}" successfully!');
-					}
-					
-					if(!ignoreProgressCheckBox.checked) openSubState(new Prompt('Warning: Any unsaved progress\nwill be lost.', func));
-					else func();
+					// Copy file to chart folder temporarily to use loadJson
+					var targetPath:String = Paths.getPath('songs/' + songName + '/' + songName + '.json');
+					sys.io.File.copy(filePath, targetPath);
+
+					// Use loadJson to load the chart
+					loadJson(songName, diff);
+
+					// Store the original path
+					Song.chartPath = filePath;
+
+					reloadNotesDropdowns();
+					prepareReload();
+					showOutput('Opened chart "${filePath}" successfully!');
 				}
 				catch(e:Exception)
 				{
@@ -4357,7 +4424,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 				showOutput('The "backups" folder does not exist.', true);
 				return;
 			}
-			
+
 			var fileList:Array<String> = FileSystem.readDirectory('backups/').filter((file:String) -> file.endsWith('.$BACKUP_EXT'));
 			if(fileList.length < 1)
 			{
@@ -4365,7 +4432,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 				return;
 			}
 
-			fileList.sort((a:String, b:String) -> (a.toUpperCase() < b.toUpperCase()) ? 1 : -1); //Sort alphabetically descending
+			fileList.sort((a:String, b:String) -> (a.toUpperCase() < b.toUpperCase()) ? 1 : -1);
 			var maxItems:Int = Std.int(Math.min(5, fileList.length));
 			var radioGrp:PsychUIRadioGroup = new PsychUIRadioGroup(0, 0, fileList, 25, maxItems, false, 240);
 			radioGrp.checked = 0;
@@ -4395,29 +4462,32 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 						{
 							try
 							{
-								var loadedChart:SwagSong = Song.parseJSON(File.getContent(path), autosaveName, null);
+								var fileContent:String = File.getContent(path);
+								var loadedChart:SwagSong = Song.parseJSON(fileContent, autosaveName);
+
 								if(loadedChart == null || !Reflect.hasField(loadedChart, '__original_path'))
 								{
 									showOutput('Error: File loaded is not a valid Psych Engine autosave.', true);
 									return;
-	
 								}
-	
+
 								var originalPath:String = Reflect.field(loadedChart, '__original_path');
-								Reflect.deleteField(loadedChart, '__original_path');
-	
-								var func:Void->Void = function()
-								{
-									Song.chartPath = FileSystem.exists(originalPath) ? originalPath : null;
-									loadChart(loadedChart);
-									reloadNotesDropdowns();
-									prepareReload();
-	
-									showOutput('Opened autosave "$autosaveName" successfully!');
-								}
-								
-								if(!ignoreProgressCheckBox.checked) openSubState(new Prompt('Warning: Any unsaved progress\nwill be lost.', func));
-								else func();
+								var songName:String = Paths.formatToSongPath(loadedChart.song);
+								var diff:String = Difficulty.list.length > 0 && Difficulty.list[PlayState.storyDifficulty] != null ? Difficulty.list[PlayState.storyDifficulty].toLowerCase() : Difficulty.getDefault().toLowerCase();
+
+								// Save autosave to chart folder temporarily
+								var targetPath:String = Paths.getPath('songs/' + songName + '/' + songName + '.json');
+								sys.io.File.saveContent(targetPath, fileContent);
+
+								// Use loadJson to load
+								loadJson(songName, diff);
+
+								// Restore original path
+								Song.chartPath = FileSystem.exists(originalPath) ? originalPath : null;
+
+								reloadNotesDropdowns();
+								prepareReload();
+								showOutput('Opened autosave "$autosaveName" successfully!');
 							}
 							catch(e:Exception)
 							{
