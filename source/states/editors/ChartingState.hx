@@ -2014,11 +2014,6 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			trace("Loading binary chart...");
 			loadedChart = ChartLoader.loadBinary(chartPath + ".bin");
 		}
-		else if (ChartLoader.useSQLite && FileSystem.exists(chartPath + ".db"))
-		{
-			trace("Loading SQLite chart...");
-			loadedChart = ChartLoader.loadFromSQLite(chartPath + ".db");
-		}
 		else if (ChartLoader.useThreaded)
 		{
 			trace("Loading chart in background...");
