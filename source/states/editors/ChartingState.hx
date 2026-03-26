@@ -4108,7 +4108,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		tab_group.add(opponentDropDown);
 		tab_group.add(playerDropDown);
 
-		originalLoadingCheckbox = new PsychUICheckBox(objX + 80, objY + 120, 'Use Original Loading', 120, function()
+		originalLoadingCheckbox = new PsychUICheckBox(objX, objY + 120, 'Use Original Loading', 120, function()
 		{
 			chartEditorSave.data.originalLoadingChart = originalLoadingCheckbox.checked;
 			chartEditorSave.flush();
