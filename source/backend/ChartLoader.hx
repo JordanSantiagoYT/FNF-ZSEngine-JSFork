@@ -5,6 +5,7 @@ import haxe.io.Bytes;
 import haxe.io.BytesInput;
 import haxe.io.BytesOutput;
 import sys.thread.Thread;
+import backend.Song;
 
 class ChartLoader
 {
@@ -12,7 +13,7 @@ class ChartLoader
     public static var useThreaded:Bool = false;
     public static var onProgress:Float->Void = null;
 
-    public static function saveBinary(song:SwagSong, path:String):Void
+    public static function saveBinary(song:Song.SwagSong, path:String):Void
     {
         if (!useBinary) return;
 
