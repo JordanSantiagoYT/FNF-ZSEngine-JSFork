@@ -123,26 +123,9 @@ class Song
 
 	public static var chartPath:String;
 	public static var loadedSongName:String;
-	public static function loadFromJsonStreaming(jsonInput:String, ?folder:String):SwagSong
+	public static function loadFromJsonStreaming(filePath:String, ?folder:String):SwagSong
 	{
-		if(folder == null) folder = jsonInput;
-
-		var filePath:String = '';
-		#if MODS_ALLOWED
-		if(FileSystem.exists(Paths.modsJson(folder + '/' + jsonInput)))
-			filePath = Paths.modsJson(folder + '/' + jsonInput);
-		else if(FileSystem.exists(Paths.json(folder + '/' + jsonInput)))
-			filePath = Paths.json(folder + '/' + jsonInput);
-		#else
-		if(OpenFlAssets.exists(Paths.json(folder + '/' + jsonInput)))
-			filePath = Paths.json(folder + '/' + jsonInput);
-		#end
-
-		if(filePath == '')
-		{
-			trace('Chart not found: ' + jsonInput);
-			return null;
-		}
+		if(songName == null) songName = Paths.formatToSongPath(Path.withoutExtension(filePath));
 
 		var file = sys.io.File.read(filePath);
 		var result:SwagSong = null;
@@ -223,12 +206,27 @@ class Song
 
 		if (!Song.originalLoading)
 		{
-			var song = loadFromJsonStreaming(jsonInput, folder);
-			if (song != null)
+			// Build file path from song name and folder
+			var filePath:String = '';
+			#if MODS_ALLOWED
+			if(FileSystem.exists(Paths.modsJson(folder + '/' + jsonInput)))
+				filePath = Paths.modsJson(folder + '/' + jsonInput);
+			else if(FileSystem.exists(Paths.json(folder + '/' + jsonInput)))
+				filePath = Paths.json(folder + '/' + jsonInput);
+			#else
+			if(OpenFlAssets.exists(Paths.json(folder + '/' + jsonInput)))
+				filePath = Paths.json(folder + '/' + jsonInput);
+			#end
+
+			if (filePath != '')
 			{
-				loadedSongName = folder;
-				StageData.loadDirectory(song);
-				return song;
+				var song = loadFromJsonStreaming(filePath, folder);
+				if (song != null)
+				{
+					loadedSongName = folder;
+					StageData.loadDirectory(song);
+					return song;
+				}
 			}
 		}
 		else
@@ -236,14 +234,16 @@ class Song
 			PlayState.SONG = getChart(jsonInput, folder);
 			loadedSongName = folder;
 			chartPath = _lastPath;
+
+			#if windows
+			chartPath = chartPath.replace('/', '\\');
+			#end
+
+			StageData.loadDirectory(PlayState.SONG);
+			return PlayState.SONG;
 		}
 
-		#if windows
-		chartPath = chartPath.replace('/', '\\');
-		#end
-
-		StageData.loadDirectory(PlayState.SONG);
-		return PlayState.SONG;
+		return null;
 	}
 
 	static var _lastPath:String;

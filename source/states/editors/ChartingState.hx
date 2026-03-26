@@ -1995,22 +1995,25 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		Conductor.bpm = PlayState.SONG.bpm;
 	}
 
-	function loadJson(song:String, ?diff:String = ''):Void
+	function loadJson(songOrPath:String, ?diff:String = '', ?isFilePath:Bool = false):Void
 	{
-		var songName:String = Paths.formatToSongPath(song);
-		var basePath = Paths.json(songName + '/' + songName);
-		var diffSuffix = (diff != null && diff.length > 0 && diff != Difficulty.getDefault().toLowerCase()) ? "-" + diff : "";
-		var chartPath = basePath + diffSuffix;
-
 		var loadedChart:SwagSong = null;
 
-		trace("Loading JSON chart...");
-		loadedChart = Song.loadFromJson(songName.toLowerCase() + diffSuffix, songName.toLowerCase());
-
-		if (loadedChart != null)
-			loadChartComplete(loadedChart);
+		if (isFilePath)
+		{
+			// Direct file path loading (for Open Chart/Autosave)
+			loadedChart = Song.loadFromJsonStreaming(songOrPath, Paths.formatToSongPath(Path.withoutExtension(songOrPath)));
+		}
 		else
-        	showOutput('Error: Failed to load chart "${songName}"', true);
+		{
+			// Normal song name loading
+			var songName:String = Paths.formatToSongPath(songOrPath);
+			var diffSuffix = (diff != null && diff.length > 0 && diff != Difficulty.getDefault().toLowerCase()) ? "-" + diff : "";
+
+			loadedChart = Song.loadFromJson(songName.toLowerCase() + diffSuffix, songName.toLowerCase());
+		}
+
+		if (loadedChart != null) loadChartComplete(loadedChart);
 	}
 
 	function loadChartComplete(chart:SwagSong):Void
@@ -3772,35 +3775,38 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 				return;
 			}
 
-			// Track which notes to remove
-			var notesToRemove:Array<MetaNote> = [];
-
+			// Build time ranges
+			var deleteRanges:Array<{min:Float, max:Float}> = [];
 			for (sectionIndex in sectionStart...sectionEnd + 1)
 			{
-				var minTime:Float = cachedSectionTimes[sectionIndex];
-				var maxTime:Float = cachedSectionTimes[sectionIndex + 1];
+				deleteRanges.push({
+					min: cachedSectionTimes[sectionIndex],
+					max: cachedSectionTimes[sectionIndex + 1]
+				});
+			}
 
-				// Find visual notes in this time range
-				for (note in notes)
+			// Single pass removal with splice (backwards iteration)
+			var i:Int = notes.length - 1;
+			while(i >= 0)
+			{
+				var note = notes[i];
+				if (note != null && !note.isEvent)
 				{
-					if (note == null || note.isEvent) continue;
-					if (note.strumTime >= minTime && note.strumTime < maxTime)
+					for (range in deleteRanges)
 					{
-						if (notesToRemove.indexOf(note) == -1)
-							notesToRemove.push(note);
+						if (note.strumTime >= range.min && note.strumTime < range.max)
+						{
+							notes.splice(i, 1);
+							selectedNotes.remove(note);
+							note.destroy();
+							break;
+						}
 					}
 				}
+				i--;
 			}
 
-			// Remove all found notes
-			for (note in notesToRemove)
-			{
-				notes.remove(note);
-				selectedNotes.remove(note);
-				note.destroy();
-			}
-
-			// Also clear sectionNotes for these sections to maintain consistency
+			// Clear sectionNotes
 			for (sectionIndex in sectionStart...sectionEnd + 1)
 			{
 				var currentSection = PlayState.SONG.notes[sectionIndex];
@@ -4338,23 +4344,14 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 				try
 				{
 					var filePath:String = fileDialog.path.replace('\\', '/');
-					var fileName:String = filePath.substr(filePath.lastIndexOf('/') + 1);
-					var songName:String = fileName.substr(0, fileName.lastIndexOf('.'));
-					var diff:String = Difficulty.list.length > 0 && Difficulty.list[PlayState.storyDifficulty] != null ? Difficulty.list[PlayState.storyDifficulty].toLowerCase() : Difficulty.getDefault().toLowerCase();
 
-					// Copy file to chart folder temporarily to use loadJson
-					var targetPath:String = Paths.getPath('songs/' + songName + '/' + songName + '.json');
-					sys.io.File.copy(filePath, targetPath);
+					var func:Void->Void = function()
+					{
+						loadJson(filePath, '', true);
+					}
 
-					// Use loadJson to load the chart
-					loadJson(songName, diff);
-
-					// Store the original path
-					Song.chartPath = filePath;
-
-					reloadNotesDropdowns();
-					prepareReload();
-					showOutput('Opened chart "${filePath}" successfully!');
+					if(!ignoreProgressCheckBox.checked) openSubState(new Prompt('Warning: Any unsaved progress\nwill be lost.', func));
+					else func();
 				}
 				catch(e:Exception)
 				{
@@ -4414,39 +4411,13 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 						if(FileSystem.exists(path))
 						{
-							try
+							var func:Void->Void = function()
 							{
-								var fileContent:String = File.getContent(path);
-								var loadedChart:SwagSong = Song.parseJSON(fileContent, autosaveName);
-
-								if(loadedChart == null || !Reflect.hasField(loadedChart, '__original_path'))
-								{
-									showOutput('Error: File loaded is not a valid Psych Engine autosave.', true);
-									return;
-								}
-
-								var originalPath:String = Reflect.field(loadedChart, '__original_path');
-								var songName:String = Paths.formatToSongPath(loadedChart.song);
-								var diff:String = Difficulty.list.length > 0 && Difficulty.list[PlayState.storyDifficulty] != null ? Difficulty.list[PlayState.storyDifficulty].toLowerCase() : Difficulty.getDefault().toLowerCase();
-
-								// Save autosave to chart folder temporarily
-								var targetPath:String = Paths.getPath('songs/' + songName + '/' + songName + '.json');
-								sys.io.File.saveContent(targetPath, fileContent);
-
-								// Use loadJson to load
-								loadJson(songName, diff);
-
-								// Restore original path
-								Song.chartPath = FileSystem.exists(originalPath) ? originalPath : null;
-
-								reloadNotesDropdowns();
-								prepareReload();
-								showOutput('Opened autosave "$autosaveName" successfully!');
+								loadJson(path, '', true);
 							}
-							catch(e:Exception)
-							{
-								showOutput('Error on loading autosave: ${e.message}', true);
-							}
+							
+							if(!ignoreProgressCheckBox.checked) openSubState(new Prompt('Warning: Any unsaved progress\nwill be lost.', func));
+							else func();
 						}
 						else showOutput('Error! Autosave file selected could not be found, huh??', true);
 					});
