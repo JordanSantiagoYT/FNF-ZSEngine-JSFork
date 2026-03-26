@@ -7,7 +7,6 @@ import objects.Note;
 
 typedef SwagSong =
 {
-	> PlayState.SONG,
 	var song:String;
 	var notes:Array<SwagSection>;
 	var events:Array<Dynamic>;
@@ -31,8 +30,6 @@ typedef SwagSong =
 
 	@:optional var arrowSkin:String;
 	@:optional var splashSkin:String;
-	@:optional var __db:Dynamic;
-    @:optional var __dbPath:String;
 }
 
 typedef SwagSection =
@@ -126,7 +123,7 @@ class Song
 
 	public static var chartPath:String;
 	public static var loadedSongName:String;
-	public static function loadFromJsonStreaming(jsonInput:String, ?folder:String, onProgress:Float->Void = null):SwagSong
+	public static function loadFromJsonStreaming(jsonInput:String, ?folder:String):SwagSong
 	{
 		if(folder == null) folder = jsonInput;
 
@@ -147,12 +144,12 @@ class Song
 			return null;
 		}
 
-		// Use streaming parser for large files
 		var file = sys.io.File.read(filePath);
-		var parser = new haxe.format.JsonParser(new haxe.io.BytesInput(file.readAll()));
+		var result:SwagSong = null;
 
 		try
 		{
+			var parser = new haxe.format.JsonParser(new haxe.io.BytesInput(file.readAll()));
 			var obj = parser.parse();
 			var song:SwagSong = cast obj;
 
@@ -160,15 +157,14 @@ class Song
 			var totalNotes:Int = 0;
 			for (sec in song.notes) totalNotes += sec.sectionNotes.length;
 
-			if (totalNotes > 300000 && onProgress != null)
+			if (totalNotes > 300000)
 			{
-				onProgress(0);
+				trace('Loading large chart with ' + totalNotes + ' notes');
 			}
 
 			// Process notes in chunks
 			var chunkSize:Int = 5000;
 			var processedNotes:Int = 0;
-			var processedSections:Int = 0;
 
 			for (section in song.notes)
 			{
@@ -186,13 +182,7 @@ class Song
 						processedNotes++;
 					}
 
-					if (onProgress != null && totalNotes > 0)
-					{
-						onProgress(processedNotes / totalNotes);
-					}
-
-					// Force GC periodically
-					if (processedNotes % 100000 == 0)
+					if (processedNotes % 50000 == 0)
 					{
 						#if cpp
 						cpp.vm.Gc.enable(true);
@@ -202,32 +192,29 @@ class Song
 					}
 				}
 				section.sectionNotes = newNotes;
-				processedSections++;
 			}
 
-			trace('Loaded ' + processedNotes + ' notes from ' + filePath);
+			trace('Loaded ' + processedNotes + ' notes');
 			#end
 
 			PlayState.SONG = song;
 			loadedSongName = folder;
-			chartPath = _lastPath;
+			chartPath = filePath;
 
 			#if windows
 			chartPath = chartPath.replace('/', '\\');
 			#end
 
 			StageData.loadDirectory(PlayState.SONG);
-			return PlayState.SONG;
+			result = PlayState.SONG;
 		}
 		catch(e:Dynamic)
 		{
 			trace('Error parsing JSON: ' + e);
-			return null;
 		}
-		finally
-		{
-			file.close();
-		}
+
+		file.close();
+		return result;
 	}
 
 	public static function loadFromJson(jsonInput:String, ?folder:String):SwagSong
