@@ -271,11 +271,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		// deletePlayerNotes = chartEditorSave.data.deletePlayer;
 		// deleteOpponentNotes = chartEditorSave.data.deleteOpponent;
 
-		if(chartEditorSave.data.useBinary == null) chartEditorSave.data.useBinary = false;
-		if(chartEditorSave.data.useThreaded == null) chartEditorSave.data.useThreaded = false;
 		if(chartEditorSave.data.originalLoadingChart == null) chartEditorSave.data.originalLoadingChart = false;
-		ChartLoader.useBinary = chartEditorSave.data.useBinary;
-		ChartLoader.useThreaded = chartEditorSave.data.useThreaded;
 		Song.originalLoading = chartEditorSave.data.originalLoadingChart;
 
 		if(chartEditorSave.data.customBgColor == null) chartEditorSave.data.customBgColor = '303030';
@@ -2009,24 +2005,8 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 		var loadedChart:SwagSong = null;
 
-		// Try fast formats first
-		if (ChartLoader.useBinary && FileSystem.exists(chartPath + ".bin"))
-		{
-			trace("Loading binary chart...");
-			loadedChart = ChartLoader.loadBinary(chartPath + ".bin");
-		}
-		else if (ChartLoader.useThreaded)
-		{
-			trace("Loading chart in background...");
-			ChartLoader.loadAsync(songName, function(chart) { loadChartComplete(chart); }, function(error) { showOutput('Error: ' + error, true); });
-			return;
-		}
-		else
-		{
-			// Fallback to original loading (which now uses streaming parser first)
-			trace("Loading JSON chart...");
-			loadedChart = Song.loadFromJson(songName.toLowerCase() + diffSuffix, songName.toLowerCase());
-		}
+		trace("Loading JSON chart...");
+		loadedChart = Song.loadFromJson(songName.toLowerCase() + diffSuffix, songName.toLowerCase());
 
 		if (loadedChart != null)
 			loadChartComplete(loadedChart);
@@ -4000,8 +3980,6 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 	var opponentDropDown:PsychUIDropDownMenu;
 	var girlfriendDropDown:PsychUIDropDownMenu;
 
-	var useBinaryCheckbox:PsychUICheckBox;
-	var useThreadedCheckbox:PsychUICheckBox;
 	var originalLoadingCheckbox:PsychUICheckBox;
 
 	function addSongTab()
@@ -4130,33 +4108,14 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		tab_group.add(opponentDropDown);
 		tab_group.add(playerDropDown);
 
-		var useBinaryCheckbox:PsychUICheckBox = new PsychUICheckBox(objX, objY + 120, 'Use Binary Format', 120, function()
-		{
-			chartEditorSave.data.useBinary = useBinaryCheckbox.checked;
-			chartEditorSave.flush();
-			ChartLoader.useBinary = useBinaryCheckbox.checked;
-		});
-
-		useThreadedCheckbox = new PsychUICheckBox(objX + 40, objY + 120, 'Use Threaded Loading', 120, function()
-		{
-			chartEditorSave.data.useThreaded = useThreadedCheckbox.checked;
-			chartEditorSave.flush();
-			ChartLoader.useThreaded = useThreadedCheckbox.checked;
-		});
-
 		originalLoadingCheckbox = new PsychUICheckBox(objX + 80, objY + 120, 'Use Original Loading', 120, function()
 		{
 			chartEditorSave.data.originalLoadingChart = originalLoadingCheckbox.checked;
 			chartEditorSave.flush();
 			Song.originalLoading = originalLoadingCheckbox.checked;
 		});
-
-		useBinaryCheckbox.checked = chartEditorSave.data.useBinary;
-		useThreadedCheckbox.checked = chartEditorSave.data.useThreaded;
 		originalLoadingCheckbox.checked = chartEditorSave.data.originalLoadingChart;
 
-		tab_group.add(useBinaryCheckbox);
-		tab_group.add(useThreadedCheckbox);
 		tab_group.add(originalLoadingCheckbox);
 	}
 
