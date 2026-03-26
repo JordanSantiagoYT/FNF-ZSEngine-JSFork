@@ -2,6 +2,7 @@ package backend;
 
 import haxe.Json;
 import lime.utils.Assets;
+import haxe.io.Path;
 
 import objects.Note;
 
@@ -123,7 +124,7 @@ class Song
 
 	public static var chartPath:String;
 	public static var loadedSongName:String;
-	public static function loadFromJsonStreaming(filePath:String, ?folder:String):SwagSong
+	public static function loadFromJsonStreaming(filePath:String, ?songName:String = null):SwagSong
 	{
 		if(songName == null) songName = Paths.formatToSongPath(Path.withoutExtension(filePath));
 
