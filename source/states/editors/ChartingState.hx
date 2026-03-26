@@ -28,6 +28,7 @@ import backend.StageData;
 import backend.Highscore;
 import backend.Difficulty;
 import backend.CoolUtil;
+import backend.ChartLoader;
 import backend.ui.*;
 
 import objects.Character;
