@@ -149,13 +149,10 @@ class Song
 
 		try
 		{
-			// Fix: read as string, not bytes
 			var content:String = file.readAll().toString();
-			var parser = new haxe.format.JsonParser(content);
-			var obj = parser.parse();
+			var obj = haxe.Json.parse(content);
 			var song:SwagSong = cast obj;
 
-			// Process notes in chunks
 			#if cpp
 			var totalNotes:Int = 0;
 			for (sec in song.notes) totalNotes += sec.sectionNotes.length;
@@ -165,6 +162,7 @@ class Song
 				trace('Loading large chart with ' + totalNotes + ' notes');
 			}
 
+			// Process notes in chunks
 			var chunkSize:Int = 5000;
 			var processedNotes:Int = 0;
 
