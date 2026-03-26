@@ -128,6 +128,14 @@ class Song
 	{
 		if(songName == null) songName = Paths.formatToSongPath(Path.withoutExtension(filePath));
 
+		trace('Loading file: ' + filePath);
+
+		if (!FileSystem.exists(filePath))
+		{
+			trace('File does not exist: ' + filePath);
+			return null;
+		}
+
 		var file = sys.io.File.read(filePath);
 		var result:SwagSong = null;
 
@@ -136,6 +144,14 @@ class Song
 			var content:String = file.readAll().toString();
 			var obj = haxe.Json.parse(content);
 			var song:SwagSong = cast obj;
+
+			trace('File size: ' + content.length + ' bytes');
+
+			if (content.length == 0)
+			{
+				trace('File is empty!');
+				return null;
+			}
 
 			#if cpp
 			var totalNotes:Int = 0;
@@ -195,6 +211,7 @@ class Song
 		catch(e:Dynamic)
 		{
 			trace('Error parsing JSON: ' + e);
+			trace('First 500 chars of content: ' + content.substr(0, 500));
 		}
 
 		file.close();
