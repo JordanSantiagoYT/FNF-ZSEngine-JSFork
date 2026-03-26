@@ -138,10 +138,11 @@ class Song
 
 		var file = sys.io.File.read(filePath);
 		var result:SwagSong = null;
+		var content:String = "";
 
 		try
 		{
-			var content:String = file.readAll().toString();
+			content = file.readAll().toString();
 			var obj = haxe.Json.parse(content);
 			var song:SwagSong = cast obj;
 
