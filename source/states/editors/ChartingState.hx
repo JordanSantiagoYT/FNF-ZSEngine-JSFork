@@ -17,6 +17,7 @@ import flash.geom.Rectangle;
 import haxe.Json;
 import haxe.Exception;
 import haxe.io.Bytes;
+import haxe.io.Path;
 
 import states.editors.content.MetaNote;
 import states.editors.content.VSlice;

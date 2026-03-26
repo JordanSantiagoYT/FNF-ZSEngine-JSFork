@@ -182,7 +182,7 @@ class Song
 			#end
 
 			PlayState.SONG = song;
-			loadedSongName = folder;
+			loadedSongName = songName;
 			chartPath = filePath;
 
 			#if windows
