@@ -496,23 +496,8 @@ class NoteSplashEditorState extends MusicBeatState
         // Empty line
     }
 
-	function showOutput(message:String, isError:Bool = false)
-	{
-		trace(message);
-		outputTxt.text = message;
-		outputTxt.y = FlxG.height - outputTxt.height - 30;
-		outputAlpha = 4;
-		if(isError)
-		{
-			FlxG.sound.play(Paths.sound('cancelMenu'), 0.6);
-			outputTxt.color = FlxColor.RED;
-		}
-		else
-		{
-			FlxG.sound.play(Paths.sound('scrollMenu'), 0.6);
-			outputTxt.color = FlxColor.WHITE;
-		}
-	}
+    var outputTxt:FlxText;
+    var outputAlpha:Float = 0;
 
     var holdingArrowsTime:Float = 0;
     var holdingArrowsElapsed:Float = 0;
@@ -522,6 +507,8 @@ class NoteSplashEditorState extends MusicBeatState
         super.update(elapsed);
 
         errorText.x = FlxG.width - errorText.width - 5;
+
+        outputAlpha = Math.max(0, outputAlpha - elapsed);
 
         curText.text = 'Copied Offsets: ${Std.string(copiedOffset).replace(',', ', ')}\n';
         curText.text += 'Current Animation: ${curAnim == null || curAnim.length < 1  ? "NONE" : curAnim}';
@@ -651,6 +638,24 @@ class NoteSplashEditorState extends MusicBeatState
                 strum.playAnim('static');
         }
     }
+
+	function showOutput(message:String, isError:Bool = false)
+	{
+		trace(message);
+		outputTxt.text = message;
+		outputTxt.y = FlxG.height - outputTxt.height - 30;
+		outputAlpha = 4;
+		if(isError)
+		{
+			FlxG.sound.play(Paths.sound('cancelMenu'), 0.6);
+			outputTxt.color = FlxColor.RED;
+		}
+		else
+		{
+			FlxG.sound.play(Paths.sound('scrollMenu'), 0.6);
+			outputTxt.color = FlxColor.WHITE;
+		}
+	}
 
     function playStrumAnim(?name:String, noteData:Int)
     {
