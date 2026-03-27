@@ -2002,19 +2002,28 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 		if (isFilePath)
 		{
-			// Direct file path loading (for Open Chart/Autosave)
+			trace('Loading from file path: ' + songOrPath);
 			loadedChart = Song.loadFromJsonStreaming(songOrPath, Paths.formatToSongPath(Path.withoutExtension(songOrPath)));
+			trace('loadedChart after streaming: ' + (loadedChart != null ? loadedChart.song : 'null'));
 		}
 		else
 		{
-			// Normal song name loading
 			var songName:String = Paths.formatToSongPath(songOrPath);
 			var diffSuffix = (diff != null && diff.length > 0 && diff != Difficulty.getDefault().toLowerCase()) ? "-" + diff : "";
-
+			
 			loadedChart = Song.loadFromJson(songName.toLowerCase() + diffSuffix, songName.toLowerCase());
 		}
 
-		if (loadedChart != null) loadChartComplete(loadedChart);
+		if (loadedChart != null)
+		{
+			trace('Calling loadChartComplete with: ' + loadedChart.song);
+			loadChartComplete(loadedChart);
+		}
+		else
+		{
+			trace('loadedChart is null!');
+			showOutput('Error: Failed to load chart', true);
+		}
 	}
 
 	function loadChartComplete(chart:SwagSong):Void
