@@ -271,6 +271,9 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		// deletePlayerNotes = chartEditorSave.data.deletePlayer;
 		// deleteOpponentNotes = chartEditorSave.data.deleteOpponent;
 
+		if(chartEditorSave.data.originalLoadingChart == null) chartEditorSave.data.originalLoadingChart = false;
+		Song.originalLoading = chartEditorSave.data.originalLoadingChart;
+
 		if(chartEditorSave.data.customBgColor == null) chartEditorSave.data.customBgColor = '303030';
 		if(chartEditorSave.data.customGridColors == null || chartEditorSave.data.customGridColors.length < 2)
 			chartEditorSave.data.customGridColors = ['DFDFDF', 'BFBFBF'];
@@ -3992,6 +3995,8 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 	var opponentDropDown:PsychUIDropDownMenu;
 	var girlfriendDropDown:PsychUIDropDownMenu;
 
+	var originalLoadingCheckbox:PsychUICheckBox;
+
 	function addSongTab()
 	{
 		var tab_group = mainBox.getTab('Song').menu;
@@ -4117,6 +4122,16 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		tab_group.add(girlfriendDropDown);
 		tab_group.add(opponentDropDown);
 		tab_group.add(playerDropDown);
+
+		originalLoadingCheckbox = new PsychUICheckBox(objX, objY + 120, 'Use Original Loading', 120, function()
+		{
+			chartEditorSave.data.originalLoadingChart = originalLoadingCheckbox.checked;
+			chartEditorSave.flush();
+			Song.originalLoading = originalLoadingCheckbox.checked;
+		});
+		originalLoadingCheckbox.checked = chartEditorSave.data.originalLoadingChart;
+
+		tab_group.add(originalLoadingCheckbox);
 	}
 
 	function addNoteSpammingTab()
@@ -4257,18 +4272,24 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			var shiftAmount:Float = (stepperShiftSteps.value) * (15000/Conductor.bpm);
 			var copiedLength:Int = copiedNotes.length;
 
+			// Build all new notes in a separate array
+			var allNewNotes:Array<Dynamic> = [];
+
 			for (_i in 1...duplicateAmount + 1)
 			{
+				var timeOffset:Float = shiftAmount * _i;
 				for (i in 0...copiedLength)
 				{
 					if(copiedNotes[i] == null || copiedNotes[i].length < 3) continue;
 
 					var copiedNote:Array<Dynamic> = [copiedNotes[i][0], copiedNotes[i][1], copiedNotes[i][2]];
 					if(copiedNotes[i].length > 3) copiedNote.push(copiedNotes[i][3]);
-					copiedNote[0] += shiftAmount * _i;
-					sec.sectionNotes.push(copiedNote);
+					copiedNote[0] += timeOffset;
+					allNewNotes.push(copiedNote);
 				}
 			}
+
+			sec.sectionNotes = sec.sectionNotes.concat(allNewNotes);
 
 			_cacheSections();
 

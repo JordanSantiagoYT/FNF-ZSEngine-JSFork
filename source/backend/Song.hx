@@ -65,6 +65,8 @@ class Song
 	public var gfVersion:String = 'gf';
 	public var format:String = 'psych_v1';
 
+	public static var originalLoading:Bool = false;
+
 	public static function convert(songJson:Dynamic) // Convert old charts to psych_v1 format
 	{
 		if(songJson.gfVersion == null)
@@ -140,10 +142,18 @@ class Song
 
 		try
 		{
+			trace('1: Reading file content');
 			content = file.readAll().toString();
+			trace('2: File read complete, size: ' + content.length);
+
+			trace('3: Parsing JSON');
 			var obj = haxe.Json.parse(content);
+			trace('4: JSON parsed successfully');
+
+			trace('5: Casting to song');
 			var songData = obj.song;
 			var song:SwagSong = cast songData;
+			trace('6: Cast complete');
 
 			trace('File size: ' + content.length + ' bytes');
 
@@ -156,32 +166,36 @@ class Song
 			#if cpp
 			var totalNotes:Int = 0;
 			for (sec in song.notes) totalNotes += sec.sectionNotes.length;
+			trace('7: Total notes count: ' + totalNotes);
 
 			if (totalNotes > 300000)
 			{
-				trace('Loading large chart with ' + totalNotes + ' notes');
+				trace('8. Loading large chart with ' + totalNotes + ' notes');
 			}
 			else if (totalNotes > 100000)
 			{
-				trace('Loading medium chart with ' + totalNotes + ' notes');
+				trace('8. Loading medium chart with ' + totalNotes + ' notes');
 			}
 			else if (totalNotes > 1000000)
 			{
-				trace('Loading huge chart with ' + totalNotes + ' notes');
+				trace('8. Loading huge chart with ' + totalNotes + ' notes');
 			}
 			else
 			{
-				trace('Loading normal chart with ' + totalNotes + ' notes');
+				trace('8. Loading normal chart with ' + totalNotes + ' notes');
 			}
 
 			// Process notes in chunks
 			var chunkSize:Int = 5000;
 			var processedNotes:Int = 0;
 
-			for (section in song.notes)
+			for (sectionIndex in 0...song.notes.length)
 			{
+				var section = song.notes[sectionIndex];
 				var originalNotes = section.sectionNotes;
 				var newNotes:Array<Dynamic> = [];
+
+				trace('9: Processing section ' + sectionIndex + ' with ' + originalNotes.length + ' notes');
 
 				for (i in 0...Std.int(Math.ceil(originalNotes.length / chunkSize)))
 				{
@@ -196,6 +210,7 @@ class Song
 
 					if (processedNotes % 50000 == 0)
 					{
+						trace('10: Processed ' + processedNotes + ' notes so far');
 						#if cpp
 						cpp.vm.Gc.enable(true);
 						cpp.vm.Gc.enable(false);
@@ -204,11 +219,13 @@ class Song
 					}
 				}
 				section.sectionNotes = newNotes;
+				trace('11: Section ' + sectionIndex + ' processed, newNotes length: ' + newNotes.length);
 			}
 
-			trace('Loaded ' + processedNotes + ' notes');
+			trace('12. Loaded ' + processedNotes + ' notes');
 			#end
 
+			trace('13: Setting PlayState.SONG');
 			PlayState.SONG = song;
 			loadedSongName = songName;
 			chartPath = filePath;
@@ -217,8 +234,12 @@ class Song
 			chartPath = chartPath.replace('/', '\\');
 			#end
 
+			trace('14: Loading stage directory');
 			StageData.loadDirectory(PlayState.SONG);
+
+			trace('15: Setting result');
 			result = PlayState.SONG;
+			trace('16: Success!');
 		}
 		catch(e:Dynamic)
 		{
@@ -234,18 +255,43 @@ class Song
 	{
 		if(folder == null) folder = jsonInput;
 
-		var filePath:String = '';
-		#if MODS_ALLOWED
-		if(FileSystem.exists(Paths.modsJson(folder + '/' + jsonInput)))
-			filePath = Paths.modsJson(folder + '/' + jsonInput);
-		else if(FileSystem.exists(Paths.json(folder + '/' + jsonInput)))
-			filePath = Paths.json(folder + '/' + jsonInput);
-		#else
-		if(OpenFlAssets.exists(Paths.json(folder + '/' + jsonInput)))
-			filePath = Paths.json(folder + '/' + jsonInput);
+		// Try streaming first (faster for large charts)
+		if (!Song.originalLoading)
+		{
+			var filePath:String = '';
+			#if MODS_ALLOWED
+			if(FileSystem.exists(Paths.modsJson(folder + '/' + jsonInput)))
+				filePath = Paths.modsJson(folder + '/' + jsonInput);
+			else if(FileSystem.exists(Paths.json(folder + '/' + jsonInput)))
+				filePath = Paths.json(folder + '/' + jsonInput);
+			#else
+			if(OpenFlAssets.exists(Paths.json(folder + '/' + jsonInput)))
+				filePath = Paths.json(folder + '/' + jsonInput);
+			#end
+
+			if (filePath != '')
+			{
+				var song = loadFromJsonStreaming(filePath, folder);
+				if (song != null)
+				{
+					loadedSongName = folder;
+					StageData.loadDirectory(song);
+					return song;
+				}
+			}
+		}
+
+		// Fallback to original loading method (works reliably)
+		PlayState.SONG = getChart(jsonInput, folder);
+		loadedSongName = folder;
+		chartPath = _lastPath;
+
+		#if windows
+		chartPath = chartPath.replace('/', '\\');
 		#end
 
-		return loadFromJsonStreaming(filePath, folder);
+		StageData.loadDirectory(PlayState.SONG);
+		return PlayState.SONG;
 	}
 
 	static var _lastPath:String;
