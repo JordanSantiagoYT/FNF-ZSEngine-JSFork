@@ -2381,6 +2381,8 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		if(secNum == null) secNum = curSec;
 		var section = PlayState.SONG.notes[secNum];
 
+		trace('Creating note: strumTime=' + note[0] + ', noteData=' + note[1] + ', sustain=' + note[2]);
+
 		var daStrumTime:Float = note[0];
 		var daNoteData:Int = Std.int(note[1] % GRID_COLUMNS_PER_PLAYER);
 		var gottaHitNote:Bool = (note[1] < GRID_COLUMNS_PER_PLAYER);
@@ -3500,7 +3502,6 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 			_cacheSections();
 			updateCurrentSectionNotes();
-			forceDataUpdate = true;
 		});
 		clearButton.normalStyle.bgColor = FlxColor.RED;
 		clearButton.normalStyle.textColor = FlxColor.WHITE;
@@ -3549,7 +3550,6 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			}
 
 			updateCurrentSectionNotes();
-			forceDataUpdate = true;
 		});
 
 		clearRightButton = new PsychUIButton(objX + 200, objY + 60, 'Clear Right Side', function()
@@ -3595,7 +3595,6 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			}
 
 			updateCurrentSectionNotes();
-			forceDataUpdate = true;
 		});
 
 		clearLeftButton.normalStyle.bgColor = FlxColor.RED;
@@ -3828,7 +3827,6 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 			_cacheSections();
 			// updateCurrentSectionNotesNoSectionNotes();
-			forceDataUpdate = true;
 
 			showOutput('Deleted sections ' + sectionStart + ' to ' + sectionEnd);
 		}, 120, 20);
@@ -4202,29 +4200,29 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			updateChartData(); // Sync notes array to sectionNotes first
 			var sec = getCurChartSection();
 			if(sec == null || sec.sectionNotes == null) return;
-			
+
 			var minimumTime:Float = cachedSectionTimes[curSec];
-			
+
 			for (i in 0...sec.sectionNotes.length)
 			{
 				var note:Array<Dynamic> = sec.sectionNotes[i];
 				if (note == null || note.length < 3) continue;
 				// Skip events (negative noteData)
 				if (note[1] < 0) continue;
-				
+
 				if (note[2] > 0) note[2] *= stepperShrinkAmount.value;
-				
+
 				var originalStartTime:Float = note[0];
 				originalStartTime = originalStartTime - minimumTime;
-				
+
 				var stretchedStartTime:Float = originalStartTime * stepperShrinkAmount.value;
 				var newStartTime:Float = minimumTime + stretchedStartTime;
-				
+
 				note[0] = Math.max(newStartTime, minimumTime);
 				if (note[0] < minimumTime) note[0] = minimumTime;
 				sec.sectionNotes[i] = note;
 			}
-			
+
 			_cacheSections();
 			updateCurrentSectionNotes();
 		});
@@ -4237,13 +4235,13 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			updateChartData(); // Sync notes array to sectionNotes first
 			var sec = getCurChartSection();
 			if(sec == null || sec.sectionNotes == null) return;
-			
+
 			for (i in 0...sec.sectionNotes.length)
 			{
 				if(sec.sectionNotes[i] == null || sec.sectionNotes[i].length < 1) continue;
 				// Skip events (negative noteData)
 				if (sec.sectionNotes[i][1] < 0) continue;
-				
+
 				sec.sectionNotes[i][0] += (stepperShiftSteps.value) * (15000/Conductor.bpm);
 			}
 			_cacheSections();
@@ -4294,8 +4292,6 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			_cacheSections();
 
 			sec.sectionNotes.length <= 30000 ? updateCurrentSectionNotes() : jumpNextSection();
-
-			forceDataUpdate = true;
 			showOutput('Duplicated ' + (copiedLength * duplicateAmount) + ' notes');
 		});
 
