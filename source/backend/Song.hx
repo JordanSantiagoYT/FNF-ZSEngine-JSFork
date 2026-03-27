@@ -144,7 +144,10 @@ class Song
 		{
 			content = file.readAll().toString();
 			var obj = haxe.Json.parse(content);
-			var song:SwagSong = cast obj;
+			var song:SwagSong;
+
+			if (Reflect.hasField(obj, "song")) song = cast obj.song;
+			else song = cast obj;
 
 			trace('File size: ' + content.length + ' bytes');
 
@@ -161,6 +164,18 @@ class Song
 			if (totalNotes > 300000)
 			{
 				trace('Loading large chart with ' + totalNotes + ' notes');
+			}
+			else if (totalNotes > 100000)
+			{
+				trace('Loading medium chart with ' + totalNotes + ' notes');
+			}
+			else if (totalNotes > 1000000)
+			{
+				trace('Loading huge chart with ' + totalNotes + ' notes');
+			}
+			else
+			{
+				trace('Loading normal chart with ' + totalNotes + ' notes');
 			}
 
 			// Process notes in chunks

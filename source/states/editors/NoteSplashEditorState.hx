@@ -330,7 +330,11 @@ class NoteSplashEditorState extends MusicBeatState
 
         var reloadButton:PsychUIButton = new PsychUIButton(185, 6.8, "Reload Image", function()
         {
-            reloadImage();
+            try {
+                reloadImage();
+            } catch (e:Dynamic) {
+                showOutput("No image found");
+            }
         });
         ui.add(reloadButton);
 
@@ -489,8 +493,26 @@ class NoteSplashEditorState extends MusicBeatState
 
     dynamic function reloadImage() // Dynamic because needs to be changed later
     {
-        //
+        // Empty line
     }
+
+	function showOutput(message:String, isError:Bool = false)
+	{
+		trace(message);
+		outputTxt.text = message;
+		outputTxt.y = FlxG.height - outputTxt.height - 30;
+		outputAlpha = 4;
+		if(isError)
+		{
+			FlxG.sound.play(Paths.sound('cancelMenu'), 0.6);
+			outputTxt.color = FlxColor.RED;
+		}
+		else
+		{
+			FlxG.sound.play(Paths.sound('scrollMenu'), 0.6);
+			outputTxt.color = FlxColor.WHITE;
+		}
+	}
 
     var holdingArrowsTime:Float = 0;
     var holdingArrowsElapsed:Float = 0;
