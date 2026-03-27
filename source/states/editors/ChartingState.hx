@@ -271,9 +271,6 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		// deletePlayerNotes = chartEditorSave.data.deletePlayer;
 		// deleteOpponentNotes = chartEditorSave.data.deleteOpponent;
 
-		if(chartEditorSave.data.originalLoadingChart == null) chartEditorSave.data.originalLoadingChart = false;
-		Song.originalLoading = chartEditorSave.data.originalLoadingChart;
-
 		if(chartEditorSave.data.customBgColor == null) chartEditorSave.data.customBgColor = '303030';
 		if(chartEditorSave.data.customGridColors == null || chartEditorSave.data.customGridColors.length < 2)
 			chartEditorSave.data.customGridColors = ['DFDFDF', 'BFBFBF'];
@@ -3827,7 +3824,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			}
 
 			_cacheSections();
-			updateCurrentSectionNotesNoSectionNotes();
+			// updateCurrentSectionNotesNoSectionNotes();
 			forceDataUpdate = true;
 
 			showOutput('Deleted sections ' + sectionStart + ' to ' + sectionEnd);
@@ -3995,8 +3992,6 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 	var opponentDropDown:PsychUIDropDownMenu;
 	var girlfriendDropDown:PsychUIDropDownMenu;
 
-	var originalLoadingCheckbox:PsychUICheckBox;
-
 	function addSongTab()
 	{
 		var tab_group = mainBox.getTab('Song').menu;
@@ -4122,16 +4117,6 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		tab_group.add(girlfriendDropDown);
 		tab_group.add(opponentDropDown);
 		tab_group.add(playerDropDown);
-
-		originalLoadingCheckbox = new PsychUICheckBox(objX, objY + 120, 'Use Original Loading', 120, function()
-		{
-			chartEditorSave.data.originalLoadingChart = originalLoadingCheckbox.checked;
-			chartEditorSave.flush();
-			Song.originalLoading = originalLoadingCheckbox.checked;
-		});
-		originalLoadingCheckbox.checked = chartEditorSave.data.originalLoadingChart;
-
-		tab_group.add(originalLoadingCheckbox);
 	}
 
 	function addNoteSpammingTab()

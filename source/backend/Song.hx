@@ -65,8 +65,6 @@ class Song
 	public var gfVersion:String = 'gf';
 	public var format:String = 'psych_v1';
 
-	public static var originalLoading:Bool = false;
-
 	public static function convert(songJson:Dynamic) // Convert old charts to psych_v1 format
 	{
 		if(songJson.gfVersion == null)
@@ -236,46 +234,18 @@ class Song
 	{
 		if(folder == null) folder = jsonInput;
 
-		if (!Song.originalLoading)
-		{
-			// Build file path from song name and folder
-			var filePath:String = '';
-			#if MODS_ALLOWED
-			if(FileSystem.exists(Paths.modsJson(folder + '/' + jsonInput)))
-				filePath = Paths.modsJson(folder + '/' + jsonInput);
-			else if(FileSystem.exists(Paths.json(folder + '/' + jsonInput)))
-				filePath = Paths.json(folder + '/' + jsonInput);
-			#else
-			if(OpenFlAssets.exists(Paths.json(folder + '/' + jsonInput)))
-				filePath = Paths.json(folder + '/' + jsonInput);
-			#end
+		var filePath:String = '';
+		#if MODS_ALLOWED
+		if(FileSystem.exists(Paths.modsJson(folder + '/' + jsonInput)))
+			filePath = Paths.modsJson(folder + '/' + jsonInput);
+		else if(FileSystem.exists(Paths.json(folder + '/' + jsonInput)))
+			filePath = Paths.json(folder + '/' + jsonInput);
+		#else
+		if(OpenFlAssets.exists(Paths.json(folder + '/' + jsonInput)))
+			filePath = Paths.json(folder + '/' + jsonInput);
+		#end
 
-			if (filePath != '')
-			{
-				var song = loadFromJsonStreaming(filePath, folder);
-				if (song != null)
-				{
-					loadedSongName = folder;
-					StageData.loadDirectory(song);
-					return song;
-				}
-			}
-		}
-		else
-		{
-			PlayState.SONG = getChart(jsonInput, folder);
-			loadedSongName = folder;
-			chartPath = _lastPath;
-
-			#if windows
-			chartPath = chartPath.replace('/', '\\');
-			#end
-
-			StageData.loadDirectory(PlayState.SONG);
-			return PlayState.SONG;
-		}
-
-		return null;
+		return loadFromJsonStreaming(filePath, folder);
 	}
 
 	static var _lastPath:String;
