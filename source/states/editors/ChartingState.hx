@@ -644,7 +644,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			for (section in PlayState.SONG.notes)
 				totalNoteCount += section.sectionNotes.length;
 		}
-		
+
 		// Optimize GC for very large note counts (matching JS-Engine-source behavior)
 		#if cpp
 		if (totalNoteCount > 1000000)
@@ -652,20 +652,20 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			cpp.vm.Gc.enable(false);
 		}
 		#end
-		
+
 		updateJsonData();
 		loadMusic();
 		reloadNotes();
 		onChartLoaded();
 		updateHeads(true);
-		
+
 		autoSaveTime = 0;
 		Conductor.songPosition = 0;
 		if(FlxG.sound.music != null) FlxG.sound.music.time = 0;
 		curSec = 0;
 		loadSection();
 		forceDataUpdate = true;
-		
+
 		#if cpp
 		if (totalNoteCount > 1000000)
 		{
@@ -2776,26 +2776,34 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 	{
 		for (i in 1...GRID_PLAYERS+1)
 		{
-			//trace('adding iconP$i');
-			var data:CharacterFile = loadCharacterFile(Reflect.field(PlayState.SONG, 'player$i'));
+			var playerName:String = Reflect.field(PlayState.SONG, 'player$i');
+			if (playerName == null) continue;
+
+			var data:CharacterFile = loadCharacterFile(playerName);
 			Reflect.setField(characterData, 'iconP$i', data != null && data.healthicon != null ? data.healthicon : 'face');
 			Reflect.setField(characterData, 'vocalsP$i', data != null && data.vocals_file != null ? data.vocals_file : '');
 		}
 	}
-	
+
 	var _lastSec:Int = -1;
 	var _lastGfSection:Null<Bool> = null;
 	function updateHeads(ignoreCheck:Bool = false):Void
 	{
 		var curSecData:SwagSection = PlayState.SONG.notes[curSec];
 		var isGfSection:Bool = (curSecData != null && curSecData.gfSection == true);
-		if(_lastGfSection == isGfSection && _lastSec == curSec && !ignoreCheck) return; //optimization
+		if(_lastGfSection == isGfSection && _lastSec == curSec && !ignoreCheck) return;
+
+		// Add null check for icons
+		if (icons == null) return;
 
 		for (i in 0...GRID_PLAYERS)
 		{
+			if (i >= icons.length) break;
 			var icon:HealthIcon = icons[i];
-			//trace('changing iconP${icon.ID}');
+			if (icon == null) continue;
+
 			var iconName:String = Reflect.field(characterData, 'iconP${icon.ID}');
+			if (iconName == null) iconName = 'face';
 			icon.changeIcon(iconName);
 		}
 
@@ -2803,19 +2811,22 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		{
 			var iconP1:HealthIcon = icons[0];
 			var iconP2:HealthIcon = icons[1];
-			var mustHitSection:Bool = (curSecData != null && curSecData.mustHitSection == true);
-			if (isGfSection)
+			if (iconP1 != null && iconP2 != null)
 			{
-				if (mustHitSection)
-					iconP1.changeIcon('gf');
-				else
-					iconP2.changeIcon('gf');
-			}
+				var mustHitSection:Bool = (curSecData != null && curSecData.mustHitSection == true);
+				if (isGfSection)
+				{
+					if (mustHitSection)
+						iconP1.changeIcon('gf');
+					else
+						iconP2.changeIcon('gf');
+				}
 
-			if(mustHitSection)
-				mustHitIndicator.x = iconP1.x + iconP1.width/2;
-			else
-				mustHitIndicator.x = iconP2.x + iconP2.width/2;
+				if(mustHitSection)
+					mustHitIndicator.x = iconP1.x + iconP1.width/2;
+				else
+					mustHitIndicator.x = iconP2.x + iconP2.width/2;
+			}
 		}
 		_lastGfSection = isGfSection;
 		_lastSec = curSec;
