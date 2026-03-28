@@ -2028,9 +2028,13 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 	function loadChartComplete(chart:SwagSong):Void
 	{
+		trace('loadChartComplete: Starting');
 		loadChart(chart);
+		trace('loadChartComplete: After loadChart');
 		reloadNotesDropdowns();
+		trace('loadChartComplete: After reloadNotesDropdowns');
 		prepareReload();
+		trace('loadChartComplete: After prepareReload');
 		showOutput('Loaded chart "${chart.song}" successfully!');
 	}
 
@@ -2380,8 +2384,6 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 	{
 		if(secNum == null) secNum = curSec;
 		var section = PlayState.SONG.notes[secNum];
-
-		trace('Creating note: strumTime=' + note[0] + ', noteData=' + note[1] + ', sustain=' + note[2]);
 
 		var daStrumTime:Float = note[0];
 		var daNoteData:Int = Std.int(note[1] % GRID_COLUMNS_PER_PLAYER);
