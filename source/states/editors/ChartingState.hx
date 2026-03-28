@@ -677,17 +677,22 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 	function onChartLoaded()
 	{
+		trace('onChartLoaded: start');
 		if(PlayState.SONG == null) return;
+		trace('onChartLoaded: PlayState.SONG exists');
 
 		// SONG TAB
+		trace('onChartLoaded: setting song name');
 		songNameInputText.text = PlayState.SONG.song;
-		allowVocalsCheckBox.checked = (PlayState.SONG.needsVoices != false); //If the song for some reason does not have this value, it will be set to true
+		allowVocalsCheckBox.checked = (PlayState.SONG.needsVoices != false);
 
+		trace('onChartLoaded: setting bpm and speed');
 		bpmStepper.value = PlayState.SONG.bpm;
 		scrollSpeedStepper.value = PlayState.SONG.speed;
 		audioOffsetStepper.value = Reflect.hasField(PlayState.SONG, 'offset') ? PlayState.SONG.offset : 0;
 		Conductor.offset = audioOffsetStepper.value;
 
+		trace('onChartLoaded: setting dropdowns');
 		playerDropDown.selectedLabel = PlayState.SONG.player1;
 		opponentDropDown.selectedLabel = PlayState.SONG.player2;
 		girlfriendDropDown.selectedLabel = PlayState.SONG.gfVersion;
@@ -695,6 +700,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		StageData.loadDirectory(PlayState.SONG);
 
 		// DATA TAB
+		trace('onChartLoaded: setting game over data');
 		gameOverCharDropDown.selectedLabel = PlayState.SONG.gameOverChar;
 		gameOverSndInputText.text = PlayState.SONG.gameOverSound;
 		gameOverLoopInputText.text = PlayState.SONG.gameOverLoop;
@@ -704,8 +710,9 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 		noteTextureInputText.text = PlayState.SONG.arrowSkin;
 		noteSplashesInputText.text = PlayState.SONG.splashSkin;
+		trace('onChartLoaded: complete');
 	}
-	
+
 	var noteSelectionSine:Float = 0;
 	var selectedNotes:Array<MetaNote> = [];
 	var ignoreClickForThisFrame:Bool = false;
@@ -2774,62 +2781,61 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 	var characterData:Dynamic = {};
 	function updateJsonData():Void
 	{
+		trace('updateJsonData: start');
 		for (i in 1...GRID_PLAYERS+1)
 		{
-			var playerName:String = Reflect.field(PlayState.SONG, 'player$i');
-			if (playerName == null) continue;
-
-			var data:CharacterFile = loadCharacterFile(playerName);
+			trace('updateJsonData: processing player ' + i);
+			var data:CharacterFile = loadCharacterFile(Reflect.field(PlayState.SONG, 'player$i'));
 			Reflect.setField(characterData, 'iconP$i', data != null && data.healthicon != null ? data.healthicon : 'face');
 			Reflect.setField(characterData, 'vocalsP$i', data != null && data.vocals_file != null ? data.vocals_file : '');
 		}
+		trace('updateJsonData: complete');
 	}
 
 	var _lastSec:Int = -1;
 	var _lastGfSection:Null<Bool> = null;
 	function updateHeads(ignoreCheck:Bool = false):Void
 	{
+		trace('updateHeads: start, ignoreCheck=' + ignoreCheck);
 		var curSecData:SwagSection = PlayState.SONG.notes[curSec];
 		var isGfSection:Bool = (curSecData != null && curSecData.gfSection == true);
-		if(_lastGfSection == isGfSection && _lastSec == curSec && !ignoreCheck) return;
+		if(_lastGfSection == isGfSection && _lastSec == curSec && !ignoreCheck) 
+		{
+			trace('updateHeads: early return');
+			return;
+		}
 
-		// Add null check for icons
-		if (icons == null) return;
-
+		trace('updateHeads: icons length = ' + icons.length);
 		for (i in 0...GRID_PLAYERS)
 		{
-			if (i >= icons.length) break;
+			trace('updateHeads: processing icon ' + i);
 			var icon:HealthIcon = icons[i];
-			if (icon == null) continue;
-
 			var iconName:String = Reflect.field(characterData, 'iconP${icon.ID}');
-			if (iconName == null) iconName = 'face';
 			icon.changeIcon(iconName);
 		}
 
 		if(icons.length > 1)
 		{
+			trace('updateHeads: processing icon positions');
 			var iconP1:HealthIcon = icons[0];
 			var iconP2:HealthIcon = icons[1];
-			if (iconP1 != null && iconP2 != null)
+			var mustHitSection:Bool = (curSecData != null && curSecData.mustHitSection == true);
+			if (isGfSection)
 			{
-				var mustHitSection:Bool = (curSecData != null && curSecData.mustHitSection == true);
-				if (isGfSection)
-				{
-					if (mustHitSection)
-						iconP1.changeIcon('gf');
-					else
-						iconP2.changeIcon('gf');
-				}
-
-				if(mustHitSection)
-					mustHitIndicator.x = iconP1.x + iconP1.width/2;
+				if (mustHitSection)
+					iconP1.changeIcon('gf');
 				else
-					mustHitIndicator.x = iconP2.x + iconP2.width/2;
+					iconP2.changeIcon('gf');
 			}
+
+			if(mustHitSection)
+				mustHitIndicator.x = iconP1.x + iconP1.width/2;
+			else
+				mustHitIndicator.x = iconP2.x + iconP2.width/2;
 		}
 		_lastGfSection = isGfSection;
 		_lastSec = curSec;
+		trace('updateHeads: complete');
 	}
 
 	var playbackSlider:PsychUISlider;
@@ -4270,6 +4276,12 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			var sec = getCurChartSection();
 			if(sec == null || sec.sectionNotes == null) return;
 
+			// Disable GC for massive operations
+			#if cpp
+			cpp.vm.Gc.enable(false);
+			#end
+
+			// Collect notes to duplicate (original logic)
 			var copiedNotes:Array<Dynamic> = [];
 			for (i in 0...sec.sectionNotes.length)
 			{
@@ -4277,15 +4289,23 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 				if(note != null && note.length > 1 && note[1] >= 0) copiedNotes.push(note);
 			}
 
-			if(copiedNotes.length == 0) return;
+			if(copiedNotes.length == 0)
+			{
+				#if cpp cpp.vm.Gc.enable(true); #end
+				showOutput('No notes to duplicate!');
+				return;
+			}
 
 			var duplicateAmount:Int = Std.int(stepperDuplicateAmount.value);
 			var shiftAmount:Float = (stepperShiftSteps.value) * (15000/Conductor.bpm);
 			var copiedLength:Int = copiedNotes.length;
+			var totalNewNotes:Int = copiedLength * duplicateAmount;
 
-			// Build all new notes in a separate array
-			var allNewNotes:Array<Dynamic> = [];
+			// Pre-allocate array for new notes (optimization)
+			var newNotes:Array<Array<Dynamic>> = [for (i in 0...totalNewNotes) null];
 
+			// Generate all new notes (original duplication logic)
+			var index:Int = 0;
 			for (_i in 1...duplicateAmount + 1)
 			{
 				var timeOffset:Float = shiftAmount * _i;
@@ -4293,19 +4313,28 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 				{
 					if(copiedNotes[i] == null || copiedNotes[i].length < 3) continue;
 
-					var copiedNote:Array<Dynamic> = [copiedNotes[i][0], copiedNotes[i][1], copiedNotes[i][2]];
-					if(copiedNotes[i].length > 3) copiedNote.push(copiedNotes[i][3]);
-					copiedNote[0] += timeOffset;
-					allNewNotes.push(copiedNote);
+					var original = copiedNotes[i];
+					var newNote:Array<Dynamic> = [original[0], original[1], original[2]];
+					if(original.length > 3) newNote.push(original[3]);
+					newNote[0] += timeOffset;
+					newNotes[index++] = newNote;
 				}
 			}
 
-			sec.sectionNotes = sec.sectionNotes.concat(allNewNotes);
+			sec.sectionNotes = sec.sectionNotes.concat(newNotes);
+
+			newNotes = null;
 
 			_cacheSections();
 
 			sec.sectionNotes.length <= 30000 ? updateCurrentSectionNotes() : jumpNextSection();
-			showOutput('Duplicated ' + (copiedLength * duplicateAmount) + ' notes');
+
+			// Re-enable GC
+			#if cpp
+			cpp.vm.Gc.enable(true);
+			#end
+
+			showOutput('Duplicated ' + totalNewNotes + ' notes');
 		});
 
 		tab_group.add(check_stackActive);
