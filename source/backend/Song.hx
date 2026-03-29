@@ -126,7 +126,11 @@ class Song
 	public static var loadedSongName:String;
 	public static function loadFromJsonStreaming(filePath:String, ?songName:String = null):SwagSong
 	{
-		if(songName == null) songName = Paths.formatToSongPath(Path.withoutExtension(filePath));
+		if(songName == null)
+		{
+			var fileName:String = haxe.io.Path.withoutDirectory(filePath);
+			songName = haxe.io.Path.withoutExtension(fileName);
+		}
 
 		trace('Loading file: ' + filePath);
 
@@ -161,22 +165,10 @@ class Song
 			var totalNotes:Int = 0;
 			for (sec in song.notes) totalNotes += sec.sectionNotes.length;
 
-			if (totalNotes > 300000)
-			{
-				trace('Loading large chart with ' + totalNotes + ' notes');
-			}
-			else if (totalNotes > 100000)
-			{
-				trace('Loading medium chart with ' + totalNotes + ' notes');
-			}
-			else if (totalNotes > 1000000)
-			{
-				trace('Loading huge chart with ' + totalNotes + ' notes');
-			}
-			else
-			{
-				trace('Loading normal chart with ' + totalNotes + ' notes');
-			}
+			if (totalNotes > 300000) trace('Loading large chart with ' + totalNotes + ' notes');
+			else if (totalNotes > 100000) trace('Loading medium chart with ' + totalNotes + ' notes');
+			else if (totalNotes > 1000000) trace('Loading huge chart with ' + totalNotes + ' notes');
+			else trace('Loading normal chart with ' + totalNotes + ' notes');
 
 			// Process notes in chunks
 			var chunkSize:Int = 5000;
@@ -212,7 +204,9 @@ class Song
 			}
 			#end
 
+			trace('songName passed to getChart: ' + songName);
 			result = getChart(songData, songName);
+
 			if (result != null)
 			{
 				loadedSongName = songName;
