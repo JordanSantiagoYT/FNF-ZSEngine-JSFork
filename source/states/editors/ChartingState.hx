@@ -677,22 +677,17 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 	function onChartLoaded()
 	{
-		trace('onChartLoaded: start');
 		if(PlayState.SONG == null) return;
-		trace('onChartLoaded: PlayState.SONG exists');
 
 		// SONG TAB
-		trace('onChartLoaded: setting song name');
 		songNameInputText.text = PlayState.SONG.song;
 		allowVocalsCheckBox.checked = (PlayState.SONG.needsVoices != false);
 
-		trace('onChartLoaded: setting bpm and speed');
 		bpmStepper.value = PlayState.SONG.bpm;
 		scrollSpeedStepper.value = PlayState.SONG.speed;
 		audioOffsetStepper.value = Reflect.hasField(PlayState.SONG, 'offset') ? PlayState.SONG.offset : 0;
 		Conductor.offset = audioOffsetStepper.value;
 
-		trace('onChartLoaded: setting dropdowns');
 		playerDropDown.selectedLabel = PlayState.SONG.player1;
 		opponentDropDown.selectedLabel = PlayState.SONG.player2;
 		girlfriendDropDown.selectedLabel = PlayState.SONG.gfVersion;
@@ -700,7 +695,6 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		StageData.loadDirectory(PlayState.SONG);
 
 		// DATA TAB
-		trace('onChartLoaded: setting game over data');
 		gameOverCharDropDown.selectedLabel = PlayState.SONG.gameOverChar;
 		gameOverSndInputText.text = PlayState.SONG.gameOverSound;
 		gameOverLoopInputText.text = PlayState.SONG.gameOverLoop;
@@ -710,7 +704,6 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 		noteTextureInputText.text = PlayState.SONG.arrowSkin;
 		noteSplashesInputText.text = PlayState.SONG.splashSkin;
-		trace('onChartLoaded: complete');
 	}
 
 	var noteSelectionSine:Float = 0;
@@ -2553,13 +2546,9 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 	var forceDataUpdate:Bool = true;
 	function loadSection(?sec:Null<Int> = null)
 	{
-		trace('loadSection: start, sec=' + sec);
 		if(sec != null) curSec = sec;
 		curSec = Std.int(FlxMath.bound(curSec, 0, PlayState.SONG.notes.length-1));
-		trace('loadSection: curSec=' + curSec);
-
 		Conductor.bpm = cachedSectionBPMs[curSec];
-		trace('loadSection: Conductor.bpm set');
 
 		var hei:Float = 0;
 		if(curSec > 0)
@@ -2588,37 +2577,29 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		if(!prevGridBg.visible) eventLockOverlay.y = gridBg.y;
 		eventLockOverlay.scale.y = hei;
 		eventLockOverlay.updateHitbox();
-		trace('loadSection: grid positioned');
 
 		softReloadNotes();
-		trace('loadSection: softReloadNotes done');
-
 		updateHeads();
-		trace('loadSection: updateHeads done');
 
 		var sec = getCurChartSection();
 		if(sec != null)
 		{
-			trace('loadSection: updating UI elements');
 			mustHitCheckBox.checked = sec.mustHitSection;
 			gfSectionCheckBox.checked = sec.gfSection;
 			altAnimSectionCheckBox.checked = sec.altAnim;
 			changeBpmCheckBox.checked = sec.changeBPM;
 			changeBpmStepper.value = Conductor.bpm;
 			beatsPerSecStepper.value = sec.sectionBeats;
-			trace('loadSection: UI elements updated');
 
 			strumTimeStepper.step = Conductor.stepCrochet;
 			susLengthStepper.step = cachedSectionCrochets[curSec] / 4 / 2;
 			susLengthStepper.max = susLengthStepper.step * 128;
 			if(selectedNotes.length > 1) susLengthStepper.min = -susLengthStepper.max;
 			else susLengthStepper.min = 0;
-			trace('loadSection: steppers updated');
 		}
 		prevGridBg.vortexLineEnabled = gridBg.vortexLineEnabled = nextGridBg.vortexLineEnabled = vortexEnabled;
 		prevGridBg.vortexLineSpace = gridBg.vortexLineSpace = nextGridBg.vortexLineSpace = GRID_SIZE * 4 * curZoom;
 		updateWaveform();
-		trace('loadSection: complete');
 	}
 
 	function softReloadNotes(onlyCurrent:Bool = false)
@@ -2793,22 +2774,18 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 	var characterData:Dynamic = {};
 	function updateJsonData():Void
 	{
-		trace('updateJsonData: start');
 		for (i in 1...GRID_PLAYERS+1)
 		{
-			trace('updateJsonData: processing player ' + i);
 			var data:CharacterFile = loadCharacterFile(Reflect.field(PlayState.SONG, 'player$i'));
 			Reflect.setField(characterData, 'iconP$i', data != null && data.healthicon != null ? data.healthicon : 'face');
 			Reflect.setField(characterData, 'vocalsP$i', data != null && data.vocals_file != null ? data.vocals_file : '');
 		}
-		trace('updateJsonData: complete');
 	}
 
 	var _lastSec:Int = -1;
 	var _lastGfSection:Null<Bool> = null;
 	function updateHeads(ignoreCheck:Bool = false):Void
 	{
-		trace('updateHeads: start, ignoreCheck=' + ignoreCheck);
 		var curSecData:SwagSection = PlayState.SONG.notes[curSec];
 		var isGfSection:Bool = (curSecData != null && curSecData.gfSection == true);
 		if(_lastGfSection == isGfSection && _lastSec == curSec && !ignoreCheck) 
@@ -2817,10 +2794,8 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			return;
 		}
 
-		trace('updateHeads: icons length = ' + icons.length);
 		for (i in 0...GRID_PLAYERS)
 		{
-			trace('updateHeads: processing icon ' + i);
 			var icon:HealthIcon = icons[i];
 			var iconName:String = Reflect.field(characterData, 'iconP${icon.ID}');
 			icon.changeIcon(iconName);
@@ -2828,7 +2803,6 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 		if(icons.length > 1)
 		{
-			trace('updateHeads: processing icon positions');
 			var iconP1:HealthIcon = icons[0];
 			var iconP2:HealthIcon = icons[1];
 			var mustHitSection:Bool = (curSecData != null && curSecData.mustHitSection == true);
@@ -2847,7 +2821,6 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		}
 		_lastGfSection = isGfSection;
 		_lastSec = curSec;
-		trace('updateHeads: complete');
 	}
 
 	var playbackSlider:PsychUISlider;

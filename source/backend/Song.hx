@@ -144,7 +144,7 @@ class Song
 		{
 			content = file.readAll().toString();
 			var obj = haxe.Json.parse(content);
-			var songData = obj.song;
+			var songData = obj.song != null ? obj.song : obj;
 			var song:SwagSong = cast songData;
 
 			trace('File size: ' + content.length + ' bytes');
@@ -210,16 +210,18 @@ class Song
 			}
 			#end
 
-			PlayState.SONG = song;
-			loadedSongName = songName;
-			chartPath = filePath;
+			result = getChart(songData, songName);
+			if (result != null)
+			{
+				loadedSongName = songName;
+				chartPath = filePath;
 
-			#if windows
-			chartPath = chartPath.replace('/', '\\');
-			#end
+				#if windows
+				chartPath = chartPath.replace('/', '\\');
+				#end
 
-			StageData.loadDirectory(PlayState.SONG);
-			result = PlayState.SONG;
+				StageData.loadDirectory(result);
+			}
 		}
 		catch(e:Dynamic)
 		{
@@ -235,7 +237,6 @@ class Song
 	{
 		if(folder == null) folder = jsonInput;
 
-		// Try streaming first (faster for large charts)
 		if (!Song.originalLoading)
 		{
 			var filePath:String = '';
@@ -251,7 +252,8 @@ class Song
 
 			if (filePath != '')
 			{
-				var song = loadFromJsonStreaming(filePath, folder);
+				var song:SwagSong = loadFromJsonStreaming(filePath, folder);
+
 				if (song != null)
 				{
 					loadedSongName = folder;
@@ -261,7 +263,7 @@ class Song
 			}
 		}
 
-		// Fallback to original loading method (works reliably)
+		// Original loading method
 		PlayState.SONG = getChart(jsonInput, folder);
 		loadedSongName = folder;
 		chartPath = _lastPath;
@@ -314,7 +316,7 @@ class Song
 				case 'psych_v1':
 					if(!fmt.startsWith('psych_v1')) //Convert to Psych 1.0 format
 					{
-						trace('converting chart $nameForError with format $fmt to psych_v1 format...');
+						trace('Converting chart $nameForError with format $fmt to psych_v1 format...');
 						songJson.format = 'psych_v1_convert';
 						convert(songJson);
 					}
