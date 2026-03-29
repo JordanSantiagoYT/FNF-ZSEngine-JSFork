@@ -144,7 +144,7 @@ class Song
 		{
 			content = file.readAll().toString();
 			var obj = haxe.Json.parse(content);
-			var songData = obj.song != null ? obj.song : obj;
+			var songData = (obj != null && obj.song != null) ? obj.song : obj;
 			var song:SwagSong = cast songData;
 
 			trace('File size: ' + content.length + ' bytes');
