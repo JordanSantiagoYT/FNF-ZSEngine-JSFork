@@ -140,29 +140,43 @@ class Song
 			return null;
 		}
 
-		var file = sys.io.File.read(filePath);
-		var result:SwagSong = null;
 		var content:String = "";
-
+		var file = sys.io.File.read(filePath);
 		try
 		{
 			content = file.readAll().toString();
-			var obj = haxe.Json.parse(content);
-			var songData:Dynamic = obj;
-			if (obj != null && Reflect.hasField(obj, "song") && obj.song != null)
-				songData = obj.song;
+		}
+		catch (e:Dynamic)
+		{
+			trace('Error reading file: ' + e);
+			file.close();
+			return null;
+		}
+		file.close();
 
-			var song:SwagSong = cast songData;
+		var result:SwagSong = null;
 
-			trace('File size: ' + content.length + ' bytes');
-			if (content.length == 0)
+		trace('File size: ' + content.length + ' bytes');
+		if (content.length == 0)
+		{
+			trace('File is empty!');
+			return null;
+		}
+
+		try
+		{
+			result = parseJSON(content, songName);
+			if (result == null || result.notes == null)
 			{
-				trace('File is empty!');
+				trace('Invalid chart: missing notes');
+				result = null;
 				return null;
 			}
 
 			var totalNotes:Int = 0;
-			for (sec in song.notes) totalNotes += sec.sectionNotes.length;
+			for (sec in result.notes)
+				if (sec.sectionNotes != null)
+					totalNotes += sec.sectionNotes.length;
 
 			if (totalNotes > 300000) trace('Loading large chart with ' + totalNotes + ' notes');
 			else if (totalNotes > 100000) trace('Loading medium chart with ' + totalNotes + ' notes');
@@ -173,9 +187,14 @@ class Song
 			var chunkSize:Int = 5000;
 			var processedNotes:Int = 0;
 
-			for (section in song.notes)
+			for (section in result.notes)
 			{
 				var originalNotes = section.sectionNotes;
+				if (originalNotes == null)
+				{
+					section.sectionNotes = [];
+					continue;
+				}
 				var newNotes:Array<Dynamic> = [];
 
 				for (i in 0...Std.int(Math.ceil(originalNotes.length / chunkSize)))
@@ -203,26 +222,20 @@ class Song
 
 			trace('Loaded ' + processedNotes + ' notes');
 
-			trace('songName passed to getChart: ' + songName);
-			result = getChart(songData, songName);
-
-			if (result != null)
-			{
-				loadedSongName = songName;
-				chartPath = filePath;
-				#if windows
-				chartPath = chartPath.replace('/', '\\');
-				#end
-				StageData.loadDirectory(result);
-			}
+			loadedSongName = songName;
+			chartPath = filePath;
+			#if windows
+			chartPath = chartPath.replace('/', '\\');
+			#end
+			StageData.loadDirectory(result);
 		}
-		catch(e:Dynamic)
+		catch (e:Dynamic)
 		{
 			trace('Error parsing JSON: ' + e);
 			trace('First 500 chars of content: ' + content.substr(0, 500));
+			result = null;
 		}
 
-		file.close();
 		return result;
 	}
 
