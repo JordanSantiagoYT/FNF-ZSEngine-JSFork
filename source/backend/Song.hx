@@ -126,7 +126,7 @@ class Song
 	public static var loadedSongName:String;
 	public static function loadFromJsonStreaming(filePath:String, ?songName:String = null):SwagSong
 	{
-		if(songName == null)
+		if (songName == null)
 		{
 			var fileName:String = haxe.io.Path.withoutDirectory(filePath);
 			songName = haxe.io.Path.withoutExtension(fileName);
@@ -152,15 +152,15 @@ class Song
 			if (obj != null && Reflect.hasField(obj, "song") && obj.song != null)
 				songData = obj.song;
 
-			trace('File size: ' + content.length + ' bytes');
+			var song:SwagSong = cast songData;
 
+			trace('File size: ' + content.length + ' bytes');
 			if (content.length == 0)
 			{
 				trace('File is empty!');
 				return null;
 			}
 
-			#if cpp
 			var totalNotes:Int = 0;
 			for (sec in song.notes) totalNotes += sec.sectionNotes.length;
 
@@ -173,9 +173,8 @@ class Song
 			var chunkSize:Int = 5000;
 			var processedNotes:Int = 0;
 
-			for (sectionIndex in 0...song.notes.length)
+			for (section in song.notes)
 			{
-				var section = song.notes[sectionIndex];
 				var originalNotes = section.sectionNotes;
 				var newNotes:Array<Dynamic> = [];
 
@@ -201,20 +200,19 @@ class Song
 				}
 				section.sectionNotes = newNotes;
 			}
-			#end
+
+			trace('Loaded ' + processedNotes + ' notes');
 
 			trace('songName passed to getChart: ' + songName);
-			result = getChart(songData, songName);
+			result = getChart(song, songName);
 
 			if (result != null)
 			{
 				loadedSongName = songName;
 				chartPath = filePath;
-
 				#if windows
 				chartPath = chartPath.replace('/', '\\');
 				#end
-
 				StageData.loadDirectory(result);
 			}
 		}
