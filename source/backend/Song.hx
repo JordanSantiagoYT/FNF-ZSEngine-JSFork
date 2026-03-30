@@ -204,7 +204,7 @@ class Song
 			trace('Loaded ' + processedNotes + ' notes');
 
 			trace('songName passed to getChart: ' + songName);
-			result = getChart(song, songName);
+			result = getChart(songData, songName);
 
 			if (result != null)
 			{
