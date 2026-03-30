@@ -181,7 +181,8 @@ class EventMetaNote extends MetaNote
 
 	override function setSustainLength(v:Float, stepCrochet:Float, zoom:Float = 1) {}
 
-	public var events:Array<Array<String>>;
+	// Be tolerant: charts/mods may store non-string values or malformed arrays.
+	public var events:Array<Array<Dynamic>>;
 	public function updateEventText()
 	{
 		var myTime:Float = Math.floor(this.strumTime);
@@ -189,11 +190,14 @@ class EventMetaNote extends MetaNote
 		if(events.length == 1)
 		{
 			var event = events[0];
-			eventText.text = 'Event: ${event[0]} ($myTime ms)\nValue 1: ${event[1]}\nValue 2: ${event[2]}';
+			var name:String = (event != null && event.length > 0 && event[0] != null) ? Std.string(event[0]) : 'Unknown';
+			var v1:String = (event != null && event.length > 1 && event[1] != null) ? Std.string(event[1]) : '';
+			var v2:String = (event != null && event.length > 2 && event[2] != null) ? Std.string(event[2]) : '';
+			eventText.text = 'Event: ${name} ($myTime ms)\nValue 1: ${v1}\nValue 2: ${v2}';
 		}
 		else if(events.length > 1)
 		{
-			var eventNames:Array<String> = [for (event in events) event[0]];
+			var eventNames:Array<String> = [for (event in events) (event != null && event.length > 0 && event[0] != null) ? Std.string(event[0]) : 'Unknown'];
 			eventText.text = '${events.length} Events ($myTime ms):\n${eventNames.join(', ')}';
 		}
 		else eventText.text = 'ERROR FAILSAFE';
