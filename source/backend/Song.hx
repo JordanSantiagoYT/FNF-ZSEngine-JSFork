@@ -1,6 +1,5 @@
 package backend;
 
-import haxe.Json;
 import lime.utils.Assets;
 import haxe.io.Path;
 
@@ -124,7 +123,10 @@ class Song
 
 	public static var chartPath:String;
 	public static var loadedSongName:String;
-	public static function loadFromJsonStreaming(filePath:String, ?songName:String = null):SwagSong
+	/**
+	 * @param metadataOnly If true, skips parsing the `notes` array (fast freeplay preview). Chart editor must use false (default).
+	 */
+	public static function loadFromJsonStreaming(filePath:String, ?songName:String = null, ?metadataOnly:Bool = false):SwagSong
 	{
 		if (songName == null)
 		{
@@ -165,62 +167,76 @@ class Song
 
 		try
 		{
-			result = parseJSON(content, songName);
-			if (result == null || result.notes == null)
+			// Parse and convert in one step (same as non-streaming path). Do not call getChart() here:
+			// getChart expects string song/folder names and reloads from disk; passing the parsed object
+			// stringifies the whole JSON and breaks Assets.getText with a bogus path.
+			result = parseJSON(content, songName, 'psych_v1', metadataOnly);
+			if (result == null)
+			{
+				result = null;
+				return null;
+			}
+			if (!metadataOnly && result.notes == null)
 			{
 				trace('Invalid chart: missing notes');
 				result = null;
 				return null;
 			}
+			if (result.notes == null)
+				result.notes = [];
 
-			var totalNotes:Int = 0;
-			for (sec in result.notes)
-				if (sec.sectionNotes != null)
-					totalNotes += sec.sectionNotes.length;
-
-			if (totalNotes > 300000) trace('Loading large chart with ' + totalNotes + ' notes');
-			else if (totalNotes > 100000) trace('Loading medium chart with ' + totalNotes + ' notes');
-			else if (totalNotes > 1000000) trace('Loading huge chart with ' + totalNotes + ' notes');
-			else trace('Loading normal chart with ' + totalNotes + ' notes');
-
-			// Process notes in chunks
-			var chunkSize:Int = 5000;
-			var processedNotes:Int = 0;
-
-			for (section in result.notes)
+			if (!metadataOnly)
 			{
-				var originalNotes = section.sectionNotes;
-				if (originalNotes == null)
+				var totalNotes:Int = 0;
+				for (sec in result.notes)
+					if (sec.sectionNotes != null)
+						totalNotes += sec.sectionNotes.length;
+
+				if (totalNotes > 300000) trace('Loading large chart with ' + totalNotes + ' notes');
+				else if (totalNotes > 100000) trace('Loading medium chart with ' + totalNotes + ' notes');
+				else if (totalNotes > 1000000) trace('Loading huge chart with ' + totalNotes + ' notes');
+				else trace('Loading normal chart with ' + totalNotes + ' notes');
+
+				var chunkSize:Int = 5000;
+				var processedNotes:Int = 0;
+
+				for (section in result.notes)
 				{
-					section.sectionNotes = [];
-					continue;
-				}
-				var newNotes:Array<Dynamic> = [];
-
-				for (i in 0...Std.int(Math.ceil(originalNotes.length / chunkSize)))
-				{
-					var start = i * chunkSize;
-					var end = Std.int(Math.min(start + chunkSize, originalNotes.length));
-
-					for (j in start...end)
+					var originalNotes = section.sectionNotes;
+					if (originalNotes == null)
 					{
-						newNotes.push(originalNotes[j]);
-						processedNotes++;
+						section.sectionNotes = [];
+						continue;
 					}
+					var newNotes:Array<Dynamic> = [];
 
-					if (processedNotes % 50000 == 0)
+					for (i in 0...Std.int(Math.ceil(originalNotes.length / chunkSize)))
 					{
-						#if cpp
-						cpp.vm.Gc.enable(true);
-						cpp.vm.Gc.enable(false);
-						#end
-						Sys.sleep(0.001);
+						var start = i * chunkSize;
+						var end = Std.int(Math.min(start + chunkSize, originalNotes.length));
+
+						for (j in start...end)
+						{
+							newNotes.push(originalNotes[j]);
+							processedNotes++;
+						}
+
+						if (processedNotes % 50000 == 0)
+						{
+							#if cpp
+							cpp.vm.Gc.enable(true);
+							cpp.vm.Gc.enable(false);
+							#end
+							Sys.sleep(0.001);
+						}
 					}
+					section.sectionNotes = newNotes;
 				}
-				section.sectionNotes = newNotes;
+
+				trace('Loaded ' + processedNotes + ' notes');
 			}
-
-			trace('Loaded ' + processedNotes + ' notes');
+			else
+				trace('Metadata-only chart load (notes skipped)');
 
 			loadedSongName = songName;
 			chartPath = filePath;
@@ -239,7 +255,10 @@ class Song
 		return result;
 	}
 
-	public static function loadFromJson(jsonInput:String, ?folder:String):SwagSong
+	/**
+	 * @param metadataOnly Skips parsing note data (fast freeplay preview). Keep false for gameplay and chart editor.
+	 */
+	public static function loadFromJson(jsonInput:String, ?folder:String, ?metadataOnly:Bool = false):SwagSong
 	{
 		if(folder == null) folder = jsonInput;
 
@@ -258,10 +277,11 @@ class Song
 
 			if (filePath != '')
 			{
-				var song:SwagSong = loadFromJsonStreaming(filePath, folder);
+				var song:SwagSong = loadFromJsonStreaming(filePath, folder, metadataOnly);
 
 				if (song != null)
 				{
+					PlayState.SONG = song;
 					loadedSongName = folder;
 					StageData.loadDirectory(song);
 					return song;
@@ -270,7 +290,7 @@ class Song
 		}
 
 		// Original loading method
-		PlayState.SONG = getChart(jsonInput, folder);
+		PlayState.SONG = getChart(jsonInput, folder, metadataOnly);
 		loadedSongName = folder;
 		chartPath = _lastPath;
 
@@ -283,7 +303,7 @@ class Song
 	}
 
 	static var _lastPath:String;
-	public static function getChart(jsonInput:String, ?folder:String):SwagSong
+	public static function getChart(jsonInput:String, ?folder:String, ?metadataOnly:Bool = false):SwagSong
 	{
 		if(folder == null) folder = jsonInput;
 		var rawData:String = null;
@@ -299,12 +319,24 @@ class Song
 		#end
 			rawData = Assets.getText(_lastPath);
 
-		return rawData != null ? parseJSON(rawData, jsonInput) : null;
+		return rawData != null ? parseJSON(rawData, jsonInput, 'psych_v1', metadataOnly) : null;
 	}
 
-	public static function parseJSON(rawData:String, ?nameForError:String = null, ?convertTo:String = 'psych_v1'):SwagSong
+	public static function parseJSON(rawData:String, ?nameForError:String = null, ?convertTo:String = 'psych_v1', ?metadataOnly:Bool = false):SwagSong
 	{
-		var songJson:SwagSong = cast Json.parse(rawData);
+		var prevSkip:Bool = SongJson.skipChart;
+		SongJson.skipChart = metadataOnly;
+		var songJson:SwagSong;
+		try
+		{
+			songJson = cast SongJson.parse(rawData);
+		}
+		catch (err:Dynamic)
+		{
+			SongJson.skipChart = prevSkip;
+			throw err;
+		}
+		SongJson.skipChart = prevSkip;
 		if(Reflect.hasField(songJson, 'song'))
 		{
 			var subSong:SwagSong = Reflect.field(songJson, 'song');
@@ -328,6 +360,8 @@ class Song
 					}
 			}
 		}
+		if (songJson.notes == null)
+			songJson.notes = [];
 		return songJson;
 	}
 }

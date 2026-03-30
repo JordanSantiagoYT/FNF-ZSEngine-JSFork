@@ -143,7 +143,18 @@ class EventMetaNote extends MetaNote
 	{
 		super(time, -1, eventData);
 		this.isEvent = true;
-		events = eventData[1];
+		// Some charts may contain malformed/partial event entries.
+		// If eventData[1] is missing/null, ensure we don't crash the chart editor.
+		events = [];
+		try
+		{
+			var ev:Array<Dynamic> = cast (eventData != null ? eventData[1] : null);
+			if (ev != null) events = ev;
+		}
+		catch (_:Dynamic)
+		{
+			// Keep events as [].
+		}
 		//trace('events: $events');
 		
 		loadGraphic(Paths.image('editors/eventIcon'));
@@ -174,6 +185,7 @@ class EventMetaNote extends MetaNote
 	public function updateEventText()
 	{
 		var myTime:Float = Math.floor(this.strumTime);
+		if(events == null) events = [];
 		if(events.length == 1)
 		{
 			var event = events[0];
