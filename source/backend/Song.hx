@@ -126,20 +126,10 @@ class Song
 	public static var loadedSongName:String;
 	public static function loadFromJsonStreaming(filePath:String, ?songName:String = null):SwagSong
 	{
-		if(songName == null) 
+		if(songName == null)
 		{
-			var directory = haxe.io.Path.directory(filePath);
-			var parts = directory.split('/');
-			var folderName = parts[parts.length - 1];
-
-			if (folderName == null || folderName.length == 0 || folderName.indexOf(':') >= 0)
-			{
-				var fileName = haxe.io.Path.withoutDirectory(filePath);
-				folderName = haxe.io.Path.withoutExtension(fileName);
-			}
-
-			songName = Paths.formatToSongPath(folderName);
-			trace('Extracted songName: ' + songName);
+			var fileName:String = haxe.io.Path.withoutDirectory(filePath);
+			songName = haxe.io.Path.withoutExtension(fileName);
 		}
 
 		trace('Loading file: ' + filePath);
@@ -161,7 +151,6 @@ class Song
 			var songData:Dynamic = obj;
 			if (obj != null && Reflect.hasField(obj, "song") && obj.song != null)
 				songData = obj.song;
-			var song:SwagSong = cast songData;
 
 			trace('File size: ' + content.length + ' bytes');
 

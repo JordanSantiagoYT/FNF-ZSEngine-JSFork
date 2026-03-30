@@ -2002,39 +2002,33 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 		if (isFilePath)
 		{
-			trace('Loading from file path: ' + songOrPath);
-			loadedChart = Song.loadFromJsonStreaming(songOrPath, Paths.formatToSongPath(Path.withoutExtension(songOrPath)));
-			trace('loadedChart after streaming: ' + (loadedChart != null ? loadedChart.song : 'null'));
+			var filePath:String = songOrPath;
+			var fileName:String = filePath.substr(filePath.lastIndexOf('/') + 1);
+			var songName:String = fileName.substr(0, fileName.lastIndexOf('.'));
+
+			#if windows
+			if (songName.indexOf('-') == 1 && songName.charAt(0) == 'd')
+				songName = 'd:' + songName.substr(2);
+			#end
+
+			loadedChart = Song.loadFromJsonStreaming(filePath, songName);
 		}
 		else
 		{
 			var songName:String = Paths.formatToSongPath(songOrPath);
 			var diffSuffix = (diff != null && diff.length > 0 && diff != Difficulty.getDefault().toLowerCase()) ? "-" + diff : "";
-			
 			loadedChart = Song.loadFromJson(songName.toLowerCase() + diffSuffix, songName.toLowerCase());
 		}
 
 		if (loadedChart != null)
-		{
-			trace('Calling loadChartComplete with: ' + loadedChart.song);
 			loadChartComplete(loadedChart);
-		}
-		else
-		{
-			trace('loadedChart is null!');
-			showOutput('Error: Failed to load chart', true);
-		}
 	}
 
 	function loadChartComplete(chart:SwagSong):Void
 	{
-		trace('loadChartComplete: Starting');
 		loadChart(chart);
-		trace('loadChartComplete: After loadChart');
 		reloadNotesDropdowns();
-		trace('loadChartComplete: After reloadNotesDropdowns');
 		prepareReload();
-		trace('loadChartComplete: After prepareReload');
 		showOutput('Loaded chart "${chart.song}" successfully!');
 	}
 
@@ -4386,7 +4380,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 					var func:Void->Void = function()
 					{
-						loadJson(filePath, '', true);
+						loadJson(filePath, '', true);  // ← isFilePath = true
 					}
 
 					if(!ignoreProgressCheckBox.checked) openSubState(new Prompt('Warning: Any unsaved progress\nwill be lost.', func));
@@ -4452,9 +4446,9 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 						{
 							var func:Void->Void = function()
 							{
-								loadJson(path, '', true);
+								loadJson(path, '', true);  // ← isFilePath = true
 							}
-							
+
 							if(!ignoreProgressCheckBox.checked) openSubState(new Prompt('Warning: Any unsaved progress\nwill be lost.', func));
 							else func();
 						}
