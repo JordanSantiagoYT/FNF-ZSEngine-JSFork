@@ -148,8 +148,21 @@ class EventMetaNote extends MetaNote
 		events = [];
 		try
 		{
-			var ev:Array<Dynamic> = cast (eventData != null ? eventData[1] : null);
-			if (ev != null) events = ev;
+			// expected shape from ChartingState.createEvent:
+			// eventData = [strumTime, [[eventName, value1, value2], ...]]
+			var outer:Dynamic = (eventData != null) ? eventData[1] : null;
+			if (outer != null && Std.isOfType(outer, Array))
+			{
+				var outerArr:Array<Dynamic> = cast outer;
+				for (entry in outerArr)
+				{
+					// tolerate malformed entries: if it's already an array, keep it, otherwise wrap.
+					if (entry != null && Std.isOfType(entry, Array))
+						events.push(cast entry);
+					else
+						events.push([entry]);
+				}
+			}
 		}
 		catch (_:Dynamic)
 		{

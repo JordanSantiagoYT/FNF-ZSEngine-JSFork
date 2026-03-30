@@ -1925,11 +1925,11 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			curEventSelected = Std.int(FlxMath.bound(curEventSelected, 0, eventNote.events.length - 1));
 			selectedEventText.text = 'Selected Event: ${curEventSelected + 1} / ${eventNote.events.length}';
 			selectedEventText.visible = true;
-			
-			var myEvent:Array<String> = eventNote.events[curEventSelected];
+
+			var myEvent:Array<Dynamic> = eventNote.events[curEventSelected];
 			if(myEvent != null)
 			{
-				var eventName:String = (myEvent[0] != null) ? myEvent[0] : '';
+				var eventName:String = (myEvent.length > 0 && myEvent[0] != null) ? Std.string(myEvent[0]) : '';
 				for (num => event in eventsList)
 				{
 					if(event[0] == eventName)
@@ -1938,8 +1938,8 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 						break;
 					}
 				}
-				value1InputText.text = (myEvent[1] != null) ? myEvent[1] : '';
-				value2InputText.text = (myEvent[2] != null) ? myEvent[2] : '';
+				value1InputText.text = (myEvent.length > 1 && myEvent[1] != null) ? Std.string(myEvent[1]) : '';
+				value2InputText.text = (myEvent.length > 2 && myEvent[2] != null) ? Std.string(myEvent[2]) : '';
 			}
 		}
 		else selectedEventText.visible = false;
