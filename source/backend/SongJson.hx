@@ -38,7 +38,8 @@ class SongJson
 	var pos:Int;
 	var time:Float = Timer.stamp();
 	public static var skipChart:Bool = false;
-	public static var log:Bool = true;
+	// Do not depend on console availability for correctness.
+	public static var log:Bool = false;
 
 	function new(str:String)
 	{
@@ -56,7 +57,12 @@ class SongJson
 		var result = parseRec();
 		#if sys
 		if (log)
-			Sys.stdout().writeString('\x1b[0G$pos/${str.length}');
+		{
+			try {
+				Sys.stdout().writeString('\x1b[0G$pos/${str.length}');
+			}
+			catch (_:Dynamic) {}
+		}
 		#end
 		while (!StringTools.isEof(c = nextChar()))
 		{
@@ -69,7 +75,12 @@ class SongJson
 		}
 		#if sys
 		if (log)
-			Sys.print("\n");
+		{
+			try {
+				Sys.print("\n");
+			}
+			catch (_:Dynamic) {}
+		}
 		#end
 		return result;
 	}
@@ -292,7 +303,12 @@ class SongJson
 		{
 			#if sys
 			if (log)
-				Sys.stdout().writeString('\x1b[0G$pos/${str.length}');
+			{
+				try {
+					Sys.stdout().writeString('\x1b[0G$pos/${str.length}');
+				}
+				catch (_:Dynamic) {}
+			}
 			#end
 			time = Timer.stamp();
 		}
