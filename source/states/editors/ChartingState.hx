@@ -1473,7 +1473,12 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 									{
 										for (originalEvent in originalEvents)
 										{
-											var newEventData:Array<Dynamic> = [spamStrumTime, originalEvent.eventName, originalEvent.eventValue];
+											var newEventData:Array<Dynamic> = [
+												spamStrumTime,
+												originalEvent.eventName,
+												originalEvent.eventVal1,
+												originalEvent.eventVal2
+											];
 											var newEvent:EventMetaNote = createEvent(newEventData);
 											events.push(newEvent);
 										}
@@ -1609,7 +1614,12 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 							{
 								for (originalEvent in originalEvents)
 								{
-									var newEventData:Array<Dynamic> = [spamStrumTime, originalEvent.eventName, originalEvent.eventValue];
+									var newEventData:Array<Dynamic> = [
+										spamStrumTime,
+										originalEvent.eventName,
+										originalEvent.eventVal1,
+										originalEvent.eventVal2
+									];
 									var newEvent:EventMetaNote = createEvent(newEventData);
 									events.push(newEvent);
 								}
