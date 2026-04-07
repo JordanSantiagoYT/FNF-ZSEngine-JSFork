@@ -174,9 +174,11 @@ class PlayState extends MusicBeatState
 	public var grpNoteSplashes:FlxTypedGroup<NoteSplash> = new FlxTypedGroup<NoteSplash>();
 
 	public var camZooming:Bool = false;
+	private var usingBopIntervalEvent:Bool = false;
 	public var camZoomingMult:Float = 1;
 	public var camZoomingDecay:Float = 1;
 	private var curSong:String = "";
+	public var camZoomingInterval:Int = 4;
 
 	public var gfSpeed:Int = 1;
 	public var health(default, set):Float = 1;
@@ -553,8 +555,6 @@ class PlayState extends MusicBeatState
 		moveCameraSection();
 
 		maxHealth = ClientPrefs.data.maxHealth;
-		if (maxHealth > 2) health = maxHealth / 2;
-		else if (maxHealth < 2) maxHealth = 2;
 		healthBar = new Bar(0, FlxG.height * (!ClientPrefs.data.downScroll ? 0.89 : 0.11), 'healthBar', function() return health, 0, maxHealth);
 		healthBar.screenCenter(X);
 		healthBar.leftToRight = false;
@@ -603,6 +603,10 @@ class PlayState extends MusicBeatState
 		comboGroup.cameras = [camHUD];
 
 		startingSong = true;
+
+		health = maxHealth / 2;
+		if (maxHealth < 2) maxHealth = 2;
+		if (health > maxHealth) health = maxHealth;
 
 		#if LUA_ALLOWED
 		for (notetype in noteTypes)
@@ -2206,6 +2210,17 @@ class PlayState extends MusicBeatState
 					}
 				}
 
+			case 'Camera Bopping':
+				var interval:Int = Std.parseInt(value1);
+				if Math.isNaN(interval) interval = 4;
+				var intensity:Float = Std.parseFloat(value2);
+				if Math.isNaN(intensity) intensity = 1;
+
+				camZoomingMult = intensity;
+				camZoomingInterval = interval;
+				if (interval != 4) usingBopIntervalEvent = true;
+				else usingBopIntervalEvent = false;
+
 			case 'Alt Idle Animation':
 				var char:Character = dad;
 				switch(value1.toLowerCase().trim()) {
@@ -3282,6 +3297,12 @@ class PlayState extends MusicBeatState
 			return;
 		}
 
+		if (camZooming && FlxG.camera.zoom < 1.35 && usingBopIntervalEvent && ClientPrefs.data.camZooms && (curBeat % camZoomingInterval == 0))
+		{
+			FlxG.camera.zoom += 0.015 * camZoomingMult;
+			camHUD.zoom += 0.03 * camZoomingMult;
+		}
+
 		if (generatedMusic)
 			notes.sort(FlxSort.byY, ClientPrefs.data.downScroll ? FlxSort.ASCENDING : FlxSort.DESCENDING);
 
@@ -3324,7 +3345,7 @@ class PlayState extends MusicBeatState
 			if (generatedMusic && !endingSong && !isCameraOnForcedPos)
 				moveCameraSection();
 
-			if (camZooming && FlxG.camera.zoom < 1.35 && ClientPrefs.data.camZooms)
+			if (camZooming && FlxG.camera.zoom < 1.35 && !usingBopIntervalEvent && ClientPrefs.data.camZooms)
 			{
 				FlxG.camera.zoom += 0.015 * camZoomingMult;
 				camHUD.zoom += 0.03 * camZoomingMult;

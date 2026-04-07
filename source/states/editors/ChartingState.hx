@@ -82,6 +82,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		['Trigger BG Ghouls', "Should be used only in \"schoolEvil\" Stage!"],
 		['Play Animation', "Plays an animation on a Character,\nonce the animation is completed,\nthe animation changes to Idle\n\nValue 1: Animation to play.\nValue 2: Character (Dad, BF, GF)"],
 		['Camera Follow Pos', "Value 1: X\nValue 2: Y\n\nThe camera won't change the follow point\nafter using this, for getting it back\nto normal, leave both values blank."],
+		['Camera Bopping', "Makes the camera do funny bopping\n\nValue 1: Bopping Speed (how many beats you want before it bops)\nValue 2: Bopping Intensity (how hard you want it to bop, default is 1)\n\nTo reset camera bopping, place a new event and put both values as '4' and '1' respectively."],
 		['Alt Idle Animation', "Sets a specified postfix after the idle animation name.\nYou can use this to trigger 'idle-alt' if you set\nValue 2 to -alt\n\nValue 1: Character to set (Dad, BF or GF)\nValue 2: New postfix (Leave it blank to disable)"],
 		['Screen Shake', "Value 1: Camera shake\nValue 2: HUD shake\n\nEvery value works as the following example: \"1, 0.05\".\nThe first number (1) is the duration.\nThe second number (0.05) is the intensity."],
 		['Change Character', "Value 1: Character to change (Dad, BF, GF)\nValue 2: New character's name"],
@@ -89,7 +90,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		['Set Property', "Value 1: Variable name\nValue 2: New value"],
 		['Play Sound', "Value 1: Sound file name\nValue 2: Volume (Default: 1), ranges from 0 to 1"]
 	];
-	
+
 	public static var keysArray:Array<FlxKey> = [ONE, TWO, THREE, FOUR, FIVE, SIX, SEVEN, EIGHT]; //Used for Vortex Editor
 	public static var SHOW_EVENT_COLUMN = true;
 	public static var GRID_COLUMNS_PER_PLAYER = 4;
@@ -1438,6 +1439,16 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 							if (check_stackActive != null && check_stackActive.checked) {
 								var addCount:Float = stepperStackNum.value * stepperStackOffset.value - 1;
+								var shouldSpamEvents:Bool = (spamEventsCheckbox != null && spamEventsCheckbox.checked);
+								var originalEvents:Array<EventMetaNote> = [];
+								if (shouldSpamEvents)
+								{
+									for (event in events)
+									{
+										if (event != null && Math.abs(event.strumTime - strumTime) < 0.1)
+											originalEvents.push(event);
+									}
+								}
 								for(i in 0...Std.int(addCount)) {
 									var spamStrumTime:Float = strumTime + (15000/Conductor.bpm)/stepperStackOffset.value * (i + 1);
 
@@ -1458,6 +1469,15 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 										spamNoteSetupData.push(typeSelected);
 
 									var spamNoteAdded:MetaNote = createNote(spamNoteSetupData);
+									if (shouldSpamEvents)
+									{
+										for (originalEvent in originalEvents)
+										{
+											var newEventData:Array<Dynamic> = [spamStrumTime, originalEvent.eventName, originalEvent.eventValue];
+											var newEvent:EventMetaNote = createEvent(newEventData);
+											events.push(newEvent);
+										}
+									}
 									var spamDidAdd:Bool = false;
 									for (num in sectionFirstNoteID...notes.length)
 									{
@@ -1555,6 +1575,16 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 					// Note Spamming feature for C key drawing
 					if (check_stackActive != null && check_stackActive.checked) {
 						var addCount:Float = stepperStackNum.value * stepperStackOffset.value - 1;
+						var shouldSpamEvents:Bool = (spamEventsCheckbox != null && spamEventsCheckbox.checked);
+						var originalEvents:Array<EventMetaNote> = [];
+						if (shouldSpamEvents)
+						{
+							for (event in events)
+							{
+								if (event != null && Math.abs(event.strumTime - strumTime) < 0.1)
+									originalEvents.push(event);
+							}
+						}
 						for(i in 0...Std.int(addCount)) {
 							var spamStrumTime:Float = strumTime + (15000/Conductor.bpm)/stepperStackOffset.value * (i + 1);
 
@@ -1575,6 +1605,15 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 								spamNoteSetupData.push(typeSelected);
 
 							var spamNoteAdded:MetaNote = createNote(spamNoteSetupData);
+							if (shouldSpamEvents)
+							{
+								for (originalEvent in originalEvents)
+								{
+									var newEventData:Array<Dynamic> = [spamStrumTime, originalEvent.eventName, originalEvent.eventValue];
+									var newEvent:EventMetaNote = createEvent(newEventData);
+									events.push(newEvent);
+								}
+							}
 							var spamDidAdd:Bool = false;
 							for (num in sectionFirstNoteID...notes.length)
 							{
@@ -2880,7 +2919,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		metronomeStepper = new PsychUINumericStepper(objX + 200, objY, 0.2, 0, 0, 1, 1);
 
 		objY += 50;
-		instVolumeStepper = new PsychUINumericStepper(objX, objY, 0.1, 0.6, 0, 1, 1);
+		instVolumeStepper = new PsychUINumericStepper(objX, objY, 0.1, 1, 0, 1, 1);
 		instVolumeStepper.onValueChange = updateAudioVolume;
 		playerVolumeStepper = new PsychUINumericStepper(objX + 100, objY, 0.1, 1, 0, 1, 1);
 		playerVolumeStepper.onValueChange = updateAudioVolume;
@@ -3182,6 +3221,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 	var stepperShrinkAmount:PsychUINumericStepper;
 	var stepperShiftSteps:PsychUINumericStepper;
 	var stepperDuplicateAmount:PsychUINumericStepper;
+	var spamEventsCheckbox:PsychUICheckBox;
 	function addNoteTab()
 	{
 		var tab_group = mainBox.getTab('Note').menu;
@@ -4138,6 +4178,10 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 		check_stackActive = new PsychUICheckBox(objX, objY, "Enable Note Spamming");
 		check_stackActive.name = 'check_stackActive';
+
+		spamEventsCheckbox = new PsychUICheckBox(objX + 90, objY, 'Spam Events');
+		spamEventsCheckbox.name = 'spam_events';
+		spamEventsCheckbox.checked = true;
 
 		stepperStackNum = new PsychUINumericStepper(objX, objY + 30, 1, 1, 0, 999999, 4, 80);
 		stepperStackNum.name = 'stack_count';
