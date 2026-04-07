@@ -2212,9 +2212,9 @@ class PlayState extends MusicBeatState
 
 			case 'Camera Bopping':
 				var interval:Int = Std.parseInt(value1);
-				if Math.isNaN(interval) interval = 4;
+				if (Math.isNaN(interval)) interval = 4;
 				var intensity:Float = Std.parseFloat(value2);
-				if Math.isNaN(intensity) intensity = 1;
+				if (Math.isNaN(intensity)) intensity = 1;
 
 				camZoomingMult = intensity;
 				camZoomingInterval = interval;
