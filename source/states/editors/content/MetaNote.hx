@@ -164,9 +164,9 @@ class EventMetaNote extends MetaNote
 				}
 			}
 		}
-		catch (_:Dynamic)
+		catch (e:Dynamic)
 		{
-			// Keep events as [].
+			trace('Error: $e');
 		}
 		//trace('events: $events');
 		
