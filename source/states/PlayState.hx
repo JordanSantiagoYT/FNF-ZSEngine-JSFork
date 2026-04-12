@@ -266,13 +266,14 @@ class PlayState extends MusicBeatState
 
 	#if LUA_ALLOWED
 	public var luaArray:Array<FunkinLua> = [];
-	// public var wiggleMap:Map<String, WiggleEffect> = new Map<String, WiggleEffect>();
+	public var wiggleMap:Map<String, WiggleEffect> = new Map<String, WiggleEffect>();
 	#end
 
-	// public var shaderEnabled:Bool = ClientPrefs.data.shaders;
-	// public static var masterPulse:PulseEffect;
-	// var allowDisable:Bool = false;
-	// var allowDisableAt:Int = 0;
+	// Shaders
+	public var shaderEnabled:Bool = ClientPrefs.data.shaders;
+	public static var masterPulse:PulseEffect;
+	var allowDisable:Bool = false;
+	var allowDisableAt:Int = 0;
 
 	#if (LUA_ALLOWED || HSCRIPT_ALLOWED)
 	private var luaDebugGroup:FlxTypedGroup<psychlua.DebugLuaText>;
@@ -1421,7 +1422,7 @@ class PlayState extends MusicBeatState
 		var sectionsData:Array<SwagSection> = PlayState.SONG.notes;
 		var ghostNotesCaught:Int = 0;
 		var daBpm:Float = Conductor.bpm;
-
+		
 		// H-Slice performance optimizations
 		var roundSus:Int;
 		var curStepCrochet:Float;
@@ -1429,7 +1430,7 @@ class PlayState extends MusicBeatState
 		var chartNoteData:Int = 0;
 		var strumTimeVector:Array<Float> = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
 		var removeTime:Float = 10.0; // Default ghost note tolerance
-
+		
 		for (section in sectionsData)
 		{
 			++cnt;

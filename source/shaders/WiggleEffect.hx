@@ -61,6 +61,12 @@ class WiggleEffect
 		shader.uWaveAmplitude.value = [waveAmplitude];
 		return v;
 	}
+	
+	function set_shader(v:WiggleShader):WiggleShader
+	{
+		shader = v;
+		return v;
+	}
 }
 
 class WiggleShader extends FlxShader
