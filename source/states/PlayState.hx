@@ -42,7 +42,7 @@ import objects.Note.EventNote;
 import objects.Note.CastNote;
 import objects.*;
 import states.stages.*;
-import states.stages.Objects;
+import states.stages.objects.*;
 
 #if LUA_ALLOWED
 import psychlua.*;
