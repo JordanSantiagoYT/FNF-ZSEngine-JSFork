@@ -1328,7 +1328,7 @@ class PlayState extends MusicBeatState
 	private var isDesktop:Bool = true;
 	private var loadNoteTime:Float = 0;
 	private var syncTime:Float = 0;
-	private var updateTime:Float = 0.1;
+	private var progressUpdateTime:Float = 0.1;
 	private var cnt:Int = 0;
 	private var sectionNoteCnt:Int = 0;
 	private var parsedNotes:Int = 0;
@@ -1340,7 +1340,7 @@ class PlayState extends MusicBeatState
 	function showProgress(force:Bool = false) {
 		if (true)
 		{
-			if (Date.now().getTime() - syncTime > updateTime || force)
+			if ((Date.now().getTime() - syncTime > progressUpdateTime) || force)
 			{
 				Sys.stdout().writeString('\x1b[0GLoading $cnt/${SONG.notes.length} (${parsedNotes + sectionNoteCnt} notes)');
 				syncTime = Date.now().getTime();
