@@ -1446,11 +1446,11 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 								{
 									for (section in PlayState.SONG.notes)
 									{
-										for (noteData in section.sectionNotes)
+										for (originalEventData in section.sectionNotes)
 										{
-											if (noteData != null && noteData.length > 1 && noteData[1] < 0 && Math.abs(noteData[0] - strumTime) < 0.1)
+											if (originalEventData != null && originalEventData.length > 1 && originalEventData[1] < 0 && Math.abs(originalEventData[0] - strumTime) < 0.1)
 											{
-												originalEventDataList.push(noteData);
+												originalEventDataList.push(originalEventData);
 											}
 										}
 									}
@@ -1594,11 +1594,11 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 						{
 							for (section in PlayState.SONG.notes)
 							{
-								for (noteData in section.sectionNotes)
+								for (originalEventData in section.sectionNotes)
 								{
-									if (noteData != null && noteData.length > 1 && noteData[1] < 0 && Math.abs(noteData[0] - strumTime) < 0.1)
+									if (originalEventData != null && originalEventData.length > 1 && originalEventData[1] < 0 && Math.abs(originalEventData[0] - strumTime) < 0.1)
 									{
-										originalEventDataList.push(noteData);
+										originalEventDataList.push(originalEventData);
 									}
 								}
 							}
@@ -2370,33 +2370,36 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 	function reloadNotes()
 	{
-		// Fast note count calculation
+		// JS-Engine optimizations: Fast note count calculation
 		var totalNoteCount:Int = 0;
 		for (section in PlayState.SONG.notes)
 			totalNoteCount += section.sectionNotes.length;
 
-		// GC control
+		// JS-Engine GC control for very large note counts
 		#if cpp
-		if (totalNoteCount > 100000) cpp.vm.Gc.enable(false);
+		if (totalNoteCount > 1000000)
+		{
+			cpp.vm.Gc.enable(false);
+		}
 		#end
 
 		var startTime = haxe.Timer.stamp();
 
-		// Clear existing notes (fast)
+		// JS-Engine: Clear existing notes (fast)
 		selectedNotes = [];
 		for (note in notes) if(note != null) note.destroy();
 		for (event in events) if(event != null) event.destroy();
 		notes = [];
 		events = [];
 
-		// OPTIMIZATION 1: Pre-allocate arrays
+		// JS-Engine OPTIMIZATION 1: Pre-allocate arrays with exact sizing
 		var estimatedNotes:Int = totalNoteCount;
 		var estimatedEvents:Int = PlayState.SONG.events.length;
 
 		if (estimatedNotes > 0) notes = [];
 		if (estimatedEvents > 0) events = [];
 
-		// OPTIMIZATION 2: Batch create notes
+		// JS-Engine OPTIMIZATION 2: Direct note creation without function call overhead
 		for (secNum => section in PlayState.SONG.notes)
 		{
 			var sectionNotes = section.sectionNotes;
@@ -2405,11 +2408,33 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			{
 				var note = sectionNotes[i];
 				if(note != null)
-					notes.push(createNote(note, secNum));
+				{
+					// JS-Engine: Direct inline note creation
+					var daNoteInfo = note[1];
+					var daStrumTime = note[0];
+					var daNoteData = Std.int(daNoteInfo % GRID_COLUMNS_PER_PLAYER);
+					var gottaHitNote = (note[1] < GRID_COLUMNS_PER_PLAYER);
+					
+					var swagNote:MetaNote = new MetaNote(daStrumTime, daNoteData, note);
+					swagNote.mustPress = gottaHitNote;
+					swagNote.setSustainLength(note[2], cachedSectionCrochets[secNum] / 4, curZoom);
+					swagNote.gfNote = (section.gfSection && gottaHitNote == section.mustHitSection);
+					swagNote.noteType = note[3];
+					swagNote.scrollFactor.x = 0;
+					var txt:FlxText = swagNote.findNoteTypeText(swagNote.noteType != null ? noteTypes.indexOf(swagNote.noteType) : 0);
+					if(txt != null) txt.visible = showNoteTypeLabels;
+					swagNote.updateHitbox();
+					if(swagNote.width > swagNote.height)
+						swagNote.setGraphicSize(GRID_SIZE);
+					else
+						swagNote.setGraphicSize(GRID_SIZE, GRID_SIZE);
+					
+					notes.push(swagNote);
+				}
 			}
 		}
 
-		// OPTIMIZATION 3: Batch create events
+		// JS-Engine OPTIMIZATION 3: Batch create events with optimized timing
 		var eventsLen:Int = PlayState.SONG.events.length;
 		var cachedLen:Int = cachedSectionTimes.length;
 		var lastTime:Float = (cachedLen > 0) ? cachedSectionTimes[cachedLen-1] : 0;
@@ -2418,19 +2443,38 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		{
 			var event = PlayState.SONG.events[i];
 			if(event != null && (cachedLen < 1 || event[0] < lastTime))
-				events.push(createEvent(event));
+			{
+				// JS-Engine: Create EventMetaNote with proper event data storage
+				var eventNote:EventMetaNote = new EventMetaNote(event[0], event);
+				eventNote.x = gridBg.x;
+				eventNote.eventText.x = eventNote.x - eventNote.eventText.width - 10;
+				eventNote.scrollFactor.x = 0;
+				eventNote.active = false;
+				
+				// Calculate section for positioning
+				var secNum:Int = 0;
+				for (j in 1...cachedSectionTimes.length)
+				{
+					if(cachedSectionTimes[j] > event[0]) break;
+					secNum++;
+				}
+				
+				positionNoteYOnTime(eventNote, secNum);
+				events.push(eventNote);
+			}
 		}
 
-		// OPTIMIZATION 4: Use native sort with cached function
+		// JS-Engine OPTIMIZATION 4: Use native sort with cached function
 		notes.sort(PlayState.sortByTime);
 		events.sort(PlayState.sortByTime);
 
-		// OPTIMIZATION 5: Only load section if needed
+		// JS-Engine OPTIMIZATION 5: Only load section if needed
 		if (curSec >= 0 && curSec < PlayState.SONG.notes.length)
 			loadSection(curSec);
 
+		// JS-Engine GC control
 		#if cpp
-		if (totalNoteCount > 100000)
+		if (totalNoteCount > 1000000)
 		{
 			cpp.vm.Gc.enable(true);
 			// Only GC if really needed
@@ -2441,7 +2485,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 		forceDataUpdate = true;
 
-		// Debug timing
+		// JS-Engine: Debug timing with higher threshold
 		if (totalNoteCount > 50000)
 			trace('reloadNotes() processed ' + totalNoteCount + ' notes in ' + (haxe.Timer.stamp() - startTime) + 's');
 	}
