@@ -2419,7 +2419,16 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 					swagNote.mustPress = gottaHitNote;
 					swagNote.setSustainLength(note[2], cachedSectionCrochets[secNum] / 4, curZoom);
 					swagNote.gfNote = (section.gfSection && gottaHitNote == section.mustHitSection);
-					swagNote.noteType = !Std.isOfType(note[3], String) ? Note.defaultNoteTypes[Std.int(note[3])] : note[3];
+					var noteTypeValue:String = '';
+					if (!Std.isOfType(note[3], String)) {
+						var noteTypeIndex:Int = Std.int(note[3]);
+						if (noteTypeIndex >= 0 && noteTypeIndex < Note.defaultNoteTypes.length) {
+							noteTypeValue = Note.defaultNoteTypes[noteTypeIndex];
+						}
+					} else {
+						noteTypeValue = note[3];
+					}
+					swagNote.noteType = noteTypeValue;
 					swagNote.scrollFactor.x = 0;
 					var txt:FlxText = swagNote.findNoteTypeText(swagNote.noteType != null ? noteTypes.indexOf(swagNote.noteType) : 0);
 					if(txt != null) txt.visible = showNoteTypeLabels;
