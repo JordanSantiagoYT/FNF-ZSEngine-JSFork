@@ -1420,7 +1420,15 @@ class PlayState extends MusicBeatState
 		var sectionsData:Array<SwagSection> = PlayState.SONG.notes;
 		var ghostNotesCaught:Int = 0;
 		var daBpm:Float = Conductor.bpm;
-	
+
+		// H-Slice performance optimizations
+		var roundSus:Int;
+		var curStepCrochet:Float;
+		var sustainNote:CastNote;
+		var chartNoteData:Int = 0;
+		var strumTimeVector:Vector<Float> = new Vector(8, 0.0);
+		var removeTime:Float = 10.0; // Default ghost note tolerance
+
 		for (section in sectionsData)
 		{
 			++cnt;
@@ -1429,70 +1437,62 @@ class PlayState extends MusicBeatState
 			if (section.changeBPM != null && section.changeBPM && section.bpm != null && daBpm != section.bpm)
 				daBpm = section.bpm;
 
-			for (i in 0...section.sectionNotes.length)
+			for (songNotes in section.sectionNotes)
 			{
-				final songNotes: Array<Dynamic> = section.sectionNotes[i];
 				var spawnTime: Float = songNotes[0];
-				var noteColumn: Int = Std.int(songNotes[1] % totalColumns);
+				chartNoteData = songNotes[1];
+				var noteColumn: Int = Std.int(chartNoteData % totalColumns);
 				var holdLength: Float = songNotes[2];
 				var noteType: String = !Std.isOfType(songNotes[3], String) ? Note.defaultNoteTypes[songNotes[3]] : songNotes[3];
 				if (Math.isNaN(holdLength))
 					holdLength = 0.0;
 
-				var gottaHitNote:Bool = (songNotes[1] < totalColumns);
+				var gottaHitNote:Bool = (chartNoteData < totalColumns);
 
-				if (i != 0) {
-					// CLEAR ANY POSSIBLE GHOST NOTES (CastNote version)
-					var j:Int = unspawnNotes.length - 1;
-					while (j >= 0) {
-						var evilNote:CastNote = unspawnNotes[j];
-						var evilNoteData:Int = evilNote.noteData & 0xFF;
-						var evilMustPress:Bool = (evilNote.noteData & 0x100) != 0;
-						var evilNoteType:String = evilNote.noteType;
-						
-						var matches: Bool = (noteColumn == evilNoteData && gottaHitNote == evilMustPress && evilNoteType == noteType);
-						if (matches && Math.abs(spawnTime - evilNote.strumTime) < flixel.math.FlxMath.EPSILON) {
-							unspawnNotes.splice(j, 1);
-							ghostNotesCaught++;
-						}
-						j--;
+				// H-Slice fast ghost note detection using vector lookup
+				if (sectionNoteCnt != 0) {
+					if (Math.abs(strumTimeVector[chartNoteData] - spawnTime) <= removeTime) {
+						ghostNotesCaught++;
+						continue; // Skip this note - it's a ghost
+					} else {
+						strumTimeVector[chartNoteData] = spawnTime;
 					}
 				}
-
-				// Create CastNote instead of full Note for memory efficiency
-				var flags:Int = noteColumn & 0xFF; // 1st-8th bits for noteData
-				if (gottaHitNote) flags |= 0x100; // 9th bit for mustHit
-				if (holdLength > 0) flags |= 0x200; // 10th bit for isHold
-				if (section.gfSection && gottaHitNote == section.mustHitSection) flags |= 0x800; // 12th bit for gfNote
-				if (section.altAnim && !gottaHitNote) flags |= 0x1000; // 13th bit for altAnim
 				
+				// H-Slice optimized CastNote creation with bit operations
 				var castNote:CastNote = {
 					strumTime: spawnTime,
-					noteData: flags,
+					noteData: noteColumn,
 					noteType: noteType,
-					holdLength: holdLength > 0 ? holdLength : null,
+					holdLength: holdLength,
 					noteSkin: Note.defaultNoteSkin
 				};
 				
+				// Apply bit flags like H-Slice for performance
+				castNote.noteData |= gottaHitNote ? 1<<8 : 0; // mustHit
+				castNote.noteData |= (section.gfSection && gottaHitNote == section.mustHitSection) ? 1<<11 : 0; // gfNote
+				castNote.noteData |= (section.altAnim && !gottaHitNote) ? 1<<12 : 0; // altAnim
+				
 				unspawnNotes.push(castNote);
 
-				var curStepCrochet:Float = 60 / daBpm * 1000 / 4.0;
-				final roundSus:Int = Math.round(castNote.holdLength / curStepCrochet);
+				// H-Slice optimized sustain note generation
+				curStepCrochet = 15000 / daBpm;
+				roundSus = Math.round(castNote.holdLength / curStepCrochet);
 				if(roundSus > 0)
 				{
-					for (susNote in 0...roundSus)
+					for (susNote in 0...roundSus + 1)
 					{
-						// Create sustain CastNote with isHoldEnd flag
-						var sustainFlags:Int = flags | 0x400; // Set isHoldEnd flag
-						
 						var sustainCastNote:CastNote = {
-							strumTime: spawnTime + (curStepCrochet * susNote),
-							noteData: sustainFlags,
-							noteType: noteType,
-							holdLength: null, // Sustain pieces don't have hold length
-							noteSkin: Note.defaultNoteSkin
+							strumTime: castNote.strumTime + curStepCrochet * susNote,
+							noteData: castNote.noteData,
+							noteType: castNote.noteType,
+							holdLength: null,
+							noteSkin: castNote.noteSkin
 						};
 						
+						sustainCastNote.noteData |= 1<<9; // isHold
+						sustainCastNote.noteData |= susNote == roundSus ? 1<<10 : 0; // isHoldEnd
+
 						unspawnNotes.push(sustainCastNote);
 						sustainTotalCnt++;
 					}
