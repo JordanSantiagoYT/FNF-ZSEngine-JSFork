@@ -1426,7 +1426,7 @@ class PlayState extends MusicBeatState
 		var curStepCrochet:Float;
 		var sustainNote:CastNote;
 		var chartNoteData:Int = 0;
-		var strumTimeVector:Vector<Float> = new Vector(8, 0.0);
+		var strumTimeVector:Array<Float> = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
 		var removeTime:Float = 10.0; // Default ghost note tolerance
 
 		for (section in sectionsData)
