@@ -1324,6 +1324,32 @@ class PlayState extends MusicBeatState
 	private var eventsPushed:Array<String> = [];
 	private var totalColumns: Int = 4;
 
+	// Faster note parsing variables from H-Slice
+	private var isDesktop:Bool = Main.platform != 'Phones';
+	private var loadNoteTime:Float = CoolUtil.getNanoTime();
+	private var syncTime:Float = Timer.stamp();
+	private var updateTime:Float = 0.1;
+	private var cnt:Int = 0;
+	private var sectionNoteCnt:Int = 0;
+	private var notes:Int = 0;
+	private var sustainTotalCnt:Int = 0;
+	private var sustainNoteCnt:Int = 0;
+	private var loadTime:Float = CoolUtil.getNanoTime();
+	private var shownProgress:Bool = false;
+
+	function showProgress(force:Bool = false) {
+		if (Main.isConsoleAvailable)
+		{
+			if (Timer.stamp() - syncTime > updateTime || force)
+			{
+				Sys.stdout().writeString('\x1b[0GLoading $cnt/${SONG.notes.length} (${notes + sectionNoteCnt} notes)');
+				syncTime = Timer.stamp();
+			}
+		} else if (isDesktop && force) {
+			Sys.println('Loading $cnt/${SONG.notes.length} (${notes + sectionNoteCnt} notes)');
+		}
+	}
+
 	private function generateSong():Void
 	{
 		// FlxG.log.add(ChartParser.parse());
@@ -1392,6 +1418,9 @@ class PlayState extends MusicBeatState
 	
 		for (section in sectionsData)
 		{
+			++cnt;
+			sectionNoteCnt = 0;
+			shownProgress = false;
 			if (section.changeBPM != null && section.changeBPM && section.bpm != null && daBpm != section.bpm)
 				daBpm = section.bpm;
 
@@ -1460,13 +1489,33 @@ class PlayState extends MusicBeatState
 						};
 						
 						unspawnNotes.push(sustainCastNote);
+						sustainTotalCnt++;
 					}
 				}
 				
 				if(!noteTypes.contains(noteType))
 					noteTypes.push(noteType);
+
+				showProgress();
+				++sectionNoteCnt;
 			}
+
+			showProgress();
+			notes += sectionNoteCnt;
 		}
+
+		showProgress(isDesktop);
+
+		Sys.println('\n[ --- "${SONG.song.toUpperCase()}" CHART INFO --- ]');
+		
+		var takenTime = CoolUtil.floorDecimal(CoolUtil.getNanoTime() - loadTime, 6);
+		var takenNoteTime = CoolUtil.floorDecimal(CoolUtil.getNanoTime() - loadNoteTime, 6);
+
+		Sys.println('Loaded ${notes} notes!
+Sustain notes amount: $sustainTotalCnt
+Taken time: $takenTime sec
+Average NPS in loading: ${notes / takenNoteTime}');
+
 		trace('["${SONG.song.toUpperCase()}" CHART INFO]: Ghost Notes Cleared: $ghostNotesCaught');
 		for (event in songData.events) //Event Notes
 			for (i in 0...event[1].length)

@@ -1444,12 +1444,14 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 								var originalEventDataList:Array<Array<Dynamic>> = [];
 								if (shouldSpamEvents)
 								{
-									for (event in events)
+									for (section in PlayState.SONG.notes)
 									{
-										if (event != null && Math.abs(event.strumTime - strumTime) < 0.1)
+										for (noteData in section.sectionNotes)
 										{
-											// Store the original event's data array
-											originalEventDataList.push(event.songData);
+											if (noteData != null && noteData.length > 1 && noteData[1] < 0 && Math.abs(noteData[0] - strumTime) < 0.1)
+											{
+												originalEventDataList.push(noteData);
+											}
 										}
 									}
 								}
@@ -1477,10 +1479,14 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 									{
 										for (originalEventData in originalEventDataList)
 										{
-											// Create new event data with updated strumTime
 											var newEventData:Array<Dynamic> = originalEventData.copy();
 											newEventData[0] = spamStrumTime;
 
+											// Add to the current section's sectionNotes
+											var currentSection = PlayState.SONG.notes[curSec];
+											currentSection.sectionNotes.push(newEventData);
+
+											// Also create visual event
 											var newEvent:EventMetaNote = createEvent(newEventData);
 											events.push(newEvent);
 										}
@@ -1586,12 +1592,14 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 						var originalEventDataList:Array<Array<Dynamic>> = [];
 						if (shouldSpamEvents)
 						{
-							for (event in events)
+							for (section in PlayState.SONG.notes)
 							{
-								if (event != null && Math.abs(event.strumTime - strumTime) < 0.1)
+								for (noteData in section.sectionNotes)
 								{
-									// Store the original event's data array
-									originalEventDataList.push(event.songData);
+									if (noteData != null && noteData.length > 1 && noteData[1] < 0 && Math.abs(noteData[0] - strumTime) < 0.1)
+									{
+										originalEventDataList.push(noteData);
+									}
 								}
 							}
 						}
@@ -1619,10 +1627,14 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 							{
 								for (originalEventData in originalEventDataList)
 								{
-									// Create new event data with updated strumTime
 									var newEventData:Array<Dynamic> = originalEventData.copy();
 									newEventData[0] = spamStrumTime;
 
+									// Add to the current section's sectionNotes
+									var currentSection = PlayState.SONG.notes[curSec];
+									currentSection.sectionNotes.push(newEventData);
+
+									// Also create visual event
 									var newEvent:EventMetaNote = createEvent(newEventData);
 									events.push(newEvent);
 								}
