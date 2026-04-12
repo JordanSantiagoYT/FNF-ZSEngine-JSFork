@@ -42,7 +42,7 @@ import objects.Note.EventNote;
 import objects.Note.CastNote;
 import objects.*;
 import states.stages.*;
-import states.stages.objects;
+import states.stages.Objects;
 
 #if LUA_ALLOWED
 import psychlua.*;
@@ -703,7 +703,7 @@ class PlayState extends MusicBeatState
 			if(ratio != 1)
 			{
 				for (note in notes.members) note.resizeByRatio(ratio);
-				for (note in unspawnNotes) note.resizeByRatio(ratio);
+				for (castNote in unspawnNotes) castNote.strumTime *= ratio;
 			}
 		}
 		songSpeed = value;
@@ -724,7 +724,7 @@ class PlayState extends MusicBeatState
 			if(ratio != 1)
 			{
 				for (note in notes.members) note.resizeByRatio(ratio);
-				for (note in unspawnNotes) note.resizeByRatio(ratio);
+				for (castNote in unspawnNotes) castNote.strumTime *= ratio;
 			}
 		}
 		playbackRate = value;
@@ -1151,7 +1151,7 @@ class PlayState extends MusicBeatState
 	{
 		var i:Int = unspawnNotes.length - 1;
 		while (i >= 0) {
-			var daNote:Note = unspawnNotes[i];
+			var daNote:Note = Note.fromCastNote(unspawnNotes[i]);
 			if(daNote.strumTime - 350 < time)
 			{
 				daNote.active = false;
@@ -1159,7 +1159,7 @@ class PlayState extends MusicBeatState
 				daNote.ignoreNote = true;
 
 				daNote.kill();
-				unspawnNotes.remove(daNote);
+				unspawnNotes.splice(i, 1);
 				daNote.destroy();
 			}
 			--i;
