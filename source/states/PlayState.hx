@@ -1325,33 +1325,38 @@ class PlayState extends MusicBeatState
 	private var totalColumns: Int = 4;
 
 	// Faster note parsing variables from H-Slice
-	private var isDesktop:Bool = Main.platform != 'Phones';
-	private var loadNoteTime:Float = CoolUtil.getNanoTime();
-	private var syncTime:Float = Timer.stamp();
+	private var isDesktop:Bool = true;
+	private var loadNoteTime:Float = 0;
+	private var syncTime:Float = 0;
 	private var updateTime:Float = 0.1;
 	private var cnt:Int = 0;
 	private var sectionNoteCnt:Int = 0;
-	private var notes:Int = 0;
+	private var parsedNotes:Int = 0;
 	private var sustainTotalCnt:Int = 0;
 	private var sustainNoteCnt:Int = 0;
-	private var loadTime:Float = CoolUtil.getNanoTime();
+	private var loadTime:Float = 0;
 	private var shownProgress:Bool = false;
 
 	function showProgress(force:Bool = false) {
-		if (Main.isConsoleAvailable)
+		if (true)
 		{
-			if (Timer.stamp() - syncTime > updateTime || force)
+			if (Date.now().getTime() - syncTime > updateTime || force)
 			{
-				Sys.stdout().writeString('\x1b[0GLoading $cnt/${SONG.notes.length} (${notes + sectionNoteCnt} notes)');
-				syncTime = Timer.stamp();
+				Sys.stdout().writeString('\x1b[0GLoading $cnt/${SONG.notes.length} (${parsedNotes + sectionNoteCnt} notes)');
+				syncTime = Date.now().getTime();
 			}
 		} else if (isDesktop && force) {
-			Sys.println('Loading $cnt/${SONG.notes.length} (${notes + sectionNoteCnt} notes)');
+			Sys.println('Loading $cnt/${SONG.notes.length} (${parsedNotes + sectionNoteCnt} notes)');
 		}
 	}
 
 	private function generateSong():Void
 	{
+		// Initialize timing variables
+		loadTime = Date.now().getTime();
+		loadNoteTime = Date.now().getTime();
+		syncTime = Date.now().getTime();
+		
 		// FlxG.log.add(ChartParser.parse());
 		songSpeed = PlayState.SONG.speed;
 		songSpeedType = ClientPrefs.getGameplaySetting('scrolltype');
@@ -1501,20 +1506,20 @@ class PlayState extends MusicBeatState
 			}
 
 			showProgress();
-			notes += sectionNoteCnt;
+			parsedNotes += sectionNoteCnt;
 		}
 
 		showProgress(isDesktop);
 
 		Sys.println('\n[ --- "${SONG.song.toUpperCase()}" CHART INFO --- ]');
 		
-		var takenTime = CoolUtil.floorDecimal(CoolUtil.getNanoTime() - loadTime, 6);
-		var takenNoteTime = CoolUtil.floorDecimal(CoolUtil.getNanoTime() - loadNoteTime, 6);
+		var takenTime = CoolUtil.floorDecimal((Date.now().getTime() - loadTime) / 1000, 6);
+		var takenNoteTime = CoolUtil.floorDecimal((Date.now().getTime() - loadNoteTime) / 1000, 6);
 
-		Sys.println('Loaded ${notes} notes!
+		Sys.println('Loaded ${parsedNotes} notes!
 Sustain notes amount: $sustainTotalCnt
 Taken time: $takenTime sec
-Average NPS in loading: ${notes / takenNoteTime}');
+Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 
 		trace('["${SONG.song.toUpperCase()}" CHART INFO]: Ghost Notes Cleared: $ghostNotesCaught');
 		for (event in songData.events) //Event Notes
