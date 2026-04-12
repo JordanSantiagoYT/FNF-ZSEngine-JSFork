@@ -3,6 +3,7 @@ package states;
 import backend.WeekData;
 import backend.Highscore;
 import backend.Song;
+import backend.SongJson;
 
 import objects.HealthIcon;
 import objects.MusicPlayer;
@@ -337,7 +338,16 @@ class FreeplayState extends MusicBeatState
 
 				Mods.currentModDirectory = songs[curSelected].folder;
 				var poop:String = Highscore.formatSong(songs[curSelected].songName.toLowerCase(), curDifficulty);
+				trace('[FAST JSON] Freeplay preview loading: ${songs[curSelected].songName.toLowerCase()} with skipChart=true');
+				SongJson.skipChart = true;
+				SongJson.log = true;
+				var jsonPath = Paths.json(poop.toLowerCase());
+				var jsonSize = sys.FileSystem.exists(jsonPath) ? sys.FileSystem.stat(jsonPath).size : 0;
+				trace('Loading ${jsonSize} bytes');
 				Song.loadFromJson(poop, songs[curSelected].songName.toLowerCase(), true);
+				SongJson.skipChart = false;
+				SongJson.log = false;
+				trace('[FAST JSON] Freeplay preview loaded successfully');
 				if (PlayState.SONG.needsVoices)
 				{
 					vocals = new FlxSound();

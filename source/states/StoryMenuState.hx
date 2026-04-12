@@ -3,6 +3,7 @@ package states;
 import backend.WeekData;
 import backend.Highscore;
 import backend.Song;
+import backend.SongJson;
 
 import flixel.group.FlxGroup;
 import flixel.graphics.FlxGraphic;
@@ -318,8 +319,17 @@ class StoryMenuState extends MusicBeatState
 				if(diffic == null) diffic = '';
 	
 				PlayState.storyDifficulty = curDifficulty;
-	
+
+				trace('[FAST JSON] Story mode loading: ${PlayState.storyPlaylist[0].toLowerCase()} with skipChart=true');
+				SongJson.skipChart = true;
+				SongJson.log = true;
+				var jsonPath = Paths.json((PlayState.storyPlaylist[0].toLowerCase() + diffic).toLowerCase());
+				var jsonSize = sys.FileSystem.exists(jsonPath) ? sys.FileSystem.stat(jsonPath).size : 0;
+				trace('Loading ${jsonSize} bytes');
 				Song.loadFromJson(PlayState.storyPlaylist[0].toLowerCase() + diffic, PlayState.storyPlaylist[0].toLowerCase(), true);
+				SongJson.skipChart = false;
+				SongJson.log = false;
+				trace('[FAST JSON] Story mode loaded successfully');
 				PlayState.campaignScore = 0;
 				PlayState.campaignMisses = 0;
 			}

@@ -25,6 +25,7 @@ import states.editors.content.Prompt;
 import states.editors.content.*;
 
 import backend.Song;
+import backend.SongJson;
 import backend.StageData;
 import backend.Highscore;
 import backend.Difficulty;
@@ -1440,13 +1441,16 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 							if (check_stackActive != null && check_stackActive.checked) {
 								var addCount:Float = stepperStackNum.value * stepperStackOffset.value - 1;
 								var shouldSpamEvents:Bool = (spamEventsCheckbox != null && spamEventsCheckbox.checked);
-								var originalEvents:Array<EventMetaNote> = [];
+								var originalEventDataList:Array<Array<Dynamic>> = [];
 								if (shouldSpamEvents)
 								{
 									for (event in events)
 									{
 										if (event != null && Math.abs(event.strumTime - strumTime) < 0.1)
-											originalEvents.push(event);
+										{
+											// Store the original event's data array
+											originalEventDataList.push(event.songData);
+										}
 									}
 								}
 								for(i in 0...Std.int(addCount)) {
@@ -1471,14 +1475,12 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 									var spamNoteAdded:MetaNote = createNote(spamNoteSetupData);
 									if (shouldSpamEvents)
 									{
-										for (originalEvent in originalEvents)
+										for (originalEventData in originalEventDataList)
 										{
-											var newEventData:Array<Dynamic> = [
-												spamStrumTime,
-												originalEvent.eventName,
-												originalEvent.eventVal1,
-												originalEvent.eventVal2
-											];
+											// Create new event data with updated strumTime
+											var newEventData:Array<Dynamic> = originalEventData.copy();
+											newEventData[0] = spamStrumTime;
+
 											var newEvent:EventMetaNote = createEvent(newEventData);
 											events.push(newEvent);
 										}
@@ -1581,13 +1583,16 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 					if (check_stackActive != null && check_stackActive.checked) {
 						var addCount:Float = stepperStackNum.value * stepperStackOffset.value - 1;
 						var shouldSpamEvents:Bool = (spamEventsCheckbox != null && spamEventsCheckbox.checked);
-						var originalEvents:Array<EventMetaNote> = [];
+						var originalEventDataList:Array<Array<Dynamic>> = [];
 						if (shouldSpamEvents)
 						{
 							for (event in events)
 							{
 								if (event != null && Math.abs(event.strumTime - strumTime) < 0.1)
-									originalEvents.push(event);
+								{
+									// Store the original event's data array
+									originalEventDataList.push(event.songData);
+								}
 							}
 						}
 						for(i in 0...Std.int(addCount)) {
@@ -1612,14 +1617,12 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 							var spamNoteAdded:MetaNote = createNote(spamNoteSetupData);
 							if (shouldSpamEvents)
 							{
-								for (originalEvent in originalEvents)
+								for (originalEventData in originalEventDataList)
 								{
-									var newEventData:Array<Dynamic> = [
-										spamStrumTime,
-										originalEvent.eventName,
-										originalEvent.eventVal1,
-										originalEvent.eventVal2
-									];
+									// Create new event data with updated strumTime
+									var newEventData:Array<Dynamic> = originalEventData.copy();
+									newEventData[0] = spamStrumTime;
+
 									var newEvent:EventMetaNote = createEvent(newEventData);
 									events.push(newEvent);
 								}
@@ -2060,18 +2063,26 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 				songName = 'd:' + songName.substr(2);
 			#end
 
-			loadedChart = Song.loadFromJsonStreaming(filePath, songName);
-		}
-		else
-		{
-			var songName:String = Paths.formatToSongPath(songOrPath);
-			var diffSuffix = (diff != null && diff.length > 0 && diff != Difficulty.getDefault().toLowerCase()) ? "-" + diff : "";
-			loadedChart = Song.loadFromJson(songName.toLowerCase() + diffSuffix, songName.toLowerCase());
-		}
+        loadedChart = Song.loadFromJsonStreaming(filePath, songName);
+    }
+    else
+    {
+        var songName:String = Paths.formatToSongPath(songOrPath);
+        var diffSuffix = (diff != null && diff.length > 0 && diff != Difficulty.getDefault().toLowerCase()) ? "-" + diff : "";
+        trace('[FAST JSON] Chart editor loading: $songName with skipChart=false (editor needs full chart)');
+        SongJson.skipChart = false; // Chart editor needs full chart data
+        SongJson.log = true;
+        var jsonPath = Paths.json((songName.toLowerCase() + diffSuffix).toLowerCase());
+        var jsonSize = sys.FileSystem.exists(jsonPath) ? sys.FileSystem.stat(jsonPath).size : 0;
+        trace('Loading ${jsonSize} bytes');
+        loadedChart = Song.loadFromJson(songName.toLowerCase() + diffSuffix, songName.toLowerCase());
+        SongJson.log = false;
+        trace('[FAST JSON] Chart editor loaded successfully');
+    }
 
-		if (loadedChart != null)
-			loadChartComplete(loadedChart);
-	}
+    if (loadedChart != null)
+        loadChartComplete(loadedChart);
+}
 
 	function loadChartComplete(chart:SwagSong):Void
 	{
