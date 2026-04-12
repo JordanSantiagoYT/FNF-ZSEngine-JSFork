@@ -1,7 +1,6 @@
 package shaders;
 
 // STOLEN FROM HAXEFLIXEL DEMO LOL
-import flixel.system.FlxAssets.FlxShader;
 
 enum WiggleEffectType
 {
@@ -14,8 +13,8 @@ enum WiggleEffectType
 
 class WiggleEffect
 {
-	public var shader(default, null):WiggleShader = new WiggleShader();
-	public var effectType(default, set):WiggleEffectType = DREAMY; // To use FLAG soon
+	public var shader(default, set):WiggleShader = new WiggleShader();
+	public var effectType(default, set):WiggleEffectType = FLAG;
 	public var waveSpeed(default, set):Float = 0;
 	public var waveFrequency(default, set):Float = 0;
 	public var waveAmplitude(default, set):Float = 0;

@@ -30,12 +30,13 @@ import substates.PauseSubState;
 import substates.GameOverSubstate;
 
 #if !flash
+import flixel.addons.display.FlxRuntimeShader;
 import openfl.filters.ShaderFilter;
 #end
 
 import shaders.ErrorHandledShader;
-// import shaders.WiggleEffect;
-// import shaders.PulseEffect;
+import shaders.WiggleEffect;
+import shaders.PulseEffect;
 
 import objects.VideoSprite;
 import objects.Note.EventNote;
@@ -289,7 +290,7 @@ class PlayState extends MusicBeatState
 	private static var _lastLoadedModDirectory:String = '';
 	public static var nextReloadAll:Bool = false;
 
-	// private var globalElapsed:Float = 0;
+	private var globalElapsed:Float = 0;
 
 	public var zsScript:Bool = ClientPrefs.data.zsScript;
 
@@ -1845,7 +1846,6 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 		}
 		doDeathCheck();
 
-		/* Comment to use soon
 		if (shaderEnabled) {
 			for(wig in wiggleMap) {
 				wig.update(globalElapsed);
@@ -1860,7 +1860,6 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 			if (masterPulse.shader.uampmul.value[0] > 0)
 				masterPulse.update(globalElapsed);
 		}
-		*/
 
 		if (unspawnNotes[0] != null)
 		{
