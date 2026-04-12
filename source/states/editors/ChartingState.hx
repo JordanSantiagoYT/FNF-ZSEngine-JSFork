@@ -2426,7 +2426,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 							noteTypeValue = Note.defaultNoteTypes[noteTypeIndex];
 						}
 					} else {
-						noteTypeValue = note[3];
+						noteTypeValue = Std.string(note[3]);
 					}
 					swagNote.noteType = noteTypeValue;
 					swagNote.scrollFactor.x = 0;
