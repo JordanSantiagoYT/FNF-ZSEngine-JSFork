@@ -1444,13 +1444,33 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 								var originalEventDataList:Array<Array<Dynamic>> = [];
 								if (shouldSpamEvents)
 								{
+									// Find events near the current click position
 									for (section in PlayState.SONG.notes)
 									{
 										for (originalEventData in section.sectionNotes)
 										{
-											if (originalEventData != null && originalEventData.length > 1 && originalEventData[1] < 0 && Math.abs(originalEventData[0] - strumTime) < 0.1)
+											if (originalEventData != null && originalEventData.length > 1)
 											{
-												originalEventDataList.push(originalEventData);
+												// Check if this is an event and within time tolerance
+												var noteData:Dynamic = originalEventData[1];
+												var isEvent:Bool = false;
+												
+												// Handle both event formats: [strumTime, -1, eventName, value1, value2] and [strumTime, [[eventName, value1, value2]]]
+												if (Std.isOfType(noteData, Array))
+												{
+													// This is the new format: [strumTime, [[eventName, value1, value2]]]
+													isEvent = true;
+												}
+												else if (Std.isOfType(noteData, Int) && noteData < 0)
+												{
+													// This is the old format: [strumTime, -1, eventName, value1, value2]
+													isEvent = true;
+												}
+												
+												if (isEvent && Math.abs(originalEventData[0] - strumTime) < 0.1)
+												{
+													originalEventDataList.push(originalEventData);
+												}
 											}
 										}
 									}
@@ -1592,13 +1612,33 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 						var originalEventDataList:Array<Array<Dynamic>> = [];
 						if (shouldSpamEvents)
 						{
+							// Find events near the current click position (not the original strumTime)
 							for (section in PlayState.SONG.notes)
 							{
 								for (originalEventData in section.sectionNotes)
 								{
-									if (originalEventData != null && originalEventData.length > 1 && originalEventData[1] < 0 && Math.abs(originalEventData[0] - strumTime) < 0.1)
+									if (originalEventData != null && originalEventData.length > 1)
 									{
-										originalEventDataList.push(originalEventData);
+										// Check if this is an event (noteData < 0) and within time tolerance
+										var noteData:Dynamic = originalEventData[1];
+										var isEvent:Bool = false;
+										
+										// Handle both event formats: [strumTime, -1, eventName, value1, value2] and [strumTime, [[eventName, value1, value2]]]
+										if (Std.isOfType(noteData, Array))
+										{
+											// This is the new format: [strumTime, [[eventName, value1, value2]]]
+											isEvent = true;
+										}
+										else if (Std.isOfType(noteData, Int) && noteData < 0)
+										{
+											// This is the old format: [strumTime, -1, eventName, value1, value2]
+											isEvent = true;
+										}
+										
+										if (isEvent && Math.abs(originalEventData[0] - strumTime) < 0.1)
+										{
+											originalEventDataList.push(originalEventData);
+										}
 									}
 								}
 							}
