@@ -263,7 +263,6 @@ class PlayState extends MusicBeatState
 
 	// Lua shit
 	public static var instance:PlayState;
-	public var variables:Map<String, Dynamic> = new Map<String, Dynamic>();
 
 	#if LUA_ALLOWED
 	public var luaArray:Array<FunkinLua> = [];
@@ -296,18 +295,6 @@ class PlayState extends MusicBeatState
 
 	public var zsScript:Bool = ClientPrefs.data.zsScript;
 
-	function startCharacterPos(char:Character, ?gfCheck:Bool = false)
-	{
-		if (gfCheck && char.curCharacter.startsWith('gf'))
-		{ // IF DAD IS GIRLFRIEND, HE GOES TO HER POSITION
-			char.setPosition(GF_X, GF_Y);
-			char.scrollFactor.set(0.95, 0.95);
-			char.danceEveryNumBeats = 2;
-		}
-		char.x += char.positionArray[0];
-		char.y += char.positionArray[1];
-	}
-
 	override public function create()
 	{
 		//trace('Playback Rate: ' + playbackRate);
@@ -325,6 +312,7 @@ class PlayState extends MusicBeatState
 
 		// for lua
 		instance = this;
+		variables = new Map<String, Dynamic>();
 
 		PauseSubState.songName = null; //Reset to default
 		playbackRate = ClientPrefs.getGameplaySetting('songspeed');
