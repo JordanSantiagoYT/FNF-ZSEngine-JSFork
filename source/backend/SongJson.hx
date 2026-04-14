@@ -55,6 +55,7 @@ class SongJson
 	function doParse():Dynamic
 	{
 		var result = parseRec();
+		#if sys
 		if (log)
 		{
 			try {
@@ -62,6 +63,7 @@ class SongJson
 			}
 			catch (_:Dynamic) {}
 		}
+		#end
 		while (!StringTools.isEof(c = nextChar()))
 		{
 			switch (c)
@@ -299,6 +301,7 @@ class SongJson
 	{
 		if (Timer.stamp() - time > 0.1)
 		{
+			#if sys
 			if (log)
 			{
 				try {
@@ -306,6 +309,7 @@ class SongJson
 				}
 				catch (_:Dynamic) {}
 			}
+			#end
 			time = Timer.stamp();
 		}
 	}

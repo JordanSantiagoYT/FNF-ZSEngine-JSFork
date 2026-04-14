@@ -3612,54 +3612,18 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		});
 		var clearButton:PsychUIButton = new PsychUIButton(objX + 200, objY, 'Clear', function()
 		{
-			var minTime:Float = cachedSectionTimes[curSec];
-			var maxTime:Float = cachedSectionTimes[curSec + 1];
-
-			var currentSection = getCurChartSection();
-			if(currentSection == null) return;
-
-			// Clear sectionNotes for CURRENT SECTION only
-			if(affectNotes.checked)
-			{
-				currentSection.sectionNotes = [];
-			}
-
-			if(affectEvents.checked)
-			{
-				// Remove only events (note[1] < 0)
-				var i:Int = currentSection.sectionNotes.length - 1;
-				while(i >= 0)
-				{
-					var note = currentSection.sectionNotes[i];
-					if(note != null && note.length > 1 && note[1] < 0)
-						currentSection.sectionNotes.splice(i, 1);
-					i--;
-				}
-			}
-
-			// Clear visual notes for CURRENT SECTION only
-			var visualRemove:Array<MetaNote> = [];
-			for (note in notes)
+			for (note in curRenderedNotes)
 			{
 				if(note == null) continue;
-				if(note.strumTime >= minTime && note.strumTime < maxTime)
-				{
-					if(!note.isEvent && affectNotes.checked)
-						visualRemove.push(note);
-					if(note.isEvent && affectEvents.checked)
-						visualRemove.push(note);
-				}
-			}
 
-			for (note in visualRemove)
-			{
-				notes.remove(note);
+				if(!note.isEvent && affectNotes.checked)
+					notes.remove(note);
+				if(note.isEvent && affectEvents.checked)
+					events.remove(cast (note, EventMetaNote));
+
 				selectedNotes.remove(note);
-				note.destroy();
 			}
-
-			_cacheSections();
-			updateCurrentSectionNotes();
+			softReloadNotes(true);
 		});
 		clearButton.normalStyle.bgColor = FlxColor.RED;
 		clearButton.normalStyle.textColor = FlxColor.WHITE;
