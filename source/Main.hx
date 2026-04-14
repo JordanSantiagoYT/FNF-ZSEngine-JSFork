@@ -59,6 +59,7 @@ class Main extends Sprite
 	};
 
 	public static var fpsVar:FPSCounter;
+	public static var isConsoleAvailable:Bool = true;
 
 	// You can pretty much ignore everything from here on - your code should go in your states.
 
@@ -70,6 +71,11 @@ class Main extends Sprite
 	public function new()
 	{
 		super();
+
+		// Console availability detection (from H-Slice)
+		try {
+			Sys.stdout().writeString("Console Available!\n");
+		} catch (e:Dynamic) {isConsoleAvailable = false;}
 
 		#if (cpp && windows)
 		backend.Native.fixScaling();

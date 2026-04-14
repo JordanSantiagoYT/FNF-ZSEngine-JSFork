@@ -3,6 +3,7 @@ package states;
 import backend.WeekData;
 import backend.Highscore;
 import backend.Song;
+import backend.SongJson;
 
 import objects.HealthIcon;
 import objects.MusicPlayer;
@@ -100,7 +101,9 @@ class FreeplayState extends MusicBeatState
 				}
 				addSong(song[0], i, song[1], FlxColor.fromRGB(colors[0], colors[1], colors[2]));
 			}
+			if(Main.isConsoleAvailable) Sys.stdout().writeString('\x1b[0GLoading Weeklist (${i+1}/${WeekData.weeksList.length})');
 		}
+		Sys.print("\n");
 		Mods.loadTopMod();
 
 		bg = new FlxSprite().loadGraphic(Paths.image('menuDesat'));
@@ -124,7 +127,6 @@ class FreeplayState extends MusicBeatState
 			var icon:HealthIcon = new HealthIcon(songs[i].songCharacter);
 			icon.sprTracker = songText;
 
-			
 			// too laggy with a lot of songs, so i had to recode the logic for it
 			songText.visible = songText.active = songText.isMenuItem = false;
 			icon.visible = icon.active = false;
@@ -136,7 +138,9 @@ class FreeplayState extends MusicBeatState
 			// songText.x += 40;
 			// DONT PUT X IN THE FIRST PARAMETER OF new ALPHABET() !!
 			// songText.screenCenter(X);
+			if(Main.isConsoleAvailable) Sys.stdout().writeString('\x1b[0GLoading Song (${i+1}/${songs.length})');
 		}
+		Sys.println('\nLoading Done');
 		WeekData.setDirectoryFromWeek();
 
 		scoreText = new FlxText(FlxG.width * 0.7, 5, 0, "", 32);
@@ -337,7 +341,16 @@ class FreeplayState extends MusicBeatState
 
 				Mods.currentModDirectory = songs[curSelected].folder;
 				var poop:String = Highscore.formatSong(songs[curSelected].songName.toLowerCase(), curDifficulty);
+				trace('[FAST JSON] Freeplay preview loading: ${songs[curSelected].songName.toLowerCase()} with skipChart=true');
+				SongJson.skipChart = true;
+				SongJson.log = true;
+				var jsonPath = Paths.json(poop.toLowerCase());
+				var jsonSize = sys.FileSystem.exists(jsonPath) ? sys.FileSystem.stat(jsonPath).size : 0;
+				trace('Loading ${jsonSize} bytes');
 				Song.loadFromJson(poop, songs[curSelected].songName.toLowerCase(), true);
+				SongJson.skipChart = false;
+				SongJson.log = false;
+				trace('[FAST JSON] Freeplay preview loaded successfully');
 				if (PlayState.SONG.needsVoices)
 				{
 					vocals = new FlxSound();

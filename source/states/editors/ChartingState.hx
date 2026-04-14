@@ -640,22 +640,6 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 	function prepareReload()
 	{
-		// Calculate total note count before loading for GC optimization
-		var totalNoteCount:Int = 0;
-		if(PlayState.SONG != null && PlayState.SONG.notes != null)
-		{
-			for (section in PlayState.SONG.notes)
-				totalNoteCount += section.sectionNotes.length;
-		}
-
-		// Optimize GC for very large note counts (matching JS-Engine-source behavior)
-		#if cpp
-		if (totalNoteCount > 1000000)
-		{
-			cpp.vm.Gc.enable(false);
-		}
-		#end
-
 		updateJsonData();
 		loadMusic();
 		reloadNotes();
@@ -668,14 +652,6 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		curSec = 0;
 		loadSection();
 		forceDataUpdate = true;
-
-		#if cpp
-		if (totalNoteCount > 1000000)
-		{
-			cpp.vm.Gc.enable(true);
-			openfl.system.System.gc();
-		}
-		#end
 	}
 
 	function onChartLoaded()
@@ -2405,19 +2381,6 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 	function reloadNotes()
 	{
-		// JS-Engine optimizations: Fast note count calculation
-		var totalNoteCount:Int = 0;
-		for (section in PlayState.SONG.notes)
-			totalNoteCount += section.sectionNotes.length;
-
-		// JS-Engine GC control for very large note counts
-		#if cpp
-		if (totalNoteCount > 1000000)
-		{
-			cpp.vm.Gc.enable(false);
-		}
-		#end
-
 		var startTime = haxe.Timer.stamp();
 
 		// JS-Engine: Clear existing notes (fast)
@@ -2428,7 +2391,9 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		events = [];
 
 		// JS-Engine OPTIMIZATION 1: Pre-allocate arrays with exact sizing
-		var estimatedNotes:Int = totalNoteCount;
+		var estimatedNotes:Int = 0;
+		for (section in PlayState.SONG.notes)
+			estimatedNotes += section.sectionNotes.length;
 		var estimatedEvents:Int = PlayState.SONG.events.length;
 
 		if (estimatedNotes > 0) notes = [];
@@ -2516,22 +2481,11 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		if (curSec >= 0 && curSec < PlayState.SONG.notes.length)
 			loadSection(curSec);
 
-		// JS-Engine GC control
-		#if cpp
-		if (totalNoteCount > 1000000)
-		{
-			cpp.vm.Gc.enable(true);
-			// Only GC if really needed
-			if (totalNoteCount > 500000)
-				openfl.system.System.gc();
-		}
-		#end
-
 		forceDataUpdate = true;
 
 		// JS-Engine: Debug timing with higher threshold
-		if (totalNoteCount > 50000)
-			trace('reloadNotes() processed ' + totalNoteCount + ' notes in ' + (haxe.Timer.stamp() - startTime) + 's');
+		if (estimatedNotes > 50000)
+			trace('reloadNotes() processed ' + estimatedNotes + ' notes in ' + (haxe.Timer.stamp() - startTime) + 's');
 	}
 
 	function createNote(note:Dynamic, ?secNum:Null<Int> = null)

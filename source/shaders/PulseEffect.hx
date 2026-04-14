@@ -5,7 +5,7 @@ import flixel.system.FlxAssets.FlxShader;
 
 class PulseEffect
 {
-    public var shader(default,null):PulseShader = new PulseShader();
+    public var shader(default, set):PulseShader = new PulseShader();
 
     public var waveSpeed(default, set):Float = 0;
 	public var waveFrequency(default, set):Float = 0;
@@ -37,21 +37,26 @@ class PulseEffect
         shader.uEnabled.value = [enabled];
         return v;
     }
-    
+
+	function set_shader(v:WiggleShader):WiggleShader
+	{
+		shader = v;
+		return v;
+	}
+
     function set_waveFrequency(v:Float):Float
     {
         waveFrequency = v;
         shader.uFrequency.value = [waveFrequency];
         return v;
     }
-    
+
     function set_waveAmplitude(v:Float):Float
     {
         waveAmplitude = v;
         shader.uWaveAmplitude.value = [waveAmplitude];
         return v;
     }
-
 }
 
 class PulseShader extends FlxShader
