@@ -1326,11 +1326,6 @@ class PlayState extends MusicBeatState
 
 	private function generateSong():Void
 	{
-		// Initialize timing variables
-		loadTime = Date.now().getTime();
-		loadNoteTime = Date.now().getTime();
-		syncTime = Date.now().getTime();
-		
 		// FlxG.log.add(ChartParser.parse());
 		songSpeed = PlayState.SONG.speed;
 		songSpeedType = ClientPrefs.getGameplaySetting('scrolltype');
