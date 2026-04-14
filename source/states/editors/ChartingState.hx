@@ -409,7 +409,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		infoBox.getTab('Information').menu.add(infoText);
 		add(infoBox);
 
-		mainBox = new PsychUIBox(mainBoxPosition.x, mainBoxPosition.y, 300, 420, ['Charting', 'Data', 'Events', 'Note', 'Note Spamming', 'Section', 'Song']);
+		mainBox = new PsychUIBox(mainBoxPosition.x, mainBoxPosition.y, 300, 420, ['Charting', 'Data', 'Events', 'Event Spamming', 'Note', 'Note Spamming', 'Section', 'Song']);
 		mainBox.selectedName = 'Song';
 		mainBox.scrollFactor.set();
 		mainBox.cameras = [camUI];
@@ -462,6 +462,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		addSectionTab();
 		addSongTab();
 		addNoteSpammingTab();
+		addEventSpammingTab();
 		
 		////// for upper box
 		addFileTab();
@@ -1440,41 +1441,6 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 							if (check_stackActive != null && check_stackActive.checked) {
 								var addCount:Float = stepperStackNum.value * stepperStackOffset.value - 1;
-								var shouldSpamEvents:Bool = (spamEventsCheckbox != null && spamEventsCheckbox.checked);
-								var originalEventDataList:Array<Array<Dynamic>> = [];
-								if (shouldSpamEvents)
-								{
-									// Find events near the current click position
-									for (section in PlayState.SONG.notes)
-									{
-										for (originalEventData in section.sectionNotes)
-										{
-											if (originalEventData != null && originalEventData.length > 1)
-											{
-												// Check if this is an event and within time tolerance
-												var noteData:Dynamic = originalEventData[1];
-												var isEvent:Bool = false;
-												
-												// Handle both event formats: [strumTime, -1, eventName, value1, value2] and [strumTime, [[eventName, value1, value2]]]
-												if (Std.isOfType(noteData, Array))
-												{
-													// This is the new format: [strumTime, [[eventName, value1, value2]]]
-													isEvent = true;
-												}
-												else if (Std.isOfType(noteData, Int) && noteData < 0)
-												{
-													// This is the old format: [strumTime, -1, eventName, value1, value2]
-													isEvent = true;
-												}
-												
-												if (isEvent && Math.abs(originalEventData[0] - strumTime) < 0.1)
-												{
-													originalEventDataList.push(originalEventData);
-												}
-											}
-										}
-									}
-								}
 								for(i in 0...Std.int(addCount)) {
 									var spamStrumTime:Float = strumTime + (15000/Conductor.bpm)/stepperStackOffset.value * (i + 1);
 
@@ -1495,32 +1461,16 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 										spamNoteSetupData.push(typeSelected);
 
 									var spamNoteAdded:MetaNote = createNote(spamNoteSetupData);
-									if (shouldSpamEvents)
-									{
-										for (originalEventData in originalEventDataList)
-										{
-											var newEventData:Array<Dynamic> = originalEventData.copy();
-											newEventData[0] = spamStrumTime;
-
-											// Add to the current section's sectionNotes
-											var currentSection = PlayState.SONG.notes[curSec];
-											currentSection.sectionNotes.push(newEventData);
-
-											// Also create visual event
-											var newEvent:EventMetaNote = createEvent(newEventData);
-											events.push(newEvent);
-										}
-									}
 									var spamDidAdd:Bool = false;
 									for (num in sectionFirstNoteID...notes.length)
 									{
 										var note = notes[num];
 										if(note.strumTime >= spamStrumTime)
-											{
-												notes.insert(num, spamNoteAdded);
-												spamDidAdd = true;
-												break;
-											}
+										{
+											notes.insert(num, spamNoteAdded);
+											spamDidAdd = true;
+											break;
+										}
 									}
 									if(!spamDidAdd) notes.push(spamNoteAdded);
 
@@ -1552,6 +1502,42 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 							selectedNotes.push(eventAdded);
 							addUndoAction(ADD_NOTE, {events: [eventAdded]});
+
+							if (spamEvent != null && spamEvent.checked) {
+								var addCount:Float = spamLength.value * spamMultiplier.value - 1;
+								for(i in 0...Std.int(addCount)) {
+									var spamStrumTime:Float = strumTime + (15000/Conductor.bpm) / spamMultiplier.value * (i + 1);
+
+									// Determine which player the original event belongs to and maintain that assignment
+									var originalPlayer:Int = Math.floor(noteData / GRID_COLUMNS_PER_PLAYER);
+									var originalNoteData:Int = noteData % GRID_COLUMNS_PER_PLAYER;
+									var spamEventData:Int = originalNoteData + Math.floor(spamSide.value);
+
+									// Clamp event data to valid range within the player's columns
+									if (spamEventData >= 0) spamEventData = 0;
+									if (spamEventData < GRID_COLUMNS_PER_PLAYER) spamEventData = GRID_COLUMNS_PER_PLAYER - 1;
+
+									// Add the player offset back to maintain the correct player assignment
+									spamEventData += originalPlayer * GRID_COLUMNS_PER_PLAYER;
+
+									var spamEventAdded:EventMetaNote = createEvent([spamStrumTime, [[eventsList[Std.int(Math.max(eventDropDown.selectedIndex, 0))][0], value1InputText.text, value2InputText.text]]]);
+									var spamDidAdd:Bool = false;
+									for (num in sectionFirstEventID...events.length)
+									{
+										var event = events[num];
+										if(event.strumTime >= spamStrumTime)
+										{
+											events.insert(num, spamEventAdded);
+											spamDidAdd = true;
+											break;
+										}
+									}
+									if(!spamDidAdd) events.push(spamEventAdded);
+
+									selectedNotes.push(spamEventAdded);
+									addUndoAction(ADD_NOTE, {events: [spamEventAdded]});
+								}
+							}
 						}
 						onSelectNote();
 						softReloadNotes();
@@ -1608,41 +1594,6 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 					// Note Spamming feature for C key drawing
 					if (check_stackActive != null && check_stackActive.checked) {
 						var addCount:Float = stepperStackNum.value * stepperStackOffset.value - 1;
-						var shouldSpamEvents:Bool = (spamEventsCheckbox != null && spamEventsCheckbox.checked);
-						var originalEventDataList:Array<Array<Dynamic>> = [];
-						if (shouldSpamEvents)
-						{
-							// Find events near the current click position (not the original strumTime)
-							for (section in PlayState.SONG.notes)
-							{
-								for (originalEventData in section.sectionNotes)
-								{
-									if (originalEventData != null && originalEventData.length > 1)
-									{
-										// Check if this is an event (noteData < 0) and within time tolerance
-										var noteData:Dynamic = originalEventData[1];
-										var isEvent:Bool = false;
-										
-										// Handle both event formats: [strumTime, -1, eventName, value1, value2] and [strumTime, [[eventName, value1, value2]]]
-										if (Std.isOfType(noteData, Array))
-										{
-											// This is the new format: [strumTime, [[eventName, value1, value2]]]
-											isEvent = true;
-										}
-										else if (Std.isOfType(noteData, Int) && noteData < 0)
-										{
-											// This is the old format: [strumTime, -1, eventName, value1, value2]
-											isEvent = true;
-										}
-										
-										if (isEvent && Math.abs(originalEventData[0] - strumTime) < 0.1)
-										{
-											originalEventDataList.push(originalEventData);
-										}
-									}
-								}
-							}
-						}
 						for(i in 0...Std.int(addCount)) {
 							var spamStrumTime:Float = strumTime + (15000/Conductor.bpm)/stepperStackOffset.value * (i + 1);
 
@@ -1663,37 +1614,81 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 								spamNoteSetupData.push(typeSelected);
 
 							var spamNoteAdded:MetaNote = createNote(spamNoteSetupData);
-							if (shouldSpamEvents)
-							{
-								for (originalEventData in originalEventDataList)
-								{
-									var newEventData:Array<Dynamic> = originalEventData.copy();
-									newEventData[0] = spamStrumTime;
-
-									// Add to the current section's sectionNotes
-									var currentSection = PlayState.SONG.notes[curSec];
-									currentSection.sectionNotes.push(newEventData);
-
-									// Also create visual event
-									var newEvent:EventMetaNote = createEvent(newEventData);
-									events.push(newEvent);
-								}
-							}
 							var spamDidAdd:Bool = false;
 							for (num in sectionFirstNoteID...notes.length)
 							{
 								var note = notes[num];
 								if(note.strumTime >= spamStrumTime)
-									{
-										notes.insert(num, spamNoteAdded);
-										spamDidAdd = true;
-										break;
-									}
+								{
+									notes.insert(num, spamNoteAdded);
+									spamDidAdd = true;
+									break;
+								}
 							}
 							if(!spamDidAdd) notes.push(spamNoteAdded);
 
 							selectedNotes.push(spamNoteAdded);
 							addUndoAction(ADD_NOTE, {notes: [spamNoteAdded]});
+						}
+					}
+				}
+				else if (!lockedEvents) {
+					trace('Added event at time: $strumTime');
+					var didAdd:Bool = false;
+
+					var eventAdded:EventMetaNote = createEvent([strumTime, [[eventsList[Std.int(Math.max(eventDropDown.selectedIndex, 0))][0], value1InputText.text, value2InputText.text]]]);
+					for (num in sectionFirstEventID...events.length)
+					{
+						var event = events[num];
+						if(event.strumTime >= strumTime)
+						{
+							events.insert(num, eventAdded);
+							didAdd = true;
+							break;
+						}
+					}
+					if(!didAdd) events.push(eventAdded);
+
+					if(!holdingAlt)
+						resetSelectedNotes();
+
+					selectedNotes.push(eventAdded);
+					addUndoAction(ADD_NOTE, {events: [eventAdded]});
+
+					// Event Spamming feature for C key drawing
+					if (spamEvent != null && spamEvent.checked) {
+						var addCount:Float = spamLength.value * spamMultiplier.value - 1;
+						for(i in 0...Std.int(addCount)) {
+							var spamStrumTime:Float = strumTime + (15000/Conductor.bpm) / spamMultiplier.value * (i + 1);
+
+							// Determine which player the original event belongs to and maintain that assignment
+							var originalPlayer:Int = Math.floor(noteData / GRID_COLUMNS_PER_PLAYER);
+							var originalNoteData:Int = noteData % GRID_COLUMNS_PER_PLAYER;
+							var spamEventData:Int = originalNoteData + Math.floor(spamSide.value);
+
+							// Clamp event data to valid range within the player's columns
+							if (spamEventData >= 0) spamEventData = 0;
+							if (spamEventData < GRID_COLUMNS_PER_PLAYER) spamEventData = GRID_COLUMNS_PER_PLAYER - 1;
+
+							// Add the player offset back to maintain the correct player assignment
+							spamEventData += originalPlayer * GRID_COLUMNS_PER_PLAYER;
+
+							var spamEventAdded:EventMetaNote = createEvent([spamStrumTime, [[eventsList[Std.int(Math.max(eventDropDown.selectedIndex, 0))][0], value1InputText.text, value2InputText.text]]]);
+							var spamDidAdd:Bool = false;
+							for (num in sectionFirstEventID...events.length)
+							{
+								var event = events[num];
+								if(event.strumTime >= spamStrumTime)
+								{
+									events.insert(num, spamEventAdded);
+									spamDidAdd = true;
+									break;
+								}
+							}
+							if(!spamDidAdd) events.push(spamEventAdded);
+
+							selectedNotes.push(spamEventAdded);
+							addUndoAction(ADD_NOTE, {events: [spamEventAdded]});
 						}
 					}
 				}
@@ -3347,7 +3342,6 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 	var stepperShrinkAmount:PsychUINumericStepper;
 	var stepperShiftSteps:PsychUINumericStepper;
 	var stepperDuplicateAmount:PsychUINumericStepper;
-	var spamEventsCheckbox:PsychUICheckBox;
 	function addNoteTab()
 	{
 		var tab_group = mainBox.getTab('Note').menu;
@@ -4305,10 +4299,6 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		check_stackActive = new PsychUICheckBox(objX, objY, "Enable Note Spamming");
 		check_stackActive.name = 'check_stackActive';
 
-		spamEventsCheckbox = new PsychUICheckBox(objX + 90, objY, 'Spam Events');
-		spamEventsCheckbox.name = 'spam_events';
-		spamEventsCheckbox.checked = true;
-
 		stepperStackNum = new PsychUINumericStepper(objX, objY + 30, 1, 1, 0, 999999, 4, 80);
 		stepperStackNum.name = 'stack_count';
 
@@ -4487,7 +4477,6 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		});
 
 		tab_group.add(check_stackActive);
-		tab_group.add(spamEventsCheckbox);
 		tab_group.add(stepperStackNum);
 		tab_group.add(stepperStackOffset);
 		tab_group.add(stepperStackSideOffset);
@@ -4503,13 +4492,75 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		tab_group.add(shrinkNotesButton);
 		tab_group.add(shiftNotesButton);
 		tab_group.add(dupeNotesButton);
-		
+
 		tab_group.add(new FlxText(100, stepperStackNum.y, 0, "Spam Height"));
 		tab_group.add(new FlxText(140, stepperStackOffset.y, 0, "Spam Multiplier"));
 		tab_group.add(new FlxText(100, stepperStackSideOffset.y, 0, "Spam Scroll Amount"));
 		tab_group.add(new FlxText(100, stepperShrinkAmount.y, 0, "Stretch Amount"));
 		tab_group.add(new FlxText(100, stepperShiftSteps.y, 0, "Steps to Shift By"));
 		tab_group.add(new FlxText(100, stepperDuplicateAmount.y, 0, "Amount of Duplicates"));
+	}
+
+	var spamEvent:PsychUICheckBox;
+	var spamLength:PsychUINumericStepper;
+	var spamMultiplier:PsychUINumericStepper;
+	var spamSide:PsychUINumericStepper;
+
+	function addEventSpammingTab()
+	{
+		var tab_group = mainBox.getTab('Event Spamming').menu;
+
+		spamEvent = new PsychUICheckBox(10, 10, 'Enable Event Spamming');
+		spamEvent.name = 'spamEvent';
+
+		spamLength = new PsychUINumericStepper(10, 40, 1, 1, 0, 999999, 4);
+		spamLength.name = 'spamLength';
+
+		var doubleSpamStep:PsychUIButton = new PsychUIButton(spamLength.x, spamLength.y + 20, 'x2 Length', function()
+		{
+			spamLength.value *= 2;
+		});
+		doubleSpamStep.normalStyle.bgColor = FlxColor.GREEN;
+		doubleSpamStep.normalStyle.textColor = FlxColor.WHITE;
+
+		var halfSpamStep:PsychUIButton = new PsychUIButton(doubleSpamStep.x + doubleSpamStep.width + 20, doubleSpamStep.y, 'x0.5 Length', function()
+		{
+			spamLength.value /= 2;
+		});
+		halfSpamStep.normalStyle.bgColor = FlxColor.RED;
+		halfSpamStep.normalStyle.textColor = FlxColor.WHITE;
+
+		spamMultiplier = new PsychUINumericStepper(10, 90, 1, 1, 0, 999999, 4);
+		spamMultiplier.name = 'spamMultiplier';
+
+		var doubleSpamMultiplier:PsychUIButton = new PsychUIButton(spamMultiplier.x, spamMultiplier.y + 20, 'x2 Mult', function()
+		{
+			spamMultiplier.value *= 2;
+		});
+		doubleSpamMultiplier.normalStyle.bgColor = FlxColor.GREEN;
+		doubleSpamMultiplier.normalStyle.textColor = FlxColor.WHITE;
+
+		var halfSpamMultiplier:PsychUIButton = new PsychUIButton(doubleSpamMultiplier.x + doubleSpamMultiplier.width + 20, doubleSpamMultiplier.y, 'x0.5 Mult', function()
+		{
+			spamMultiplier.value /= 2;
+		});
+		halfSpamMultiplier.normalStyle.bgColor = FlxColor.RED;
+		halfSpamMultiplier.normalStyle.textColor = FlxColor.WHITE;
+
+		spamSide = new PsychUINumericStepper(10, 150, 1, 0, -9999, 9999);
+		spamSide.name = 'spamSide';
+
+		tab_group.add(spamEvent);
+		tab_group.add(spamLength);
+		tab_group.add(spamMultiplier);
+		tab_group.add(doubleSpamStep);
+		tab_group.add(halfSpamStep);
+		tab_group.add(doubleSpamMultiplier);
+		tab_group.add(halfSpamMultiplier);
+		tab_group.add(spamSide);
+		tab_group.add(new FlxText(100, spamLength.y, 'Spam Length'));
+		tab_group.add(new FlxText(100, spamMultiplier.y, 'Spam Multiplier'));
+		tab_group.add(new FlxText(100, spamSide.y, 'Spam Scroll Amount'));
 	}
 
 	function addFileTab()
