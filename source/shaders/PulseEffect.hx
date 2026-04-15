@@ -38,7 +38,7 @@ class PulseEffect
         return v;
     }
 
-	function set_shader(v:WiggleShader):WiggleShader
+	function set_shader(v:PulseShader):PulseShader
 	{
 		shader = v;
 		return v;
