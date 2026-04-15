@@ -1,5 +1,5 @@
 // Fork of haxe.format.JsonParser with optional fast-skip of the "notes" array (see skipChart).
-// Progress output is gated on #if sys (ZS has no Main.isConsoleAvailable).
+// Progress output is gated on #if sys.
 
 /*
  * Copyright (C)2005-2019 Haxe Foundation
@@ -299,7 +299,7 @@ class SongJson
 	{
 		if (Timer.stamp() - time > 0.1)
 		{
-			if (log)
+			if (Main.isConsoleAvailable && log)
 			{
 				try {
 					Sys.stdout().writeString('\x1b[0G$pos/${str.length}');

@@ -1340,7 +1340,7 @@ class PlayState extends MusicBeatState
 	private var shownProgress:Bool = false;
 
 	function showProgress(force:Bool = false) {
-		if (true)
+		if (Main.isConsoleAvailable)
 		{
 			if ((Date.now().getTime() - syncTime > progressUpdateTime) || force)
 			{
