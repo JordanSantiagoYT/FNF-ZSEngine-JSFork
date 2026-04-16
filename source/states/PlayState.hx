@@ -1859,17 +1859,17 @@ Average NPS in loading: ${Math.round((parsedNotes + ghostNotesCaught) / takenNot
 				allowDisable = true;
 
 			if (allowDisable && masterPulse.shader != null && masterPulse.shader.uampmul != null) {
-				trace('PulseEffect: masterPulse.shader.uampmul.value[0] = ${masterPulse.shader.uampmul.value[0]}, subtracting ${globalElapsed / 2}');
+				trace('PulseEffect: masterPulse.shader.uampmul.value[0] = ' + masterPulse.shader.uampmul.value[0] + ', subtracting ' + (globalElapsed / 2));
 				masterPulse.shader.uampmul.value[0] -= (globalElapsed / 2);
 			} else {
-				trace('PulseEffect: Skipping shader update - allowDisable=$allowDisable, masterPulse.shader=${masterPulse.shader}, uampmul=${masterPulse.shader != null ? masterPulse.shader.uampmul : "null"}');
+				trace('PulseEffect: Skipping shader update - allowDisable=' + allowDisable + ', masterPulse.shader=' + masterPulse.shader + ', uampmul=' + (masterPulse.shader != null ? Std.string(masterPulse.shader.uampmul) : 'null'));
 			}
 
 			if (masterPulse.shader != null && masterPulse.shader.uampmul != null && masterPulse.shader.uampmul.value[0] > 0) {
-				trace('PulseEffect: masterPulse.update() called - uampmul.value[0] = ${masterPulse.shader.uampmul.value[0]}');
+				trace('PulseEffect: masterPulse.update() called - uampmul.value[0] = ' + masterPulse.shader.uampmul.value[0]);
 				masterPulse.update(globalElapsed);
 			} else {
-				trace('PulseEffect: Skipping masterPulse.update() - shader=${masterPulse.shader}, uampmul=${masterPulse.shader != null ? masterPulse.shader.uampmul : "null"}, value=${masterPulse.shader != null && masterPulse.shader.uampmul != null ? masterPulse.shader.uampmul.value[0] : "null"}');
+				trace('PulseEffect: Skipping masterPulse.update() - shader=' + masterPulse.shader + ', uampmul=' + (masterPulse.shader != null ? Std.string(masterPulse.shader.uampmul) : 'null') + ', value=' + (masterPulse.shader != null && masterPulse.shader.uampmul != null ? Std.string(masterPulse.shader.uampmul.value[0]) : 'null'));
 			}
 		}
 
