@@ -1338,9 +1338,10 @@ class PlayState extends MusicBeatState
 	private var sustainNoteCnt:Int = 0;
 	private var loadTime:Float = 0;
 	private var shownProgress:Bool = false;
+	private var ghostNotesCaught:Int = 0;
 
 	function showProgress(force:Bool = false) {
-		trace('showProgress called: Main.isConsoleAvailable=$isConsoleAvailable, force=$force');
+		trace('showProgress called: Main.isConsoleAvailable=${Main.isConsoleAvailable}, force=$force');
 		if (Main.isConsoleAvailable)
 		{
 			if ((Date.now().getTime() - syncTime > progressUpdateTime) || force)
@@ -1349,7 +1350,7 @@ class PlayState extends MusicBeatState
 				syncTime = Date.now().getTime();
 			}
 		} else if (isDesktop && force) {
-			Sys.println('Loading $cnt/${SONG.notes.length} (${parsedNotes + sectionNoteCnt} notes)');
+			Sys.println('Loading $cnt/${SONG.notes.length} (${parsedNotes + sectionNoteCnt + ghostNotesCaught} notes)');
 		}
 	}
 
@@ -1421,7 +1422,7 @@ class PlayState extends MusicBeatState
 
 		var oldNote:Note = null;
 		var sectionsData:Array<SwagSection> = PlayState.SONG.notes;
-		var ghostNotesCaught:Int = 0;
+		ghostNotesCaught = 0; // Initialize class member
 		var daBpm:Float = Conductor.bpm;
 		
 		// H-Slice performance optimizations
@@ -1857,11 +1858,19 @@ Average NPS in loading: ${Math.round((parsedNotes + ghostNotesCaught) / takenNot
 			if (allowDisableAt == curStep || isDead)
 				allowDisable = true;
 
-			if (allowDisable && masterPulse.shader != null && masterPulse.shader.uampmul != null)
+			if (allowDisable && masterPulse.shader != null && masterPulse.shader.uampmul != null) {
+				trace('PulseEffect: masterPulse.shader.uampmul.value[0] = ${masterPulse.shader.uampmul.value[0]}, subtracting ${globalElapsed / 2}');
 				masterPulse.shader.uampmul.value[0] -= (globalElapsed / 2);
+			} else {
+				trace('PulseEffect: Skipping shader update - allowDisable=$allowDisable, masterPulse.shader=${masterPulse.shader}, uampmul=${masterPulse.shader != null ? masterPulse.shader.uampmul : "null"}');
+			}
 
-			if (masterPulse.shader != null && masterPulse.shader.uampmul != null && masterPulse.shader.uampmul.value[0] > 0)
+			if (masterPulse.shader != null && masterPulse.shader.uampmul != null && masterPulse.shader.uampmul.value[0] > 0) {
+				trace('PulseEffect: masterPulse.update() called - uampmul.value[0] = ${masterPulse.shader.uampmul.value[0]}');
 				masterPulse.update(globalElapsed);
+			} else {
+				trace('PulseEffect: Skipping masterPulse.update() - shader=${masterPulse.shader}, uampmul=${masterPulse.shader != null ? masterPulse.shader.uampmul : "null"}, value=${masterPulse.shader != null && masterPulse.shader.uampmul != null ? masterPulse.shader.uampmul.value[0] : "null"}');
+			}
 		}
 
 		if (unspawnNotes[0] != null)

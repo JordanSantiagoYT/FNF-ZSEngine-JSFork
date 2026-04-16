@@ -14,27 +14,47 @@ class PulseEffect
 
 	public function new():Void
 	{
-		shader.uTime.value = [0];
-        shader.uampmul.value = [0];
-        shader.uEnabled.value = [false];
+		if (shader != null) {
+			shader.uTime.value = [0];
+	        shader.uampmul.value = [0];
+	        shader.uEnabled.value = [false];
+			trace('PulseEffect.new: Initialized shader with uTime=[0], uampmul=[0], uEnabled=[false]');
+		} else {
+			trace('PulseEffect.new: shader is null during initialization');
+		}
 	}
 
     public function update(elapsed:Float):Void
     {
-        shader.uTime.value[0] += elapsed;
+        if (shader != null) {
+            shader.uTime.value[0] += elapsed;
+            trace('PulseEffect.update: shader.uTime.value[0] = ${shader.uTime.value[0]}');
+        } else {
+            trace('PulseEffect.update: shader is null, cannot update uTime');
+        }
     }
 
     function set_waveSpeed(v:Float):Float
     {
         waveSpeed = v;
-        shader.uSpeed.value = [waveSpeed];
+        if (shader != null) {
+            shader.uSpeed.value = [waveSpeed];
+            trace('PulseEffect.set_waveSpeed: shader.uSpeed.value = [${waveSpeed}]');
+        } else {
+            trace('PulseEffect.set_waveSpeed: shader is null, cannot set uSpeed');
+        }
         return v;
     }
 
     function set_enabled(v:Bool):Bool
     {
         enabled = v;
-        shader.uEnabled.value = [enabled];
+        if (shader != null) {
+            shader.uEnabled.value = [enabled];
+            trace('PulseEffect.set_enabled: shader.uEnabled.value = [${enabled}]');
+        } else {
+            trace('PulseEffect.set_enabled: shader is null, cannot set uEnabled');
+        }
         return v;
     }
 
@@ -47,14 +67,24 @@ class PulseEffect
     function set_waveFrequency(v:Float):Float
     {
         waveFrequency = v;
-        shader.uFrequency.value = [waveFrequency];
+        if (shader != null) {
+            shader.uFrequency.value = [waveFrequency];
+            trace('PulseEffect.set_waveFrequency: shader.uFrequency.value = [${waveFrequency}]');
+        } else {
+            trace('PulseEffect.set_waveFrequency: shader is null, cannot set uFrequency');
+        }
         return v;
     }
 
     function set_waveAmplitude(v:Float):Float
     {
         waveAmplitude = v;
-        shader.uWaveAmplitude.value = [waveAmplitude];
+        if (shader != null) {
+            shader.uWaveAmplitude.value = [waveAmplitude];
+            trace('PulseEffect.set_waveAmplitude: shader.uWaveAmplitude.value = [${waveAmplitude}]');
+        } else {
+            trace('PulseEffect.set_waveAmplitude: shader is null, cannot set uWaveAmplitude');
+        }
         return v;
     }
 }
