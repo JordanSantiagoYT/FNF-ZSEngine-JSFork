@@ -1340,11 +1340,12 @@ class PlayState extends MusicBeatState
 	private var shownProgress:Bool = false;
 
 	function showProgress(force:Bool = false) {
+		trace('showProgress called: Main.isConsoleAvailable=$isConsoleAvailable, force=$force');
 		if (Main.isConsoleAvailable)
 		{
 			if ((Date.now().getTime() - syncTime > progressUpdateTime) || force)
 			{
-				Sys.stdout().writeString('\x1b[0GLoading $cnt/${SONG.notes.length} (${parsedNotes + sectionNoteCnt} notes)');
+				Sys.stdout().writeString('\x1b[0GLoading $cnt/${SONG.notes.length} (${parsedNotes + sectionNoteCnt + ghostNotesCaught} notes)');
 				syncTime = Date.now().getTime();
 			}
 		} else if (isDesktop && force) {
@@ -1856,10 +1857,10 @@ Average NPS in loading: ${Math.round((parsedNotes + ghostNotesCaught) / takenNot
 			if (allowDisableAt == curStep || isDead)
 				allowDisable = true;
 
-			if (allowDisable)
+			if (allowDisable && masterPulse.shader != null && masterPulse.shader.uampmul != null)
 				masterPulse.shader.uampmul.value[0] -= (globalElapsed / 2);
 
-			if (masterPulse.shader.uampmul.value[0] > 0)
+			if (masterPulse.shader != null && masterPulse.shader.uampmul != null && masterPulse.shader.uampmul.value[0] > 0)
 				masterPulse.update(globalElapsed);
 		}
 
