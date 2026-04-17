@@ -1368,7 +1368,17 @@ class PlayState extends MusicBeatState
 		loadNoteTime = Date.now().getTime();
 		syncTime = Date.now().getTime();
 		
-		// FlxG.log.add(ChartParser.parse());
+		// JS Engine optimization: Disable GC for large charts
+		var totalNotes:Int = 0;
+		for (section in SONG.notes)
+			if (section.sectionNotes != null)
+				totalNotes += section.sectionNotes.length;
+
+		#if cpp
+		if (totalNotes > 1000000)
+			cpp.vm.Gc.enable(false);
+		#end
+
 		songSpeed = PlayState.SONG.speed;
 		songSpeedType = ClientPrefs.getGameplaySetting('scrolltype');
 		switch(songSpeedType)
@@ -1443,6 +1453,11 @@ class PlayState extends MusicBeatState
 			for (i in 0...section.sectionNotes.length)
 			{
 				final songNotes: Array<Dynamic> = section.sectionNotes[i];
+				
+				// JS Engine optimization: Skip notes that won't be played
+				if (songNotes[0] < startOnTime - 500)
+					continue;
+
 				var spawnTime: Float = songNotes[0];
 				var noteColumn: Int = Std.int(songNotes[1] % totalColumns);
 				var holdLength: Float = songNotes[2];
@@ -1551,8 +1566,19 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 				makeEvent(event, i);
 
 		unspawnNotes.sort(sortByTime);
-		trace('[FAST NOTE PARSING] Generated ${unspawnNotes.length} CastNotes for song "${SONG.song}"');
+		trace('[FAST NOTE PARSING] Generated ${unspawnNotes.length} Notes for song "${SONG.song}"');
 		trace('Loading ${SONG.song} (${unspawnNotes.length} notes)');
+
+		// JS Engine optimization: Re-enable GC and trigger manual collection
+		#if cpp
+		if (totalNotes > 1000000)
+			cpp.vm.Gc.enable(true);
+		#end
+
+		#if sys
+		openfl.system.System.gc();
+		#end
+
 		generatedMusic = true;
 	}
 
@@ -1892,21 +1918,19 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 			// Apply H-Slice bounds checking for songSpeed
 			if(songSpeed < 1) time = Math.max(spawnTime / songSpeed, Conductor.stepCrochet);
 			else time /= songSpeed;
-			// Note: CastNote doesn't have multSpeed property, so we skip that check
+			if(unspawnNotes[0].multSpeed < 1) time /= unspawnNotes[0].multSpeed;
 
 			while (unspawnNotes.length > 0 && unspawnNotes[0].strumTime - Conductor.songPosition < time)
 			{
-				var castNote:CastNote = unspawnNotes[0];
-				
-				// Convert CastNote back to Note object for gameplay
-				var dunceNote:Note = Note.fromCastNote(castNote);
-				notes.insert(0, dunceNote);
-				dunceNote.spawned = true;
+				var note:Note = unspawnNotes[0];
 
-				trace('[FAST NOTE PARSING] Spawned note at ${castNote.strumTime}ms, data: ${castNote.noteData & 0xFF}, type: ${castNote.noteType}');
+				notes.insert(0, note);
+				note.spawned = true;
 
-				callOnLuas('onSpawnNote', [notes.members.indexOf(dunceNote), dunceNote.noteData, dunceNote.noteType, dunceNote.isSustainNote, dunceNote.strumTime]);
-				callOnHScript('onSpawnNote', [dunceNote]);
+				trace('[FAST NOTE PARSING] Spawned note at ${note.strumTime}ms, data: ${note.noteData & 0xFF}, type: ${note.noteType}');
+
+				callOnLuas('onSpawnNote', [notes.members.indexOf(note), note.noteData, note.noteType, note.isSustainNote, note.strumTime]);
+				callOnHScript('onSpawnNote', [note]);
 
 				unspawnNotes.splice(0, 1);
 			}
