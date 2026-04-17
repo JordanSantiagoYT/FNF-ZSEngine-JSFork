@@ -1376,12 +1376,10 @@ class PlayState extends MusicBeatState
 
 		#if cpp
 		if (totalNotes > 1000000) {
+			// Disable automatic GC during parsing for large charts
 			cpp.vm.Gc.enable(false);
-			// HXCPP_GC_BIG_BLOCKS optimization for large charts
-			#if (hxcpp_api_level >= 332)
-			cpp.vm.Gc.setMajorCollectionFactor(1.5);
-			cpp.vm.Gc.setMinorCollectionFactor(1.2);
-			#end
+			// Force initial collection to clear existing memory
+			cpp.vm.Gc.run(false);
 		}
 		#end
 
@@ -1447,7 +1445,12 @@ class PlayState extends MusicBeatState
 		var sectionsData:Array<SwagSection> = PlayState.SONG.notes;
 		ghostNotesCaught = 0; // Initialize class member
 		var daBpm:Float = Conductor.bpm;
-		
+
+		// Memory management for large charts
+		var notesProcessed:Int = 0;
+		var chunkSize:Int = 50000; // Process notes in chunks
+		var memoryCleanupInterval:Int = 100000; // Cleanup every 100k notes
+
 		for (section in sectionsData)
 		{
 			if (section.changeBPM != null && section.changeBPM && section.bpm != null && daBpm != section.bpm)
@@ -1455,18 +1458,29 @@ class PlayState extends MusicBeatState
 
 			++cnt;
 			sectionNoteCnt = 0;
-			
+
 			// Show progress at start of each section
 			showProgress(false);
 
 			for (i in 0...section.sectionNotes.length)
 			{
+				// Memory cleanup for large charts
+				if (totalNotes > 1000000 && notesProcessed % memoryCleanupInterval == 0) {
+					#if sys
+					openfl.system.System.gc();
+					#end
+					// Small delay to allow memory to settle
+					Sys.sleep(0.001);
+				}
+
+				notesProcessed++;
+
 				final songNotes: Array<Dynamic> = section.sectionNotes[i];
-				
+
 				// JS Engine optimization: Skip notes that won't be played
 				if (songNotes[0] < startOnTime - 500)
 					continue;
-				
+
 				var spawnTime: Float = songNotes[0];
 				var noteColumn: Int = Std.int(songNotes[1] % totalColumns);
 				var holdLength: Float = songNotes[2];
@@ -1485,7 +1499,7 @@ class PlayState extends MusicBeatState
 				swagNote.mustPress = gottaHitNote;
 				swagNote.sustainLength = holdLength;
 				swagNote.noteType = noteType;
-	
+
 				swagNote.scrollFactor.set();
 				unspawnNotes.push(swagNote);
 				++sectionNoteCnt;
