@@ -1367,7 +1367,7 @@ class PlayState extends MusicBeatState
 		loadTime = Date.now().getTime();
 		loadNoteTime = Date.now().getTime();
 		syncTime = Date.now().getTime();
-		
+
 		// JS Engine optimization: Disable GC for large charts
 		var totalNotes:Int = 0;
 		for (section in SONG.notes)
@@ -1375,8 +1375,14 @@ class PlayState extends MusicBeatState
 				totalNotes += section.sectionNotes.length;
 
 		#if cpp
-		if (totalNotes > 1000000)
+		if (totalNotes > 1000000) {
 			cpp.vm.Gc.enable(false);
+			// HXCPP_GC_BIG_BLOCKS optimization for large charts
+			#if (hxcpp_api_level >= 332)
+			cpp.vm.Gc.setMajorCollectionFactor(1.5);
+			cpp.vm.Gc.setMinorCollectionFactor(1.2);
+			#end
+		}
 		#end
 
 		songSpeed = PlayState.SONG.speed;
@@ -1449,6 +1455,9 @@ class PlayState extends MusicBeatState
 
 			++cnt;
 			sectionNoteCnt = 0;
+			
+			// Show progress at start of each section
+			showProgress(false);
 
 			for (i in 0...section.sectionNotes.length)
 			{
@@ -1457,7 +1466,7 @@ class PlayState extends MusicBeatState
 				// JS Engine optimization: Skip notes that won't be played
 				if (songNotes[0] < startOnTime - 500)
 					continue;
-
+				
 				var spawnTime: Float = songNotes[0];
 				var noteColumn: Int = Std.int(songNotes[1] % totalColumns);
 				var holdLength: Float = songNotes[2];
@@ -1568,17 +1577,17 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 		unspawnNotes.sort(sortByTime);
 		trace('[FAST NOTE PARSING] Generated ${unspawnNotes.length} Notes for song "${SONG.song}"');
 		trace('Loading ${SONG.song} (${unspawnNotes.length} notes)');
-
+		
 		// JS Engine optimization: Re-enable GC and trigger manual collection
 		#if cpp
 		if (totalNotes > 1000000)
 			cpp.vm.Gc.enable(true);
 		#end
-
+		
 		#if sys
 		openfl.system.System.gc();
 		#end
-
+		
 		generatedMusic = true;
 	}
 
@@ -1923,7 +1932,7 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 			while (unspawnNotes.length > 0 && unspawnNotes[0].strumTime - Conductor.songPosition < time)
 			{
 				var note:Note = unspawnNotes[0];
-
+				
 				notes.insert(0, note);
 				note.spawned = true;
 
