@@ -170,7 +170,9 @@ class Song
 			// Parse and convert in one step (same as non-streaming path). Do not call getChart() here:
 			// getChart expects string song/folder names and reloads from disk; passing the parsed object
 			// stringifies the whole JSON and breaks Assets.getText with a bogus path.
+			SongJson.log = true; // Enable JSON parsing progress
 			result = parseJSON(content, songName, 'psych_v1', metadataOnly);
+			SongJson.log = false; // Disable after parsing
 			if (result == null)
 			{
 				result = null;
@@ -319,7 +321,10 @@ class Song
 		#end
 			rawData = Assets.getText(_lastPath);
 
-		return rawData != null ? parseJSON(rawData, jsonInput, 'psych_v1', metadataOnly) : null;
+		SongJson.log = true; // Enable JSON parsing progress
+		var result = parseJSON(rawData, jsonInput, 'psych_v1', metadataOnly);
+		SongJson.log = false; // Disable after parsing
+		return result;
 	}
 
 	public static function parseJSON(rawData:String, ?nameForError:String = null, ?convertTo:String = 'psych_v1', ?metadataOnly:Bool = false):SwagSong

@@ -31,24 +31,6 @@ typedef NoteSplashData = {
 	a:Float
 }
 
-typedef CastNote = {
-	var strumTime:Float;
-	// noteData and flags
-	// 1st-8th bits are for noteData (256keys)
-	// 9th bit is for mustHit
-	// 10th bit is for isHold
-	// 11th bit is for isHoldEnd
-	// 12th bit is for gfNote
-	// 13th bit is for altAnim
-	// 14th bit is for noAnim & noMissAnim
-	// 15th bit is for blockHit
-	// 16th bit is for ignoreNote
-	var noteData:Int;
-	@:optional var noteType:String;
-	var holdLength:Null<Float>;
-	var noteSkin:String;
-}
-
 /**
  * The note object used as a data structure to spawn and manage notes during gameplay.
  * 
@@ -317,7 +299,7 @@ class Note extends FlxSprite
 			{
 				prevNote.animation.play(colArray[prevNote.noteData % colArray.length] + 'hold');
 
-				prevNote.scale.y *= Conductor.stepCrochet * 0.0105 * 1.05;
+				prevNote.scale.y *= Conductor.stepCrochet / 100 * 1.05;
 				if(createdFrom != null && createdFrom.songSpeed != null) prevNote.scale.y *= createdFrom.songSpeed;
 
 				if(PlayState.isPixelStage) {
@@ -591,82 +573,5 @@ class Note extends FlxSprite
 			frame = frames.frames[animation.frameIndex];
 
 		return rect;
-	}
-
-	// Fast note parsing methods from H-Slice
-	public static function DEFAULT_CAST():CastNote
-	{
-		return {
-			strumTime: 0,
-			noteData: 0,
-			noteType: '',
-			holdLength: null,
-			noteSkin: defaultNoteSkin
-		};
-	}
-
-	public function toCastNote():CastNote
-	{
-		var flags:Int = noteData & 0xFF; // 1st-8th bits for noteData
-		if (mustPress) flags |= 0x100; // 9th bit for mustHit
-		if (isSustainNote) flags |= 0x200; // 10th bit for isHold
-		if (parent != null) flags |= 0x400; // 11th bit for isHoldEnd
-		if (gfNote) flags |= 0x800; // 12th bit for gfNote
-		if (animSuffix == '-alt') flags |= 0x1000; // 13th bit for altAnim
-		if (noAnimation && noMissAnimation) flags |= 0x2000; // 14th bit for noAnim & noMissAnim
-		if (blockHit) flags |= 0x4000; // 15th bit for blockHit
-		if (ignoreNote) flags |= 0x8000; // 16th bit for ignoreNote
-
-		return {
-			strumTime: strumTime,
-			noteData: flags,
-			noteType: noteType,
-			holdLength: sustainLength,
-			noteSkin: texture != null ? texture : defaultNoteSkin
-		};
-	}
-
-	public static function fromCastNote(castNote:CastNote, ?prevNote:Note):Note
-	{
-		var note:Note = new Note(castNote.strumTime, castNote.noteData & 0xFF, prevNote);
-		note.sustainLength = castNote.holdLength;
-		note.noteType = castNote.noteType;
-		note.texture = castNote.noteSkin;
-
-		// Extract flags from noteData
-		var flags:Int = castNote.noteData;
-		note.noteData = flags & 0xFF; // 1st-8th bits for actual noteData
-		note.mustPress = (flags & 0x100) != 0; // 9th bit for mustHit
-		note.isSustainNote = (flags & 0x200) != 0; // 10th bit for isHold
-		note.gfNote = (flags & 0x800) != 0; // 12th bit for gfNote
-		note.animSuffix = (flags & 0x1000) != 0 ? '-alt' : ''; // 13th bit for altAnim
-		note.noAnimation = note.noMissAnimation = (flags & 0x2000) != 0; // 14th bit for noAnim & noMissAnim
-		note.blockHit = (flags & 0x4000) != 0; // 15th bit for blockHit
-		note.ignoreNote = (flags & 0x8000) != 0; // 16th bit for ignoreNote
-
-		return note;
-	}
-
-	public function recycleNote(castNote:CastNote, ?oldNote:Note):Note
-	{
-		if (oldNote == null) oldNote = this;
-		
-		oldNote.strumTime = castNote.strumTime;
-		oldNote.sustainLength = castNote.holdLength;
-		oldNote.noteType = castNote.noteType;
-		oldNote.texture = castNote.noteSkin;
-
-		// Extract flags from noteData
-		var flags:Int = castNote.noteData;
-		oldNote.noteData = flags & 0xFF; // 1st-8th bits for actual noteData
-		oldNote.mustPress = (flags & 0x100) != 0; // 9th bit for mustHit
-		oldNote.isSustainNote = (flags & 0x200) != 0; // 10th bit for isHold
-		oldNote.gfNote = (flags & 0x800) != 0; // 12th bit for gfNote
-		oldNote.animSuffix = (flags & 0x1000) != 0 ? '-alt' : ''; // 13th bit for altAnim
-		oldNote.noAnimation = oldNote.noMissAnimation = (flags & 0x2000) != 0; // 14th bit for noAnim & noMissAnim
-		oldNote.blockHit = (flags & 0x4000) != 0; // 15th bit for blockHit
-		oldNote.ignoreNote = (flags & 0x8000) != 0; // 16th bit for ignoreNote
-
-		return oldNote;
 	}
 }
