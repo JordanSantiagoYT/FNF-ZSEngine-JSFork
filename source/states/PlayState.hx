@@ -40,7 +40,6 @@ import shaders.PulseEffect;
 
 import objects.VideoSprite;
 import objects.Note.EventNote;
-import objects.Note.CastNote;
 import objects.*;
 import states.stages.*;
 import states.stages.objects.*;
@@ -164,8 +163,7 @@ class PlayState extends MusicBeatState
 	public var boyfriend:Character = null;
 
 	public var notes:FlxTypedGroup<Note>;
-	public var unspawnNotes:Array<CastNote> = [];
-	public var unspawnSustainNotes:Array<CastNote> = [];
+	public var unspawnNotes:Array<Note> = [];
 	public var eventNotes:Array<EventNote> = [];
 
 	public var camFollow:FlxObject;
