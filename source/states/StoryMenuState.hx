@@ -322,13 +322,13 @@ class StoryMenuState extends MusicBeatState
 	
 				PlayState.storyDifficulty = curDifficulty;
 
-				trace('[FAST JSON] Story mode loading: ${PlayState.storyPlaylist[0].toLowerCase()} with skipChart=true');
-				SongJson.skipChart = true;
+				trace('[FAST JSON] Story mode loading: ${PlayState.storyPlaylist[0].toLowerCase()} with skipChart=false');
+				SongJson.skipChart = false;
 				SongJson.log = true;
 				var jsonPath = Paths.json((PlayState.storyPlaylist[0].toLowerCase() + diffic).toLowerCase());
 				var jsonSize = sys.FileSystem.exists(jsonPath) ? sys.FileSystem.stat(jsonPath).size : 0;
 				trace('Loading ${jsonSize} bytes');
-				Song.loadFromJson(PlayState.storyPlaylist[0].toLowerCase() + diffic, PlayState.storyPlaylist[0].toLowerCase(), true);
+				Song.loadFromJson(PlayState.storyPlaylist[0].toLowerCase() + diffic, PlayState.storyPlaylist[0].toLowerCase());
 				SongJson.skipChart = false;
 				SongJson.log = false;
 				trace('[FAST JSON] Story mode loaded successfully');

@@ -536,6 +536,16 @@ class PlayState extends MusicBeatState
 			timeTxt.y += 3;
 		}
 
+		if (shaderEnabled) {
+			// Rainbow Eyesore Effect
+			masterPulse = new PulseEffect();
+			masterPulse.waveAmplitude = 1;
+			masterPulse.waveFrequency = 2;
+			masterPulse.waveSpeed = 1;
+			masterPulse.shader.uTime.value[0] = new flixel.math.FlxRandom().float(-100000, 100000);
+			masterPulse.shader.uampmul.value[0] = 0;
+		}
+
 		generateSong();
 
 		noteGroup.add(grpNoteSplashes);
@@ -1341,7 +1351,6 @@ class PlayState extends MusicBeatState
 	private var ghostNotesCaught:Int = 0;
 
 	function showProgress(force:Bool = false) {
-		trace('showProgress called: Main.isConsoleAvailable=${Main.isConsoleAvailable}, force=$force');
 		if (Main.isConsoleAvailable)
 		{
 			if ((Date.now().getTime() - syncTime > progressUpdateTime) || force)
@@ -1858,18 +1867,12 @@ Average NPS in loading: ${Math.round((parsedNotes + ghostNotesCaught) / takenNot
 			if (allowDisableAt == curStep || isDead)
 				allowDisable = true;
 
-			if (allowDisable && masterPulse.shader != null && masterPulse.shader.uampmul != null) {
-				trace('PulseEffect: masterPulse.shader.uampmul.value[0] = ' + masterPulse.shader.uampmul.value[0] + ', subtracting ' + (globalElapsed / 2));
+			if (allowDisable) {
 				masterPulse.shader.uampmul.value[0] -= (globalElapsed / 2);
-			} else {
-				trace('PulseEffect: Skipping shader update - allowDisable=' + allowDisable + ', masterPulse.shader=' + masterPulse.shader + ', uampmul=' + (masterPulse.shader != null ? Std.string(masterPulse.shader.uampmul) : 'null'));
 			}
 
-			if (masterPulse.shader != null && masterPulse.shader.uampmul != null && masterPulse.shader.uampmul.value[0] > 0) {
-				trace('PulseEffect: masterPulse.update() called - uampmul.value[0] = ' + masterPulse.shader.uampmul.value[0]);
+			if (masterPulse.shader.uampmul.value[0] > 0) {
 				masterPulse.update(globalElapsed);
-			} else {
-				trace('PulseEffect: Skipping masterPulse.update() - shader=' + masterPulse.shader + ', uampmul=' + (masterPulse.shader != null ? Std.string(masterPulse.shader.uampmul) : 'null') + ', value=' + (masterPulse.shader != null && masterPulse.shader.uampmul != null ? Std.string(masterPulse.shader.uampmul.value[0]) : 'null'));
 			}
 		}
 
