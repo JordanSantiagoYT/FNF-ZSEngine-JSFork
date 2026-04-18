@@ -1369,16 +1369,77 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 						}
 						else if(!FlxG.keys.pressed.CONTROL) // Remove Note/Event
 						{
-							var kind:String = !closest.isEvent ? 'note' : 'event';
-							trace('Removed $kind at time: ${closest.strumTime}');
-							if(!closest.isEvent)
-								notes.remove(closest);
-							else
-								events.remove(cast (closest, EventMetaNote));
+							var radius:Float = deleteRadius.value;
+							var removedNotes:Array<MetaNote> = [];
+							var removedEvents:Array<EventMetaNote> = [];
 
-							selectedNotes.remove(closest);
-							curRenderedNotes.remove(closest, true);
-							addUndoAction(DELETE_NOTE, !closest.isEvent ? {notes: [closest]} : {events: [closest]});
+							// Get mouse position in grid coordinates
+							var mouseGridX:Float = FlxG.mouse.x - gridBg.x;
+							if(SHOW_EVENT_COLUMN) mouseGridX -= GRID_SIZE;
+							var mouseGridY:Float = FlxG.mouse.y - gridBg.y;
+							var mouseColumn:Int = Math.floor(mouseGridX / GRID_SIZE);
+							var mouseTime:Float = (mouseGridY / GRID_SIZE * Conductor.stepCrochet / curZoom) + cachedSectionTimes[curSec];
+
+							// Find all notes/events within radius
+							var allNotes:Array<MetaNote> = notes.copy();
+							for (note in allNotes)
+							{
+								if(note == null) continue;
+
+								var noteColumn:Int = note.noteData;
+								var noteTime:Float = note.strumTime;
+								var columnDistance:Float = Math.abs(noteColumn - mouseColumn);
+								var timeDistance:Float = Math.abs(noteTime - mouseTime);
+								var timeInGrids:Float = timeDistance / (Conductor.stepCrochet / curZoom);
+
+								// Check if note is within radius (0 means only exact match)
+								if(radius == 0)
+								{
+									if(columnDistance < 0.5 && timeDistance < (Conductor.stepCrochet / curZoom / 2))
+									{
+										if(!note.isEvent)
+										{
+											notes.remove(note);
+											removedNotes.push(note);
+										}
+										else
+										{
+											events.remove(cast (note, EventMetaNote));
+											removedEvents.push(cast (note, EventMetaNote));
+										}
+										selectedNotes.remove(note);
+										curRenderedNotes.remove(note, true);
+									}
+								}
+								else
+								{
+									// Calculate distance in grid units
+									var distance:Float = Math.sqrt(columnDistance * columnDistance + timeInGrids * timeInGrids);
+									if(distance <= radius)
+									{
+										if(!note.isEvent)
+										{
+											notes.remove(note);
+											removedNotes.push(note);
+										}
+										else
+										{
+											events.remove(cast (note, EventMetaNote));
+											removedEvents.push(cast (note, EventMetaNote));
+										}
+										selectedNotes.remove(note);
+										curRenderedNotes.remove(note, true);
+									}
+								}
+							}
+
+							// Log deletion
+							var totalRemoved:Int = removedNotes.length + removedEvents.length;
+							if(totalRemoved > 0)
+							{
+								trace('Removed $totalRemoved items within radius $radius (${removedNotes.length} notes, ${removedEvents.length} events)');
+								addUndoAction(DELETE_NOTE, {notes: removedNotes, events: removedEvents});
+							}
 						}
 						if(selectedNotes.length == 1) onSelectNote();
 						forceDataUpdate = true;
@@ -2400,8 +2461,16 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		if (estimatedEvents > 0) events = [];
 
 		// JS-Engine OPTIMIZATION 2: Direct note creation without function call overhead
+		var cnt:Int = 0;
+		var sectionNoteCnt:Int = 0;
 		for (secNum => section in PlayState.SONG.notes)
 		{
+			++cnt;
+			sectionNoteCnt = 0;
+
+			// Show progress at start of each section
+			showProgress(false);
+
 			var sectionNotes = section.sectionNotes;
 			var len:Int = sectionNotes.length;
 			for (i in 0...len)
@@ -2439,6 +2508,8 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 						swagNote.setGraphicSize(GRID_SIZE, GRID_SIZE);
 					
 					notes.push(swagNote);
+					++sectionNoteCnt;
+					++parsedNotes;
 				}
 			}
 		}
@@ -2486,6 +2557,9 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		// JS-Engine: Debug timing with higher threshold
 		if (estimatedNotes > 50000)
 			trace('reloadNotes() processed ' + estimatedNotes + ' notes in ' + (haxe.Timer.stamp() - startTime) + 's');
+
+		// Show final progress
+		showProgress(true);
 	}
 
 	function createNote(note:Dynamic, ?secNum:Null<Int> = null)
@@ -2652,6 +2726,30 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 	var showNextSection:Bool = true;
 	var showNoteTypeLabels:Bool = true;
 	var forceDataUpdate:Bool = true;
+
+	// Progress tracking variables
+	private var isDesktop:Bool = true;
+	private var loadNoteTime:Float = 0;
+	private var syncTime:Float = 0;
+	private var progressUpdateTime:Float = 0.05;
+	private var cnt:Int = 0;
+	private var sectionNoteCnt:Int = 0;
+	private var parsedNotes:Int = 0;
+	private var loadTime:Float = 0;
+
+	function showProgress(force:Bool = false) {
+		if (Main.isConsoleAvailable)
+		{
+			if ((Date.now().getTime() - syncTime > progressUpdateTime) || force)
+			{
+				Sys.stdout().writeString('\x1b[0GLoading section $cnt/${PlayState.SONG.notes.length} (${parsedNotes + sectionNoteCnt} notes)');
+				syncTime = Date.now().getTime();
+			}
+		} else if (isDesktop && force) {
+			Sys.println('Loading section $cnt/${PlayState.SONG.notes.length} (${parsedNotes + sectionNoteCnt} notes)');
+		}
+	}
+
 	function loadSection(?sec:Null<Int> = null)
 	{
 		if(sec != null) curSec = sec;
@@ -3427,6 +3525,8 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 	// var deletePlayerNotes:Bool = true;
 	// var deleteOpponentNotes:Bool = true;
 
+	var deleteRadius:PsychUINumericStepper;
+
 	function addSectionTab()
 	{
 		var affectNotes:PsychUICheckBox = null;
@@ -3774,7 +3874,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		tab_group.add(changeBpmCheckBox);
 		tab_group.add(changeBpmStepper);
 		tab_group.add(beatsPerSecStepper);
-		
+
 		tab_group.add(copyButton);
 		tab_group.add(pasteButton);
 		tab_group.add(clearButton);
@@ -3917,6 +4017,11 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		// tab_group.add(deletePlayerCheckBox);
 		// tab_group.add(deleteOpponentCheckBox);
 		tab_group.add(deleteSections);
+
+		deleteRadius = new PsychUINumericStepper(objX + 100, objY + 20, 1, 0, 0, 16, 4);
+		deleteRadius.name = 'delete_radius';
+		tab_group.add(deleteRadius);
+		tab_group.add(new FlxText(objX + 100, objY + 10, 0, 'Delete Radius'));
 	}
 
 	function reloadNotesDropdowns()
@@ -3935,7 +4040,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			for (id => event in defaultEvents)
 				if(!eventsList.contains(event))
 					eventsList.insert(id, event);
-			
+
 			var displayEventsList:Array<String> = [];
 			for (id => data in eventsList)
 			{

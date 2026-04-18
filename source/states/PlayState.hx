@@ -1446,10 +1446,11 @@ class PlayState extends MusicBeatState
 		ghostNotesCaught = 0; // Initialize class member
 		var daBpm:Float = Conductor.bpm;
 
-		// Memory management for large charts
+		// Memory management for large charts - aggressive approach
 		var notesProcessed:Int = 0;
-		var chunkSize:Int = 50000; // Process notes in chunks
-		var memoryCleanupInterval:Int = 100000; // Cleanup every 100k notes
+		var chunkSize:Int = 10000; // Smaller chunks for better memory control
+		var memoryCleanupInterval:Int = 50000; // Cleanup every 50k notes
+		var maxNotesInMemory:Int = 50000; // Maximum notes to keep in memory at once
 
 		for (section in sectionsData)
 		{
@@ -1464,13 +1465,12 @@ class PlayState extends MusicBeatState
 
 			for (i in 0...section.sectionNotes.length)
 			{
-				// Memory cleanup for large charts
-				if (totalNotes > 1000000 && notesProcessed % memoryCleanupInterval == 0) {
+				// Memory limit check - prevent creating too many notes at once
+				if (unspawnNotes.length >= maxNotesInMemory) {
 					#if sys
 					openfl.system.System.gc();
 					#end
-					// Small delay to allow memory to settle
-					Sys.sleep(0.001);
+					Sys.sleep(0.01); // Brief pause to allow memory cleanup
 				}
 
 				notesProcessed++;
@@ -1489,6 +1489,11 @@ class PlayState extends MusicBeatState
 					holdLength = 0.0;
 
 				var gottaHitNote:Bool = (songNotes[1] < totalColumns);
+
+				// Streaming approach: only create notes that will be used soon
+				var timeWindow:Float = 10000; // 10 seconds ahead
+				if (spawnTime > startOnTime + timeWindow)
+					continue;
 
 				// JS Engine approach - no ghost note detection for simplicity
 
