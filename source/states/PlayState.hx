@@ -1948,19 +1948,23 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 			else time /= songSpeed;
 			if(unspawnNotes[0].multSpeed < 1) time /= unspawnNotes[0].multSpeed;
 
-			while (unspawnNotes.length > 0 && unspawnNotes[0].strumTime - Conductor.songPosition < time)
+			// Only spawn notes if song is actually playing (not during initial generation)
+			if(generatedMusic && Conductor.songPosition >= 0)
 			{
-				var note:Note = unspawnNotes[0];
-				
-				notes.insert(0, note);
-				note.spawned = true;
+				while (unspawnNotes.length > 0 && unspawnNotes[0].strumTime - Conductor.songPosition < time)
+				{
+					var note:Note = unspawnNotes[0];
+					
+					notes.insert(0, note);
+					note.spawned = true;
 
-				trace('[FAST NOTE PARSING] Spawned note at ${note.strumTime}ms, data: ${note.noteData & 0xFF}, type: ${note.noteType}');
+					trace('[FAST NOTE PARSING] Spawned note at ${note.strumTime}ms, data: ${note.noteData & 0xFF}, type: ${note.noteType}');
 
-				callOnLuas('onSpawnNote', [notes.members.indexOf(note), note.noteData, note.noteType, note.isSustainNote, note.strumTime]);
-				callOnHScript('onSpawnNote', [note]);
+					callOnLuas('onSpawnNote', [notes.members.indexOf(note), note.noteData, note.noteType, note.isSustainNote, note.strumTime]);
+					callOnHScript('onSpawnNote', [note]);
 
-				unspawnNotes.splice(0, 1);
+					unspawnNotes.splice(0, 1);
+				}
 			}
 		}
 

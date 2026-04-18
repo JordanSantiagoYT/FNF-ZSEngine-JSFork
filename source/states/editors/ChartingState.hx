@@ -1380,65 +1380,78 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 							var mouseColumn:Int = Math.floor(mouseGridX / GRID_SIZE);
 							var mouseTime:Float = (mouseGridY / GRID_SIZE * Conductor.stepCrochet / curZoom) + cachedSectionTimes[curSec];
 
-							// Find all notes/events within radius
-							var allNotes:Array<MetaNote> = notes.copy();
-							for (note in allNotes)
+							// Handle radius 0 as original single-item deletion
+							if(radius == 0)
 							{
-								if(note == null) continue;
-
-								var noteColumn:Int = note.noteData;
-								var noteTime:Float = note.strumTime;
-								var columnDistance:Float = Math.abs(noteColumn - mouseColumn);
-								var timeDistance:Float = Math.abs(noteTime - mouseTime);
-								var timeInGrids:Float = timeDistance / (Conductor.stepCrochet / curZoom);
-
-								// Check if note is within radius (0 means only exact match)
-								if(radius == 0)
+								// Original behavior: delete only the closest item
+								if(!closest.isEvent)
 								{
-									if(columnDistance < 0.5 && timeDistance < (Conductor.stepCrochet / curZoom / 2))
-									{
-										if(!note.isEvent)
-										{
-											notes.remove(note);
-											removedNotes.push(note);
-										}
-										else
-										{
-											events.remove(cast (note, EventMetaNote));
-											removedEvents.push(cast (note, EventMetaNote));
-										}
-										selectedNotes.remove(note);
-										curRenderedNotes.remove(note, true);
-									}
+									notes.remove(closest);
+									removedNotes.push(closest);
 								}
 								else
 								{
+									events.remove(cast (closest, EventMetaNote));
+									removedEvents.push(cast (closest, EventMetaNote));
+								}
+								selectedNotes.remove(closest);
+								curRenderedNotes.remove(closest, true);
+							}
+							else
+							{
+								// Find all notes within radius
+								var allNotes:Array<MetaNote> = notes.copy();
+								for (note in allNotes)
+								{
+									if(note == null || note.isEvent) continue;
+									
+									var noteColumn:Int = note.songData[1];
+									var noteTime:Float = note.strumTime;
+									var columnDistance:Float = Math.abs(noteColumn - mouseColumn);
+									var timeDistance:Float = Math.abs(noteTime - mouseTime);
+									var timeInGrids:Float = timeDistance / (Conductor.stepCrochet / curZoom);
+									
 									// Calculate distance in grid units
 									var distance:Float = Math.sqrt(columnDistance * columnDistance + timeInGrids * timeInGrids);
 									if(distance <= radius)
 									{
-										if(!note.isEvent)
-										{
-											notes.remove(note);
-											removedNotes.push(note);
-										}
-										else
-										{
-											events.remove(cast (note, EventMetaNote));
-											removedEvents.push(cast (note, EventMetaNote));
-										}
+										notes.remove(note);
+										removedNotes.push(note);
 										selectedNotes.remove(note);
 										curRenderedNotes.remove(note, true);
 									}
 								}
-							}
-
-							// Log deletion
-							var totalRemoved:Int = removedNotes.length + removedEvents.length;
-							if(totalRemoved > 0)
-							{
-								trace('Removed $totalRemoved items within radius $radius (${removedNotes.length} notes, ${removedEvents.length} events)');
-								addUndoAction(DELETE_NOTE, {notes: removedNotes, events: removedEvents});
+								
+								// Find all events within radius
+								var allEvents:Array<EventMetaNote> = events.copy();
+								for (event in allEvents)
+								{
+									if(event == null) continue;
+									
+									var eventColumn:Int = -1; // Events are in event column
+									var eventTime:Float = event.strumTime;
+									var columnDistance:Float = Math.abs(eventColumn - mouseColumn);
+									var timeDistance:Float = Math.abs(eventTime - mouseTime);
+									var timeInGrids:Float = timeDistance / (Conductor.stepCrochet / curZoom);
+									
+									// Calculate distance in grid units (events are in column -1)
+									var distance:Float = Math.sqrt(columnDistance * columnDistance + timeInGrids * timeInGrids);
+									if(distance <= radius)
+									{
+										events.remove(event);
+										removedEvents.push(event);
+										selectedNotes.remove(event);
+										curRenderedNotes.remove(event, true);
+									}
+								}
+								
+								// Log deletion
+								var totalRemoved:Int = removedNotes.length + removedEvents.length;
+								if(totalRemoved > 0)
+								{
+									trace('Removed $totalRemoved items within radius $radius (${removedNotes.length} notes, ${removedEvents.length} events)');
+									addUndoAction(DELETE_NOTE, {notes: removedNotes, events: removedEvents});
+								}
 							}
 						}
 						if(selectedNotes.length == 1) onSelectNote();
@@ -2457,6 +2470,13 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			estimatedNotes += section.sectionNotes.length;
 		var estimatedEvents:Int = PlayState.SONG.events.length;
 
+		// JS-Engine: Memory optimization for large charts
+		#if sys
+		if (estimatedNotes > 100000) {
+			cpp.vm.Gc.enable(false);
+		}
+		#end
+
 		if (estimatedNotes > 0) notes = [];
 		if (estimatedEvents > 0) events = [];
 
@@ -2557,6 +2577,15 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		// JS-Engine: Debug timing with higher threshold
 		if (estimatedNotes > 50000)
 			trace('reloadNotes() processed ' + estimatedNotes + ' notes in ' + (haxe.Timer.stamp() - startTime) + 's');
+
+		// JS-Engine: Re-enable GC and manual cleanup for large charts
+		#if sys
+		if (estimatedNotes > 100000) {
+			cpp.vm.Gc.enable(true);
+			cpp.vm.Gc.run(false);
+			openfl.system.System.gc();
+		}
+		#end
 
 		// Show final progress
 		showProgress(true);
@@ -4018,10 +4047,10 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		// tab_group.add(deleteOpponentCheckBox);
 		tab_group.add(deleteSections);
 
-		deleteRadius = new PsychUINumericStepper(objX + 100, objY + 20, 1, 0, 0, 16, 4);
+		deleteRadius = new PsychUINumericStepper(objX + 140, objY + 20, 1, 0, 0, 16, 4);
 		deleteRadius.name = 'delete_radius';
 		tab_group.add(deleteRadius);
-		tab_group.add(new FlxText(objX + 100, objY + 10, 0, 'Delete Radius'));
+		tab_group.add(new FlxText(objX + 140, objY + 5, 0, 'Delete Radius'));
 	}
 
 	function reloadNotesDropdowns()
