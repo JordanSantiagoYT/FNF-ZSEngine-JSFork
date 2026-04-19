@@ -2480,17 +2480,20 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		if (estimatedNotes > 0) notes = [];
 		if (estimatedEvents > 0) events = [];
 
-		// JS-Engine OPTIMIZATION 2: Direct note creation without function call overhead
+		// JS-Engine OPTIMIZATION 2: Store raw note data arrays instead of creating MetaNote objects
 		var cnt:Int = 0;
 		var sectionNoteCnt:Int = 0;
+		var rawNoteData:Array<Array<Dynamic>> = []; // Lightweight storage
+		var rawEventData:Array<Array<Dynamic>> = []; // Lightweight storage
+		
 		for (secNum => section in PlayState.SONG.notes)
 		{
 			++cnt;
 			sectionNoteCnt = 0;
-
+			
 			// Show progress at start of each section
 			showProgress(false);
-
+			
 			var sectionNotes = section.sectionNotes;
 			var len:Int = sectionNotes.length;
 			for (i in 0...len)
@@ -2498,40 +2501,55 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 				var note = sectionNotes[i];
 				if(note != null)
 				{
-					// JS-Engine: Direct inline note creation
-					var daNoteInfo = note[1];
-					var daStrumTime = note[0];
-					var daNoteData = Std.int(daNoteInfo % GRID_COLUMNS_PER_PLAYER);
-					var gottaHitNote = (note[1] < GRID_COLUMNS_PER_PLAYER);
+					// JS-Engine: Store raw data instead of creating objects
+					var noteData:Array<Dynamic> = [
+						note[0], // strumTime
+						Std.int(note[1] % GRID_COLUMNS_PER_PLAYER), // noteData
+						note[1] < GRID_COLUMNS_PER_PLAYER, // mustPress
+						note[2], // sustainLength
+						section.gfSection && (note[1] < GRID_COLUMNS_PER_PLAYER) == section.mustHitSection, // gfNote
+						secNum, // section number
+						section // section reference
+					];
 					
-					var swagNote:MetaNote = new MetaNote(daStrumTime, daNoteData, note);
-					swagNote.mustPress = gottaHitNote;
-					swagNote.setSustainLength(note[2], cachedSectionCrochets[secNum] / 4, curZoom);
-					swagNote.gfNote = (section.gfSection && gottaHitNote == section.mustHitSection);
-					var noteTypeValue:String = '';
+					// Handle note type
 					if (!Std.isOfType(note[3], String)) {
 						var noteTypeIndex:Int = Std.int(note[3]);
 						if (noteTypeIndex >= 0 && noteTypeIndex < Note.defaultNoteTypes.length) {
-							noteTypeValue = Note.defaultNoteTypes[noteTypeIndex];
+							noteData.push(Note.defaultNoteTypes[noteTypeIndex]);
+						} else {
+							noteData.push('');
 						}
 					} else {
-						noteTypeValue = Std.string(note[3]);
+						noteData.push(Std.string(note[3]));
 					}
-					swagNote.noteType = noteTypeValue;
-					swagNote.scrollFactor.x = 0;
-					var txt:FlxText = swagNote.findNoteTypeText(swagNote.noteType != null ? noteTypes.indexOf(swagNote.noteType) : 0);
-					if(txt != null) txt.visible = showNoteTypeLabels;
-					swagNote.updateHitbox();
-					if(swagNote.width > swagNote.height)
-						swagNote.setGraphicSize(GRID_SIZE);
-					else
-						swagNote.setGraphicSize(GRID_SIZE, GRID_SIZE);
 					
-					notes.push(swagNote);
+					rawNoteData.push(noteData);
 					++sectionNoteCnt;
 					++parsedNotes;
 				}
 			}
+		}
+		
+		// JS-Engine OPTIMIZATION 3: Batch create MetaNote objects only when needed for display
+		notes = []; // Clear and recreate notes array
+		for (noteData in rawNoteData)
+		{
+			var swagNote:MetaNote = new MetaNote(noteData[0], noteData[1], [noteData[0], noteData[1] * 4 + (noteData[2] ? 0 : 4), noteData[3], noteData[6]]);
+			swagNote.mustPress = noteData[2];
+			swagNote.setSustainLength(noteData[3], cachedSectionCrochets[noteData[5]] / 4, curZoom);
+			swagNote.gfNote = noteData[4];
+			swagNote.noteType = noteData[6];
+			swagNote.scrollFactor.x = 0;
+			var txt:FlxText = swagNote.findNoteTypeText(swagNote.noteType != null ? noteTypes.indexOf(swagNote.noteType) : 0);
+			if(txt != null) txt.visible = showNoteTypeLabels;
+			swagNote.updateHitbox();
+			if(swagNote.width > swagNote.height)
+				swagNote.setGraphicSize(GRID_SIZE);
+			else
+				swagNote.setGraphicSize(GRID_SIZE, GRID_SIZE);
+
+			notes.push(swagNote);
 		}
 
 		// JS-Engine OPTIMIZATION 3: Batch create events with optimized timing
