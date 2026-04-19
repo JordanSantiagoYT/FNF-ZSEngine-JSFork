@@ -6,30 +6,6 @@ import backend.WeekData;
 import backend.Song;
 import backend.Rating;
 
-// JS Engine optimization: Lightweight note struct for faster parsing
-typedef PreloadedChartNote = {
-    strumTime:Float,
-    noteData:Int,
-    mustPress:Bool,
-    oppNote:Bool,
-    noteType:String,
-    animSuffix:String,
-    noteskin:String,
-    gfNote:Bool,
-    isSustainNote:Bool,
-    isSustainEnd:Bool,
-    parentST:Float,
-    parentSL:Float,
-    hitHealth:Float,
-    missHealth:Float,
-    wasHit:Bool,
-    multSpeed:Float,
-    multAlpha:Float,
-    noteDensity:Float,
-    hitCausesMiss:Bool,
-    ignoreNote:Bool
-}
-
 import flixel.FlxBasic;
 import flixel.FlxObject;
 import flixel.FlxSubState;
@@ -85,6 +61,30 @@ import crowplexus.hscript.Printer;
 #if ZS_ALLOWED
 import zsscript.ZSTranspiler;
 #end
+
+// JS Engine optimization: Lightweight note struct for faster parsing
+typedef PreloadedChartNote = {
+    strumTime:Float,
+    noteData:Int,
+    mustPress:Bool,
+    oppNote:Bool,
+    noteType:String,
+    animSuffix:String,
+    noteskin:String,
+    gfNote:Bool,
+    isSustainNote:Bool,
+    isSustainEnd:Bool,
+    parentST:Float,
+    parentSL:Float,
+    hitHealth:Float,
+    missHealth:Float,
+    wasHit:Bool,
+    multSpeed:Float,
+    multAlpha:Float,
+    noteDensity:Float,
+    hitCausesMiss:Bool,
+    ignoreNote:Bool
+}
 
 /**
  * This is where all the Gameplay stuff happens and is managed
