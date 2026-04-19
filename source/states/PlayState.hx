@@ -737,7 +737,7 @@ class PlayState extends MusicBeatState
 			if(ratio != 1)
 			{
 				for (note in notes.members) note.resizeByRatio(ratio);
-				for (note in unspawnNotes) note.resizeByRatio(ratio);
+				// Note: unspawnNotes are structs and don't need resizeByRatio
 			}
 		}
 		songSpeed = value;
@@ -758,7 +758,6 @@ class PlayState extends MusicBeatState
 			if(ratio != 1)
 			{
 				for (note in notes.members) note.resizeByRatio(ratio);
-				for (note in unspawnNotes) note.resizeByRatio(ratio);
 			}
 		}
 		playbackRate = value;
@@ -1185,16 +1184,10 @@ class PlayState extends MusicBeatState
 	{
 		var i:Int = unspawnNotes.length - 1;
 		while (i >= 0) {
-			var daNote:Note = unspawnNotes[i];
+			var daNote:PreloadedChartNote = unspawnNotes[i];
 			if(daNote.strumTime - 350 < time)
 			{
-				daNote.active = false;
-				daNote.visible = false;
-				daNote.ignoreNote = true;
-
-				daNote.kill();
-				unspawnNotes.remove(daNote);
-				daNote.destroy();
+				unspawnNotes.splice(i, 1);
 			}
 			--i;
 		}
@@ -1509,6 +1502,7 @@ class PlayState extends MusicBeatState
 				var noteColumn: Int = Std.int(songNotes[1] % totalColumns);
 				var holdLength: Float = songNotes[2];
 				var noteType: String = !Std.isOfType(songNotes[3], String) ? Note.defaultNoteTypes[songNotes[3]] : songNotes[3];
+				var gottaHitNote:Bool = (songNotes[1] < totalColumns);
 
 				// JS Engine approach: Create lightweight PreloadedChartNote struct
 				var isAlt: Bool = section.altAnim && !gottaHitNote;
