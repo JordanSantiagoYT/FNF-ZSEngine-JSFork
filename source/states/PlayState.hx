@@ -1513,7 +1513,7 @@ class PlayState extends MusicBeatState
 					oppNote: !gottaHitNote,
 					noteType: noteType,
 					animSuffix: isAlt ? "-alt" : "",
-					noteskin: gottaHitNote ? boyfriend.noteskin : dad.noteskin,
+					noteskin: Note.defaultNoteSkin,
 					gfNote: (section.gfSection && gottaHitNote == section.mustHitSection),
 					isSustainNote: false,
 					isSustainEnd: false,
