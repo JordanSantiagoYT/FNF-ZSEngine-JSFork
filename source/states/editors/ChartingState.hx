@@ -125,6 +125,10 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		0xFF9F9F9F,
 		0xFF3F3F3F,
 	];
+
+	// Lazy loading: Store raw note data for deferred MetaNote creation
+	public var rawNoteData:Array<Array<Dynamic>> = [];
+
 	var curQuant(default, set):Int = 16;
 	function set_curQuant(v:Int)
 	{
@@ -2526,55 +2530,11 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 					rawNoteData.push(noteData);
 					++sectionNoteCnt;
-					++parsedNotes;
 				}
-			}
-		}
 
-		// JS-Engine OPTIMIZATION 3: Chunked MetaNote creation with UI updates to prevent freezing
-		notes = []; // Clear and recreate notes array
-
-		var chunkSize:Int = 1000; // Process 1000 notes per chunk
-		var totalNotes:Int = rawNoteData.length;
-		var processedNotes:Int = 0;
-
-		while (processedNotes < totalNotes)
-		{
-			var endIndex:Int = Std.int(Math.min(processedNotes + chunkSize, totalNotes));
-
-			// Process chunk
-			for (i in processedNotes...endIndex)
-			{
-				var noteData = rawNoteData[i];
-				var swagNote:MetaNote = new MetaNote(noteData[0], noteData[1], [noteData[0], noteData[1] * 4 + (noteData[2] ? 0 : 4), noteData[3], noteData[6]]);
-				swagNote.mustPress = noteData[2];
-				swagNote.setSustainLength(noteData[3], cachedSectionCrochets[noteData[5]] / 4, curZoom);
-				swagNote.gfNote = noteData[4];
-				swagNote.noteType = noteData[6];
-				swagNote.scrollFactor.x = 0;
-				var txt:FlxText = swagNote.findNoteTypeText(swagNote.noteType != null ? noteTypes.indexOf(swagNote.noteType) : 0);
-				if(txt != null) txt.visible = showNoteTypeLabels;
-				swagNote.updateHitbox();
-				if(swagNote.width > swagNote.height)
-					swagNote.setGraphicSize(GRID_SIZE);
-				else
-					swagNote.setGraphicSize(GRID_SIZE, GRID_SIZE);
-
-				notes.push(swagNote);
-			}
-
-			processedNotes = endIndex;
-
-			// Update UI progress and allow UI to respond
-			showProgress(false);
-
-			// Force UI update every few chunks to prevent freezing
-			if (processedNotes % (chunkSize * 5) == 0)
-			{
-				// Brief pause to allow UI processing
-				#if sys
-				Sys.sleep(0.001); // 1ms pause for UI responsiveness
-				#end
+				rawNoteData.push(noteData);
+				++sectionNoteCnt;
+				++parsedNotes;
 			}
 		}
 
@@ -2594,7 +2554,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 				eventNote.eventText.x = eventNote.x - eventNote.eventText.width - 10;
 				eventNote.scrollFactor.x = 0;
 				eventNote.active = false;
-				
+
 				// Calculate section for positioning
 				var secNum:Int = 0;
 				for (j in 1...cachedSectionTimes.length)
@@ -2602,7 +2562,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 					if(cachedSectionTimes[j] > event[0]) break;
 					secNum++;
 				}
-				
+
 				positionNoteYOnTime(eventNote, secNum);
 				events.push(eventNote);
 			}
@@ -4091,10 +4051,10 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		// tab_group.add(deleteOpponentCheckBox);
 		tab_group.add(deleteSections);
 
-		deleteRadius = new PsychUINumericStepper(objX + 140, objY + 20, 1, 0, 0, 16, 4);
+		deleteRadius = new PsychUINumericStepper(objX + 180, objY + 20, 1, 0, 0, 16, 4);
 		deleteRadius.name = 'delete_radius';
 		tab_group.add(deleteRadius);
-		tab_group.add(new FlxText(objX + 140, objY + 5, 0, 'Delete Radius'));
+		tab_group.add(new FlxText(objX + 180, objY + 5, 0, 'Delete Radius'));
 	}
 
 	function reloadNotesDropdowns()

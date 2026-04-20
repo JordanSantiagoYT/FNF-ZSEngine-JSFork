@@ -1953,7 +1953,7 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 			{
 				// H-Slice optimization: Batch spawn notes to reduce per-note overhead
 				var notesToSpawn:Int = 0;
-				var spawnLimit:Int = 50; // Max notes to spawn per frame
+				var spawnLimit:Int = 10; // Max notes to spawn per frame
 
 				// Count how many notes need spawning
 				while (notesToSpawn < unspawnNotes.length && notesToSpawn < spawnLimit && 
