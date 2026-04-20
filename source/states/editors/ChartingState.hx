@@ -2531,11 +2531,8 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 					rawNoteData.push(noteData);
 					++sectionNoteCnt;
 				}
-
-				rawNoteData.push(noteData);
-				++sectionNoteCnt;
-				++parsedNotes;
 			}
+			++parsedNotes;
 		}
 
 		// JS-Engine OPTIMIZATION 3: Batch create events with optimized timing
@@ -2554,7 +2551,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 				eventNote.eventText.x = eventNote.x - eventNote.eventText.width - 10;
 				eventNote.scrollFactor.x = 0;
 				eventNote.active = false;
-
+				
 				// Calculate section for positioning
 				var secNum:Int = 0;
 				for (j in 1...cachedSectionTimes.length)
@@ -2562,7 +2559,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 					if(cachedSectionTimes[j] > event[0]) break;
 					secNum++;
 				}
-
+				
 				positionNoteYOnTime(eventNote, secNum);
 				events.push(eventNote);
 			}
