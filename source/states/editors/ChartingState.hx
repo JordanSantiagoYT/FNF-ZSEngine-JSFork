@@ -2540,7 +2540,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 		while (processedNotes < totalNotes)
 		{
-			var endIndex:Int = Math.min(processedNotes + chunkSize, totalNotes);
+			var endIndex:Int = Std.int(Math.min(processedNotes + chunkSize, totalNotes));
 
 			// Process chunk
 			for (i in processedNotes...endIndex)

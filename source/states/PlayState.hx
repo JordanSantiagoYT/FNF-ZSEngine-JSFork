@@ -1995,7 +1995,7 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 					unspawnNotes.splice(0, notesToSpawn);
 
 					// Batch script calls (only for first few notes to reduce overhead)
-					var scriptLimit:Int = Math.min(5, notesToSpawn);
+					var scriptLimit:Int = Std.int(Math.min(5, notesToSpawn));
 					for (i in 0...scriptLimit)
 					{
 						var note = newNotes[i];
