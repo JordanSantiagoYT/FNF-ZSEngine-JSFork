@@ -2485,15 +2485,15 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		var sectionNoteCnt:Int = 0;
 		var rawNoteData:Array<Array<Dynamic>> = []; // Lightweight storage
 		var rawEventData:Array<Array<Dynamic>> = []; // Lightweight storage
-		
+
 		for (secNum => section in PlayState.SONG.notes)
 		{
 			++cnt;
 			sectionNoteCnt = 0;
-			
+
 			// Show progress at start of each section
 			showProgress(false);
-			
+
 			var sectionNotes = section.sectionNotes;
 			var len:Int = sectionNotes.length;
 			for (i in 0...len)
@@ -2511,7 +2511,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 						secNum, // section number
 						section // section reference
 					];
-					
+
 					// Handle note type
 					if (!Std.isOfType(note[3], String)) {
 						var noteTypeIndex:Int = Std.int(note[3]);
@@ -2523,33 +2523,59 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 					} else {
 						noteData.push(Std.string(note[3]));
 					}
-					
+
 					rawNoteData.push(noteData);
 					++sectionNoteCnt;
 					++parsedNotes;
 				}
 			}
 		}
-		
-		// JS-Engine OPTIMIZATION 3: Batch create MetaNote objects only when needed for display
-		notes = []; // Clear and recreate notes array
-		for (noteData in rawNoteData)
-		{
-			var swagNote:MetaNote = new MetaNote(noteData[0], noteData[1], [noteData[0], noteData[1] * 4 + (noteData[2] ? 0 : 4), noteData[3], noteData[6]]);
-			swagNote.mustPress = noteData[2];
-			swagNote.setSustainLength(noteData[3], cachedSectionCrochets[noteData[5]] / 4, curZoom);
-			swagNote.gfNote = noteData[4];
-			swagNote.noteType = noteData[6];
-			swagNote.scrollFactor.x = 0;
-			var txt:FlxText = swagNote.findNoteTypeText(swagNote.noteType != null ? noteTypes.indexOf(swagNote.noteType) : 0);
-			if(txt != null) txt.visible = showNoteTypeLabels;
-			swagNote.updateHitbox();
-			if(swagNote.width > swagNote.height)
-				swagNote.setGraphicSize(GRID_SIZE);
-			else
-				swagNote.setGraphicSize(GRID_SIZE, GRID_SIZE);
 
-			notes.push(swagNote);
+		// JS-Engine OPTIMIZATION 3: Chunked MetaNote creation with UI updates to prevent freezing
+		notes = []; // Clear and recreate notes array
+
+		var chunkSize:Int = 1000; // Process 1000 notes per chunk
+		var totalNotes:Int = rawNoteData.length;
+		var processedNotes:Int = 0;
+
+		while (processedNotes < totalNotes)
+		{
+			var endIndex:Int = Math.min(processedNotes + chunkSize, totalNotes);
+
+			// Process chunk
+			for (i in processedNotes...endIndex)
+			{
+				var noteData = rawNoteData[i];
+				var swagNote:MetaNote = new MetaNote(noteData[0], noteData[1], [noteData[0], noteData[1] * 4 + (noteData[2] ? 0 : 4), noteData[3], noteData[6]]);
+				swagNote.mustPress = noteData[2];
+				swagNote.setSustainLength(noteData[3], cachedSectionCrochets[noteData[5]] / 4, curZoom);
+				swagNote.gfNote = noteData[4];
+				swagNote.noteType = noteData[6];
+				swagNote.scrollFactor.x = 0;
+				var txt:FlxText = swagNote.findNoteTypeText(swagNote.noteType != null ? noteTypes.indexOf(swagNote.noteType) : 0);
+				if(txt != null) txt.visible = showNoteTypeLabels;
+				swagNote.updateHitbox();
+				if(swagNote.width > swagNote.height)
+					swagNote.setGraphicSize(GRID_SIZE);
+				else
+					swagNote.setGraphicSize(GRID_SIZE, GRID_SIZE);
+
+				notes.push(swagNote);
+			}
+
+			processedNotes = endIndex;
+
+			// Update UI progress and allow UI to respond
+			showProgress(false);
+
+			// Force UI update every few chunks to prevent freezing
+			if (processedNotes % (chunkSize * 5) == 0)
+			{
+				// Brief pause to allow UI processing
+				#if sys
+				Sys.sleep(0.001); // 1ms pause for UI responsiveness
+				#end
+			}
 		}
 
 		// JS-Engine OPTIMIZATION 3: Batch create events with optimized timing

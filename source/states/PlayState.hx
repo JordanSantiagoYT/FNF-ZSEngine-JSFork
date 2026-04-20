@@ -1951,27 +1951,57 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 			// Only spawn notes if song is actually playing (not during initial generation)
 			if(generatedMusic && Conductor.songPosition >= 0)
 			{
-				while (unspawnNotes.length > 0 && unspawnNotes[0].strumTime - Conductor.songPosition < time)
+				// H-Slice optimization: Batch spawn notes to reduce per-note overhead
+				var notesToSpawn:Int = 0;
+				var spawnLimit:Int = 50; // Max notes to spawn per frame
+
+				// Count how many notes need spawning
+				while (notesToSpawn < unspawnNotes.length && notesToSpawn < spawnLimit && 
+				       unspawnNotes[notesToSpawn].strumTime - Conductor.songPosition < time)
 				{
-					var chartNote:PreloadedChartNote = unspawnNotes[0];
-					
-					// Convert PreloadedChartNote struct to actual Note object
-					var note:Note = new Note(chartNote.strumTime, chartNote.noteData, null, chartNote.isSustainNote);
-					note.mustPress = chartNote.mustPress;
-					note.gfNote = chartNote.gfNote;
-					note.noteType = chartNote.noteType;
-					note.animSuffix = chartNote.animSuffix;
-					note.sustainLength = chartNote.parentSL;
-					note.spawned = true;
-					
-					notes.insert(0, note);
+					notesToSpawn++;
+				}
 
-					trace('[FAST NOTE PARSING] Spawned note at ${note.strumTime}ms, data: ${note.noteData}, type: ${note.noteType}');
+				// Batch spawn notes
+				if (notesToSpawn > 0)
+				{
+					var batchStart:Int = notes.length;
 
-					callOnLuas('onSpawnNote', [notes.members.indexOf(note), note.noteData, note.noteType, note.isSustainNote, note.strumTime]);
-					callOnHScript('onSpawnNote', [note]);
+					// Pre-allocate array for batch
+					var newNotes:Array<Note> = [];
+					newNotes.resize(notesToSpawn);
 
-					unspawnNotes.splice(0, 1);
+					// Batch create notes
+					for (i in 0...notesToSpawn)
+					{
+						var chartNote:PreloadedChartNote = unspawnNotes[i];
+						var note:Note = new Note(chartNote.strumTime, chartNote.noteData, null, chartNote.isSustainNote);
+						note.mustPress = chartNote.mustPress;
+						note.gfNote = chartNote.gfNote;
+						note.noteType = chartNote.noteType;
+						note.animSuffix = chartNote.animSuffix;
+						note.sustainLength = chartNote.parentSL;
+						note.spawned = true;
+						newNotes[i] = note;
+					}
+
+					// Batch add to notes group
+					for (note in newNotes)
+					{
+						notes.insert(0, note);
+					}
+
+					// Batch remove from unspawned
+					unspawnNotes.splice(0, notesToSpawn);
+
+					// Batch script calls (only for first few notes to reduce overhead)
+					var scriptLimit:Int = Math.min(5, notesToSpawn);
+					for (i in 0...scriptLimit)
+					{
+						var note = newNotes[i];
+						callOnLuas('onSpawnNote', [notes.members.indexOf(note), note.noteData, note.noteType, note.isSustainNote, note.strumTime]);
+						callOnHScript('onSpawnNote', [note]);
+					}
 				}
 			}
 		}
