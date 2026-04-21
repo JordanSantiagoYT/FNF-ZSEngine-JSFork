@@ -125,10 +125,6 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		0xFF9F9F9F,
 		0xFF3F3F3F,
 	];
-
-	// Lazy loading: Store raw note data for deferred MetaNote creation
-	public var rawNoteData:Array<Array<Dynamic>> = [];
-
 	var curQuant(default, set):Int = 16;
 	function set_curQuant(v:Int)
 	{
@@ -2484,12 +2480,9 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		if (estimatedNotes > 0) notes = [];
 		if (estimatedEvents > 0) events = [];
 
-		// JS-Engine OPTIMIZATION 2: Store raw note data arrays instead of creating MetaNote objects
+		// JS-Engine OPTIMIZATION 2: Direct note creation without function call overhead
 		var cnt:Int = 0;
 		var sectionNoteCnt:Int = 0;
-		var rawNoteData:Array<Array<Dynamic>> = []; // Lightweight storage
-		var rawEventData:Array<Array<Dynamic>> = []; // Lightweight storage
-
 		for (secNum => section in PlayState.SONG.notes)
 		{
 			++cnt;
@@ -2505,34 +2498,40 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 				var note = sectionNotes[i];
 				if(note != null)
 				{
-					// JS-Engine: Store raw data instead of creating objects
-					var noteData:Array<Dynamic> = [
-						note[0], // strumTime
-						Std.int(note[1] % GRID_COLUMNS_PER_PLAYER), // noteData
-						note[1] < GRID_COLUMNS_PER_PLAYER, // mustPress
-						note[2], // sustainLength
-						section.gfSection && (note[1] < GRID_COLUMNS_PER_PLAYER) == section.mustHitSection, // gfNote
-						secNum, // section number
-						section // section reference
-					];
-
-					// Handle note type
+					// JS-Engine: Direct inline note creation
+					var daNoteInfo = note[1];
+					var daStrumTime = note[0];
+					var daNoteData = Std.int(daNoteInfo % GRID_COLUMNS_PER_PLAYER);
+					var gottaHitNote = (note[1] < GRID_COLUMNS_PER_PLAYER);
+					
+					var swagNote:MetaNote = new MetaNote(daStrumTime, daNoteData, note);
+					swagNote.mustPress = gottaHitNote;
+					swagNote.setSustainLength(note[2], cachedSectionCrochets[secNum] / 4, curZoom);
+					swagNote.gfNote = (section.gfSection && gottaHitNote == section.mustHitSection);
+					var noteTypeValue:String = '';
 					if (!Std.isOfType(note[3], String)) {
 						var noteTypeIndex:Int = Std.int(note[3]);
 						if (noteTypeIndex >= 0 && noteTypeIndex < Note.defaultNoteTypes.length) {
-							noteData.push(Note.defaultNoteTypes[noteTypeIndex]);
-						} else {
-							noteData.push('');
+							noteTypeValue = Note.defaultNoteTypes[noteTypeIndex];
 						}
 					} else {
-						noteData.push(Std.string(note[3]));
+						noteTypeValue = Std.string(note[3]);
 					}
-
-					rawNoteData.push(noteData);
+					swagNote.noteType = noteTypeValue;
+					swagNote.scrollFactor.x = 0;
+					var txt:FlxText = swagNote.findNoteTypeText(swagNote.noteType != null ? noteTypes.indexOf(swagNote.noteType) : 0);
+					if(txt != null) txt.visible = showNoteTypeLabels;
+					swagNote.updateHitbox();
+					if(swagNote.width > swagNote.height)
+						swagNote.setGraphicSize(GRID_SIZE);
+					else
+						swagNote.setGraphicSize(GRID_SIZE, GRID_SIZE);
+					
+					notes.push(swagNote);
 					++sectionNoteCnt;
+					++parsedNotes;
 				}
 			}
-			++parsedNotes;
 		}
 
 		// JS-Engine OPTIMIZATION 3: Batch create events with optimized timing
@@ -4048,10 +4047,10 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		// tab_group.add(deleteOpponentCheckBox);
 		tab_group.add(deleteSections);
 
-		deleteRadius = new PsychUINumericStepper(objX + 180, objY + 20, 1, 0, 0, 16, 4);
+		deleteRadius = new PsychUINumericStepper(objX + 200, objY + 20, 1, 0, 0, 16, 4);
 		deleteRadius.name = 'delete_radius';
 		tab_group.add(deleteRadius);
-		tab_group.add(new FlxText(objX + 180, objY + 5, 0, 'Delete Radius'));
+		tab_group.add(new FlxText(objX + 200, objY + 5, 0, 'Delete Radius'));
 	}
 
 	function reloadNotesDropdowns()

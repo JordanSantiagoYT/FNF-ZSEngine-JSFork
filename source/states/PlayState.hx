@@ -62,30 +62,6 @@ import crowplexus.hscript.Printer;
 import zsscript.ZSTranspiler;
 #end
 
-// JS Engine optimization: Lightweight note struct for faster parsing
-typedef PreloadedChartNote = {
-    strumTime:Float,
-    noteData:Int,
-    mustPress:Bool,
-    oppNote:Bool,
-    noteType:String,
-    animSuffix:String,
-    noteskin:String,
-    gfNote:Bool,
-    isSustainNote:Bool,
-    isSustainEnd:Bool,
-    parentST:Float,
-    parentSL:Float,
-    hitHealth:Float,
-    missHealth:Float,
-    wasHit:Bool,
-    multSpeed:Float,
-    multAlpha:Float,
-    noteDensity:Float,
-    hitCausesMiss:Bool,
-    ignoreNote:Bool
-}
-
 /**
  * This is where all the Gameplay stuff happens and is managed
  *
@@ -187,7 +163,7 @@ class PlayState extends MusicBeatState
 	public var boyfriend:Character = null;
 
 	public var notes:FlxTypedGroup<Note>;
-	public var unspawnNotes:Array<PreloadedChartNote> = [];
+	public var unspawnNotes:Array<Note> = [];
 	public var eventNotes:Array<EventNote> = [];
 
 	public var camFollow:FlxObject;
@@ -737,7 +713,7 @@ class PlayState extends MusicBeatState
 			if(ratio != 1)
 			{
 				for (note in notes.members) note.resizeByRatio(ratio);
-				// Note: unspawnNotes are structs and don't need resizeByRatio
+				for (note in unspawnNotes) note.resizeByRatio(ratio);
 			}
 		}
 		songSpeed = value;
@@ -758,6 +734,7 @@ class PlayState extends MusicBeatState
 			if(ratio != 1)
 			{
 				for (note in notes.members) note.resizeByRatio(ratio);
+				for (note in unspawnNotes) note.resizeByRatio(ratio);
 			}
 		}
 		playbackRate = value;
@@ -1184,10 +1161,16 @@ class PlayState extends MusicBeatState
 	{
 		var i:Int = unspawnNotes.length - 1;
 		while (i >= 0) {
-			var daNote:PreloadedChartNote = unspawnNotes[i];
+			var daNote:Note = unspawnNotes[i];
 			if(daNote.strumTime - 350 < time)
 			{
-				unspawnNotes.splice(i, 1);
+				daNote.active = false;
+				daNote.visible = false;
+				daNote.ignoreNote = true;
+
+				daNote.kill();
+				unspawnNotes.remove(daNote);
+				daNote.destroy();
 			}
 			--i;
 		}
@@ -1463,12 +1446,6 @@ class PlayState extends MusicBeatState
 		ghostNotesCaught = 0; // Initialize class member
 		var daBpm:Float = Conductor.bpm;
 
-		// Memory management for large charts - aggressive approach
-		var notesProcessed:Int = 0;
-		var chunkSize:Int = 10000; // Smaller chunks for better memory control
-		var memoryCleanupInterval:Int = 50000; // Cleanup every 50k notes
-		var maxNotesInMemory:Int = 50000; // Maximum notes to keep in memory at once
-
 		for (section in sectionsData)
 		{
 			if (section.changeBPM != null && section.changeBPM && section.bpm != null && daBpm != section.bpm)
@@ -1476,22 +1453,12 @@ class PlayState extends MusicBeatState
 
 			++cnt;
 			sectionNoteCnt = 0;
-
+			
 			// Show progress at start of each section
 			showProgress(false);
 
 			for (i in 0...section.sectionNotes.length)
 			{
-				// Memory limit check - prevent creating too many notes at once
-				if (unspawnNotes.length >= maxNotesInMemory) {
-					#if sys
-					openfl.system.System.gc();
-					#end
-					Sys.sleep(0.01); // Brief pause to allow memory cleanup
-				}
-
-				notesProcessed++;
-
 				final songNotes: Array<Dynamic> = section.sectionNotes[i];
 
 				// JS Engine optimization: Skip notes that won't be played
@@ -1502,77 +1469,89 @@ class PlayState extends MusicBeatState
 				var noteColumn: Int = Std.int(songNotes[1] % totalColumns);
 				var holdLength: Float = songNotes[2];
 				var noteType: String = !Std.isOfType(songNotes[3], String) ? Note.defaultNoteTypes[songNotes[3]] : songNotes[3];
+				if (Math.isNaN(holdLength))
+					holdLength = 0.0;
+
 				var gottaHitNote:Bool = (songNotes[1] < totalColumns);
 
-				// JS Engine approach: Create lightweight PreloadedChartNote struct
-				var isAlt: Bool = section.altAnim && !gottaHitNote;
-				var swagNote:PreloadedChartNote = {
-					strumTime: spawnTime,
-					noteData: noteColumn,
-					mustPress: gottaHitNote,
-					oppNote: !gottaHitNote,
-					noteType: noteType,
-					animSuffix: isAlt ? "-alt" : "",
-					noteskin: Note.defaultNoteSkin,
-					gfNote: (section.gfSection && gottaHitNote == section.mustHitSection),
-					isSustainNote: false,
-					isSustainEnd: false,
-					parentST: 0,
-					parentSL: holdLength,
-					hitHealth: 0.023,
-					missHealth: (noteType == 'Hurt Note') ? 0.3 : 0.0475,
-					wasHit: false,
-					multSpeed: 1,
-					multAlpha: 1,
-					noteDensity: 1,
-					hitCausesMiss: noteType == 'Hurt Note',
-					ignoreNote: noteType == 'Hurt Note' && gottaHitNote
-				};
+				// JS Engine approach - no ghost note detection for simplicity
 
+				var swagNote:Note = new Note(spawnTime, noteColumn, oldNote);
+				var isAlt: Bool = section.altAnim && !gottaHitNote;
+				swagNote.gfNote = (section.gfSection && gottaHitNote == section.mustHitSection);
+				swagNote.animSuffix = isAlt ? "-alt" : "";
+				swagNote.mustPress = gottaHitNote;
+				swagNote.sustainLength = holdLength;
+				swagNote.noteType = noteType;
+	
+				swagNote.scrollFactor.set();
 				unspawnNotes.push(swagNote);
 				++sectionNoteCnt;
 				++parsedNotes;
 
 				var curStepCrochet:Float = 60 / daBpm * 1000 / 4.0;
-				final roundSus:Int = Math.round(swagNote.parentSL / curStepCrochet);
+				final roundSus:Int = Math.round(swagNote.sustainLength / curStepCrochet);
 				if(roundSus > 0)
 				{
 					for (susNote in 0...roundSus)
 					{
-						var sustainNote:PreloadedChartNote = {
-							strumTime: spawnTime + (curStepCrochet * susNote),
-							noteData: noteColumn,
-							mustPress: swagNote.mustPress,
-							oppNote: swagNote.oppNote,
-							noteType: swagNote.noteType,
-							animSuffix: swagNote.animSuffix,
-							noteskin: swagNote.noteskin,
-							gfNote: swagNote.gfNote,
-							isSustainNote: true,
-							isSustainEnd: (susNote == roundSus),
-							parentST: swagNote.strumTime,
-							parentSL: swagNote.parentSL,
-							hitHealth: swagNote.hitHealth,
-							missHealth: swagNote.missHealth,
-							wasHit: false,
-							multSpeed: swagNote.multSpeed,
-							multAlpha: swagNote.multAlpha,
-							noteDensity: swagNote.noteDensity,
-							hitCausesMiss: swagNote.hitCausesMiss,
-							ignoreNote: swagNote.ignoreNote
-						};
-						
+						oldNote = unspawnNotes[Std.int(unspawnNotes.length - 1)];
+
+						var sustainNote:Note = new Note(spawnTime + (curStepCrochet * susNote), noteColumn, oldNote, true);
+						sustainNote.animSuffix = swagNote.animSuffix;
+						sustainNote.mustPress = swagNote.mustPress;
+						sustainNote.gfNote = swagNote.gfNote;
+						sustainNote.noteType = swagNote.noteType;
+						sustainNote.scrollFactor.set();
+						sustainNote.parent = swagNote;
 						unspawnNotes.push(sustainNote);
-						++sectionNoteCnt;
-						++parsedNotes;
-						++sustainTotalCnt;
+						swagNote.tail.push(sustainNote);
+
+						sustainNote.correctionOffset = swagNote.height / 2;
+						if(!PlayState.isPixelStage)
+						{
+							if(oldNote.isSustainNote)
+							{
+								oldNote.scale.y *= Note.SUSTAIN_SIZE / oldNote.frameHeight;
+								oldNote.scale.y /= playbackRate;
+								oldNote.resizeByRatio(curStepCrochet / Conductor.stepCrochet);
+							}
+
+							if(ClientPrefs.data.downScroll)
+								sustainNote.correctionOffset = 0;
+						}
+						else if(oldNote.isSustainNote)
+						{
+							oldNote.scale.y /= playbackRate;
+							oldNote.resizeByRatio(curStepCrochet / Conductor.stepCrochet);
+						}
+
+						if (sustainNote.mustPress) sustainNote.x += FlxG.width / 2; // general offset
+						else if(ClientPrefs.data.middleScroll)
+						{
+							sustainNote.x += 310;
+							if(noteColumn > 1) //Up and Right
+								sustainNote.x += FlxG.width / 2 + 25;
+						}
 					}
 				}
 
+				if (swagNote.mustPress)
+				{
+					swagNote.x += FlxG.width / 2; // general offset
+				}
+				else if(ClientPrefs.data.middleScroll)
+				{
+					swagNote.x += 310;
+					if(noteColumn > 1) //Up and Right
+					{
+						swagNote.x += FlxG.width / 2 + 25;
+					}
+				}
 				if(!noteTypes.contains(swagNote.noteType))
 					noteTypes.push(swagNote.noteType);
 
-				oldNote = null; // Reset oldNote since we're using structs now
+				oldNote = swagNote;
 			}
 		}
 
@@ -1948,61 +1927,16 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 			else time /= songSpeed;
 			if(unspawnNotes[0].multSpeed < 1) time /= unspawnNotes[0].multSpeed;
 
-			// Only spawn notes if song is actually playing (not during initial generation)
-			if(generatedMusic && Conductor.songPosition >= 0)
+			while (unspawnNotes.length > 0 && unspawnNotes[0].strumTime - Conductor.songPosition < time)
 			{
-				// H-Slice optimization: Batch spawn notes to reduce per-note overhead
-				var notesToSpawn:Int = 0;
-				var spawnLimit:Int = 10; // Max notes to spawn per frame
+				var note:Note = unspawnNotes[0];
 
-				// Count how many notes need spawning
-				while (notesToSpawn < unspawnNotes.length && notesToSpawn < spawnLimit && 
-				       unspawnNotes[notesToSpawn].strumTime - Conductor.songPosition < time)
-				{
-					notesToSpawn++;
-				}
+				notes.insert(0, note);
+				note.spawned = true;
+				callOnLuas('onSpawnNote', [notes.members.indexOf(note), note.noteData, note.noteType, note.isSustainNote, note.strumTime]);
+				callOnHScript('onSpawnNote', [note]);
 
-				// Batch spawn notes
-				if (notesToSpawn > 0)
-				{
-					var batchStart:Int = notes.length;
-
-					// Pre-allocate array for batch
-					var newNotes:Array<Note> = [];
-					newNotes.resize(notesToSpawn);
-
-					// Batch create notes
-					for (i in 0...notesToSpawn)
-					{
-						var chartNote:PreloadedChartNote = unspawnNotes[i];
-						var note:Note = new Note(chartNote.strumTime, chartNote.noteData, null, chartNote.isSustainNote);
-						note.mustPress = chartNote.mustPress;
-						note.gfNote = chartNote.gfNote;
-						note.noteType = chartNote.noteType;
-						note.animSuffix = chartNote.animSuffix;
-						note.sustainLength = chartNote.parentSL;
-						note.spawned = true;
-						newNotes[i] = note;
-					}
-
-					// Batch add to notes group
-					for (note in newNotes)
-					{
-						notes.insert(0, note);
-					}
-
-					// Batch remove from unspawned
-					unspawnNotes.splice(0, notesToSpawn);
-
-					// Batch script calls (only for first few notes to reduce overhead)
-					var scriptLimit:Int = Std.int(Math.min(5, notesToSpawn));
-					for (i in 0...scriptLimit)
-					{
-						var note = newNotes[i];
-						callOnLuas('onSpawnNote', [notes.members.indexOf(note), note.noteData, note.noteType, note.isSustainNote, note.strumTime]);
-						callOnHScript('onSpawnNote', [note]);
-					}
-				}
+				unspawnNotes.splice(0, 1);
 			}
 		}
 
