@@ -9,6 +9,7 @@ class OptionsState extends MusicBeatState
 		'Note Colors',
 		'Controls',
 		'Adjust Delay and Combo',
+		'Optimizations',
 		'Graphics',
 		'Visuals',
 		'Gameplay'
@@ -32,6 +33,8 @@ class OptionsState extends MusicBeatState
 				openSubState(new options.VisualsSettingsSubState());
 			case 'Gameplay':
 				openSubState(new options.GameplaySettingsSubState());
+			case 'Optimizations':
+				openSubState(new options.OptimizeSettingsSubState());
 			case 'Adjust Delay and Combo':
 				MusicBeatState.switchState(new options.NoteOffsetState());
 			case 'Language':

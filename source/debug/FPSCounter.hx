@@ -6,6 +6,7 @@ import openfl.text.TextFormat;
 import openfl.system.System;
 import external.memory.Memory;
 import lime.system.System as LimeSystem;
+import backend.MemoryUtil;
 
 /**
 	The FPS class provides an easy-to-use monitor to display
@@ -70,7 +71,12 @@ class FPSCounter extends TextField
 	}
 
 	public dynamic function updateText():Void { // so people can override it in hscript
-		text = 'FPS: ${currentFPS}'
+		var fpsStr = 'FPS: ${currentFPS}';
+		#if sys
+		fpsStr += '${MemoryUtil.isGcEnabled ? '' : " - No GC"}';
+		#end
+
+		text = fpsStr
 		+ '\nMemory: ${flixel.util.FlxStringUtil.formatBytes(memoryMegas)}'
 		+ '\n${os}';
 

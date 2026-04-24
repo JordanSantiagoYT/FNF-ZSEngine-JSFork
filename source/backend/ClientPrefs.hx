@@ -72,6 +72,7 @@ import states.TitleState;
 	];
 
 	public var comboOffset:Array<Int> = [0, 0, 0, 0];
+	public var disableGC:Bool = false;
 	public var ratingOffset:Int = 0;
 	public var sickWindow:Float = 45.0;
 	public var goodWindow:Float = 90.0;
@@ -83,6 +84,25 @@ import states.TitleState;
 	public var language:String = 'en-US';
 	public var zsScript:Bool = true;
 	// public var lessBotLag:Bool = false;
+
+	// H-Slice optimization settings
+	public var showNotes:Bool = true;
+	public var showAfter:Bool = false;
+	public var keepNotes:Bool = true;
+	public var sortNotes:String = 'After Note Finalized';
+	public var fastSort:Bool = false;
+	public var betterRecycle:Bool = false;
+	public var limitNotes:Int = 0;
+	public var hideOverlapped:Float = 0.0;
+	public var processFirst:Bool = true;
+	public var skipSpawnNote:Bool = false;
+	public var breakTimeLimit:Bool = false;
+	public var optimizeSpawnNote:Bool = false;
+	public var noteHitPreEvent:Bool = true;
+	public var noteHitEvent:Bool = true;
+	public var spawnNoteEvent:Bool = true;
+	public var noteHitStage:Bool = true;
+	public var skipNoteEvent:Bool = true;
 }
 
 class ClientPrefs {

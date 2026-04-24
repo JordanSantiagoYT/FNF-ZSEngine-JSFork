@@ -19,6 +19,7 @@ import haxe.Exception;
 import haxe.io.Bytes;
 import haxe.io.Path;
 
+import backend.MemoryUtil;
 import states.editors.content.MetaNote;
 import states.editors.content.VSlice;
 import states.editors.content.Prompt;
@@ -2475,14 +2476,12 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			estimatedNotes += section.sectionNotes.length;
 		var estimatedEvents:Int = PlayState.SONG.events.length;
 
-		// JS-Engine: Memory optimization for large charts
+		// H-Slice approach: Use MemoryUtil for GC control
 		#if sys
-		if (estimatedNotes > 100000) {
-			cpp.vm.Gc.enable(false);
-		}
-		else if (estimatedNotes > 500000) {
-			cpp.vm.Gc.enable(false);
-			cpp.vm.Gc.run(false); // Force collect before starting
+		if (ClientPrefs.data.disableGC) {
+			MemoryUtil.enable();
+			MemoryUtil.collect(true);
+			MemoryUtil.disable();
 		}
 		#end
 
@@ -2587,12 +2586,12 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		if (estimatedNotes > 50000)
 			trace('reloadNotes() processed ' + estimatedNotes + ' notes in ' + (haxe.Timer.stamp() - startTime) + 's');
 
-		// JS-Engine: Re-enable GC and manual cleanup for large charts
+		// H-Slice approach: Re-enable GC and trigger manual collection
 		#if sys
-		if (estimatedNotes > 100000) {
-			cpp.vm.Gc.enable(true);
-			cpp.vm.Gc.run(false);
-			openfl.system.System.gc();
+		if (ClientPrefs.data.disableGC) {
+			MemoryUtil.enable();
+			MemoryUtil.collect(true);
+			MemoryUtil.disable();
 		}
 		#end
 
@@ -2889,16 +2888,21 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			{
 				if(note != null && curSecFilter(note))
 				{
+					// CRITICAL FIX: Always position and add all notes to curRenderedNotes
+					if(!firstNote) sectionFirstNoteID = num;
+					curRenderedNotes.add(note);
+					positionNoteYOnTime(note, curSec);
+					positionNoteXByData(note);
+
 					if(note.strumTime >= minVisibleTime && note.strumTime <= maxVisibleTime)
 					{
-						if(!firstNote) sectionFirstNoteID = num;
-						curRenderedNotes.add(note);
 						note.alpha = (note.strumTime >= Conductor.songPosition) ? 1 : 0.6;
 						if(note.hasSustain) note.updateSustainToZoom(cachedSectionCrochets[curSec] / 4, curZoom);
 					}
 					else
 					{
-						note.alpha = 0;
+						note.alpha = 0.4; // Reduced visibility but still visible
+						if(note.hasSustain) note.updateSustainToZoom(cachedSectionCrochets[curSec] / 4, curZoom);
 					}
 				}
 			}
