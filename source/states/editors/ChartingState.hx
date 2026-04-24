@@ -2787,7 +2787,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 				var totalNotes = parsedNotes + sectionNoteCnt;
 
 				Sys.stdout().writeString('\x1b[0GLoading section $sectionText ($totalNotes notes)');
-				sys.io.File.flush(Sys.stdout());
+				Sys.stdout().flush();
 				syncTime = currentTime;
 			}
 		} 
