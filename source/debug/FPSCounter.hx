@@ -4,6 +4,8 @@ import flixel.FlxG;
 import openfl.text.TextField;
 import openfl.text.TextFormat;
 import openfl.system.System;
+import external.memory.Memory;
+import lime.system.System as LimeSystem;
 
 /**
 	The FPS class provides an easy-to-use monitor to display
@@ -23,12 +25,19 @@ class FPSCounter extends TextField
 
 	@:noCompletion private var times:Array<Float>;
 
+	public var os:String = '';
+
 	public function new(x:Float = 10, y:Float = 10, color:Int = 0x000000)
 	{
 		super();
 
 		this.x = x;
 		this.y = y;
+
+		if (LimeSystem.platformName == LimeSystem.platformVersion || LimeSystem.platformVersion == null)
+			os = 'OS: ${LimeSystem.platformName}' #if cpp + ' ${getArch() != 'Unknown' ? getArch() : ''}' #end;
+		else
+			os = 'OS: ${LimeSystem.platformName}' #if cpp + ' ${getArch() != 'Unknown' ? getArch() : ''}' #end + ' - ${LimeSystem.platformVersion}';
 
 		currentFPS = 0;
 		selectable = false;
@@ -62,7 +71,8 @@ class FPSCounter extends TextField
 
 	public dynamic function updateText():Void { // so people can override it in hscript
 		text = 'FPS: ${currentFPS}'
-		+ '\nMemory: ${flixel.util.FlxStringUtil.formatBytes(memoryMegas)}';
+		+ '\nMemory: ${flixel.util.FlxStringUtil.formatBytes(memoryMegas)}'
+		+ '\n${os}';
 
 		textColor = 0xFFFFFFFF;
 		if (currentFPS < FlxG.drawFramerate * 0.5)
@@ -70,5 +80,47 @@ class FPSCounter extends TextField
 	}
 
 	inline function get_memoryMegas():Float
-		return cpp.vm.Gc.memInfo64(cpp.vm.Gc.MEM_INFO_USAGE);
+		return Memory.getCurrentUsage();
+
+	#if cpp
+	#if windows
+	@:functionCode('
+		SYSTEM_INFO osInfo;
+
+		GetSystemInfo(&osInfo);
+
+		switch(osInfo.wProcessorArchitecture)
+		{
+			case 9:
+				return ::String("x86_64");
+			case 5:
+				return ::String("ARM");
+			case 12:
+				return ::String("ARM64");
+			case 6:
+				return ::String("IA-64");
+			case 0:
+				return ::String("x86");
+			default:
+				return ::String("Unknown");
+		}
+	')
+	#elseif (ios || mac)
+	@:functionCode('
+		const NXArchInfo *archInfo = NXGetLocalArchInfo();
+    	return ::String(archInfo == NULL ? "Unknown" : archInfo->name);
+	')
+	#else
+	@:functionCode('
+		struct utsname osInfo{};
+		uname(&osInfo);
+		return ::String(osInfo.machine);
+	')
+	#end
+	@:noCompletion
+	private function getArch():String
+	{
+		return "Unknown";
+	}
+	#end
 }

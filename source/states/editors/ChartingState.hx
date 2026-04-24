@@ -2457,6 +2457,11 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 	{
 		var startTime = haxe.Timer.stamp();
 
+		cnt = 0;
+		parsedNotes = 0;
+		sectionNoteCnt = 0;
+		syncTime = haxe.Timer.stamp() * 1000;
+
 		// JS-Engine: Clear existing notes (fast)
 		selectedNotes = [];
 		for (note in notes) if(note != null) note.destroy();
@@ -2474,6 +2479,10 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		#if sys
 		if (estimatedNotes > 100000) {
 			cpp.vm.Gc.enable(false);
+		}
+		else if (estimatedNotes > 500000) {
+			cpp.vm.Gc.enable(false);
+			cpp.vm.Gc.run(false); // Force collect before starting
 		}
 		#end
 
@@ -2766,16 +2775,28 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 	private var parsedNotes:Int = 0;
 	private var loadTime:Float = 0;
 
-	function showProgress(force:Bool = false) {
+	function showProgress(force:Bool = false) 
+	{
 		if (Main.isConsoleAvailable)
 		{
-			if ((Date.now().getTime() - syncTime > progressUpdateTime) || force)
+			var currentTime = haxe.Timer.stamp() * 1000;
+			if ((currentTime - syncTime > progressUpdateTime * 1000) || force)
 			{
-				Sys.stdout().writeString('\x1b[0GLoading section $cnt/${PlayState.SONG.notes.length} (${parsedNotes + sectionNoteCnt} notes)');
-				syncTime = Date.now().getTime();
+				var totalSections = (PlayState.SONG != null && PlayState.SONG.notes != null) ? PlayState.SONG.notes.length : 0;
+				var sectionText = (totalSections > 0) ? '$cnt/$totalSections' : '$cnt/?';
+				var totalNotes = parsedNotes + sectionNoteCnt;
+
+				Sys.stdout().writeString('\x1b[0GLoading section $sectionText ($totalNotes notes)');
+				sys.io.File.flush(Sys.stdout());
+				syncTime = currentTime;
 			}
-		} else if (isDesktop && force) {
-			Sys.println('Loading section $cnt/${PlayState.SONG.notes.length} (${parsedNotes + sectionNoteCnt} notes)');
+		} 
+		else if (isDesktop && force) 
+		{
+			var totalSections = (PlayState.SONG != null && PlayState.SONG.notes != null) ? PlayState.SONG.notes.length : 0;
+			var sectionText = (totalSections > 0) ? '$cnt/$totalSections' : '$cnt/?';
+			var totalNotes = parsedNotes + sectionNoteCnt;
+			Sys.println('Loading section $sectionText ($totalNotes notes)');
 		}
 	}
 
@@ -3286,15 +3307,27 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 					if(note == null || !note.isEvent) continue;
 
 					var event:EventMetaNote = cast (note, EventMetaNote);
-					event.events[event.events.length - 1][0] = eventName;
-					event.updateEventText();
+					if(event.events != null && event.events.length > 0)
+					{
+						var eventIndex = Std.int(FlxMath.bound(event.events.length - 1, 0, event.events.length - 1));
+						if(event.events[eventIndex] == null)
+							event.events[eventIndex] = [];
+						event.events[eventIndex][0] = eventName;
+						event.updateEventText();
+					}
 				}
 			}
 			else if(selectedNotes.length == 1 && selectedNotes[0].isEvent)
 			{
 				var event:EventMetaNote = cast (selectedNotes[0], EventMetaNote);
-				event.events[Std.int(FlxMath.bound(curEventSelected, 0, event.events.length - 1))][0] = eventName;
-				event.updateEventText();
+				if(event.events != null && event.events.length > 0)
+				{
+					var eventIndex = Std.int(FlxMath.bound(curEventSelected, 0, event.events.length - 1));
+					if(event.events[eventIndex] == null)
+						event.events[eventIndex] = [];
+					event.events[eventIndex][0] = eventName;
+					event.updateEventText();
+				}
 			}
 		});
 
@@ -3372,15 +3405,27 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 					if(note == null || !note.isEvent) continue;
 
 					var event:EventMetaNote = cast (note, EventMetaNote);
-					event.events[event.events.length - 1][n] = str;
-					event.updateEventText();
+					if(event.events != null && event.events.length > 0)
+					{
+						var eventIndex = event.events.length - 1;
+						if(event.events[eventIndex] == null)
+							event.events[eventIndex] = [];
+						event.events[eventIndex][n] = str;
+						event.updateEventText();
+					}
 				}
 			}
 			else if(selectedNotes.length == 1 && selectedNotes[0].isEvent)
 			{
 				var event:EventMetaNote = cast (selectedNotes[0], EventMetaNote);
-				event.events[Std.int(FlxMath.bound(curEventSelected, 0, event.events.length - 1))][n] = str;
-				event.updateEventText();
+				if(event.events != null && event.events.length > 0)
+				{
+					var eventIndex = Std.int(FlxMath.bound(curEventSelected, 0, event.events.length - 1));
+					if(event.events[eventIndex] == null)
+						event.events[eventIndex] = [];
+					event.events[eventIndex][n] = str;
+					event.updateEventText();
+				}
 			}
 		}
 
