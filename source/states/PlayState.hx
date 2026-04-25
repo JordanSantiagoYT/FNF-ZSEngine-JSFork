@@ -43,6 +43,8 @@ import shaders.PulseEffect;
 import objects.VideoSprite;
 import objects.Note.EventNote;
 import objects.*;
+import states.editors.content.MetaNote;
+import states.editors.content.EventMetaNote;
 import states.stages.*;
 import states.stages.objects.*;
 
