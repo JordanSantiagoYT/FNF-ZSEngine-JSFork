@@ -1058,7 +1058,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 						stopMovingNotes();
 						resetSelectedNotes();
 						selectedNotes = pasteCopiedNotesToSection();
-						selectedNotes.sort(PlayState.sortByTime);
+						selectedNotes.sort((note1, note2) -> FlxSort.byValues(FlxSort.ASCENDING, note1.strumTime, note2.strumTime));
 
 						var didFind:Bool = false;
 						var minNoteData:Float = Math.POSITIVE_INFINITY;
