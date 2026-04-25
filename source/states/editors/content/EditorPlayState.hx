@@ -437,7 +437,7 @@ class EditorPlayState extends MusicBeatSubstate
 			}
 			oldNote = swagNote;
 		}
-		unspawnNotes.sort(PlayState.sortByTime);
+		unspawnNotes.sort(PlayState.sortByTimeNotes);
 	}
 	
 	private function generateStaticArrows(player:Int):Void

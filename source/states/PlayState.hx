@@ -735,7 +735,7 @@ class PlayState extends MusicBeatState
 		if(eventNotes.length > 0)
 		{
 			for (event in eventNotes) event.strumTime -= eventEarlyTrigger(event);
-			eventNotes.sort(sortByTime);
+			eventNotes.sort(sortByTimeEvents);
 		}
 
 		startCallback();
@@ -1646,7 +1646,7 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 			for (i in 0...event[1].length)
 				makeEvent(event, i);
 
-		unspawnNotes.sort(sortByTime);
+		unspawnNotes.sort(sortByTimeNotes);
 		trace('[FAST NOTE PARSING] Generated ${unspawnNotes.length} Notes for song "${SONG.song}"');
 		trace('Loading ${SONG.song} (${unspawnNotes.length} notes)');
 
@@ -1712,6 +1712,22 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 
 	public static function sortByTime(id:Int, note1:Note, note2:Note):Int
 		return FlxSort.byValues(FlxSort.ASCENDING, note1.strumTime, note2.strumTime);
+
+	// For Note arrays (unspawnNotes)
+	public static function sortByTimeNotes(note1:Note, note2:Note):Int
+		return FlxSort.byValues(FlxSort.ASCENDING, note1.strumTime, note2.strumTime);
+
+	// For EventNote arrays (eventNotes)
+	public static function sortByTimeEvents(event1:EventNote, event2:EventNote):Int
+		return FlxSort.byValues(FlxSort.ASCENDING, event1.strumTime, event2.strumTime);
+
+	// For MetaNote arrays (ChartingState)
+	public static function sortByTimeMeta(note1:MetaNote, note2:MetaNote):Int
+		return FlxSort.byValues(FlxSort.ASCENDING, note1.strumTime, note2.strumTime);
+
+	// For EventMetaNote arrays (ChartingState)
+	public static function sortByTimeEventMeta(event1:EventMetaNote, event2:EventMetaNote):Int
+		return FlxSort.byValues(FlxSort.ASCENDING, event1.strumTime, event2.strumTime);
 
 	// H-Slice functions
 	inline function initSpawnInfo(note:Note) {

@@ -1151,7 +1151,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 					else
 						curZoom = zoomList[Std.int(Math.min(zoomList.indexOf(curZoom) + 1, zoomList.length - 1))];
 	
-					notes.sort(PlayState.sortByTime);
+					notes.sort(PlayState.sortByTimeMeta);
 					var noteSec:Int = 0;
 					var nextSectionTime:Float = cachedSectionTimes[noteSec + 1];
 					var curSectionTime:Float = cachedSectionTimes[noteSec];
@@ -1946,8 +1946,8 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 				pushedEvents.push(cast (note, EventMetaNote));
 			}
 		});
-		notes.sort(PlayState.sortByTime);
-		events.sort(PlayState.sortByTime);
+		notes.sort(PlayState.sortByTimeMeta);
+		events.sort(PlayState.sortByTimeEventMeta);
 		movingNotes.clear();
 		isMovingNotes = false;
 		softReloadNotes();
@@ -2355,7 +2355,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			}
 		}
 
-		notes.sort(PlayState.sortByTime);
+		notes.sort(PlayState.sortByTimeMeta);
 		softReloadNotes();
 		forceDataUpdate = true;
 	}
@@ -2573,8 +2573,8 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		}
 
 		// JS-Engine OPTIMIZATION 4: Use native sort with cached function
-		notes.sort(PlayState.sortByTime);
-		events.sort(PlayState.sortByTime);
+		notes.sort(PlayState.sortByTimeMeta);
+		events.sort(PlayState.sortByTimeEventMeta);
 
 		// JS-Engine OPTIMIZATION 5: Only load section if needed
 		if (curSec >= 0 && curSec < PlayState.SONG.notes.length)
@@ -3937,7 +3937,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 					pushedNotes.push(newNote);
 				}
 			}
-			notes.sort(PlayState.sortByTime);
+			notes.sort(PlayState.sortByTimeMeta);
 			softReloadNotes(true);
 			
 			addUndoAction(ADD_NOTE, {notes: pushedNotes});
@@ -4210,7 +4210,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 				pushedNotes.push(createdNote);
 				nts.push(createdNote);
 			}
-			notes.sort(PlayState.sortByTime);
+			notes.sort(PlayState.sortByTimeMeta);
 		}
 
 		if(canCopyEvents && copiedEvents.length > 0)
@@ -4226,7 +4226,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 				pushedNotes.push(createdEvent);
 				evs.push(createdEvent);
 			}
-			events.sort(PlayState.sortByTime);
+			events.sort(PlayState.sortByTimeEventMeta);
 		}
 		loadSection();
 		
@@ -5922,7 +5922,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		for (secNum => section in PlayState.SONG.notes)
 			PlayState.SONG.notes[secNum].sectionNotes = [];
 
-		notes.sort(PlayState.sortByTime);
+		notes.sort(PlayState.sortByTimeMeta);
 		var noteSec:Int = 0;
 		var nextSectionTime:Float = cachedSectionTimes[noteSec + 1];
 		var curSectionTime:Float = cachedSectionTimes[noteSec];
@@ -5943,7 +5943,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			arr.push(note.songData);
 		}
 
-		events.sort(PlayState.sortByTime);
+		events.sort(PlayState.sortByTimeEventMeta);
 		PlayState.SONG.events = [];
 		for (event in events)
 			PlayState.SONG.events.push(event.songData);
@@ -6142,7 +6142,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		undoActions = [];
 		setSongPlaying(false);
 		var gridLerp:Float = FlxMath.bound((scrollY + FlxG.height/2 - gridBg.y) / gridBg.height, 0.000001, 0.999999);
-		notes.sort(PlayState.sortByTime);
+		notes.sort(PlayState.sortByTimeMeta);
 		_cacheSections();
 
 		var noteSec:Int = 0;
@@ -6517,7 +6517,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 					note.songData[1] = note.chartNoteData;
 				}
 			}
-			notes.sort(PlayState.sortByTime);
+			notes.sort(PlayState.sortByTimeMeta);
 		}
 		if(dataEvents != null && dataEvents.length > 0)
 		{
@@ -6530,7 +6530,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 					event.songData[0] = event.strumTime;
 				}
 			}
-			events.sort(PlayState.sortByTime);
+			events.sort(PlayState.sortByTimeEventMeta);
 		}
 		softReloadNotes();
 	}
