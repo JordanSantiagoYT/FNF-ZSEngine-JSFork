@@ -43,8 +43,6 @@ import shaders.PulseEffect;
 import objects.VideoSprite;
 import objects.Note.EventNote;
 import objects.*;
-import states.editors.content.MetaNote;
-import states.editors.content.EventMetaNote;
 import states.stages.*;
 import states.stages.objects.*;
 
@@ -1724,11 +1722,11 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 		return FlxSort.byValues(FlxSort.ASCENDING, event1.strumTime, event2.strumTime);
 
 	// For MetaNote arrays (ChartingState)
-	public static function sortByTimeMeta(note1:MetaNote, note2:MetaNote):Int
+	public static function sortByTimeMeta(note1:Dynamic, note2:Dynamic):Int
 		return FlxSort.byValues(FlxSort.ASCENDING, note1.strumTime, note2.strumTime);
 
 	// For EventMetaNote arrays (ChartingState)
-	public static function sortByTimeEventMeta(event1:EventMetaNote, event2:EventMetaNote):Int
+	public static function sortByTimeEventMeta(event1:Dynamic, event2:Dynamic):Int
 		return FlxSort.byValues(FlxSort.ASCENDING, event1.strumTime, event2.strumTime);
 
 	// H-Slice functions
