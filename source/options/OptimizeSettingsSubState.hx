@@ -165,4 +165,10 @@ class OptimizeSettingsSubState extends BaseOptionsMenu
 	function onChangeCacheCount(){
 		cacheCount.scrollSpeed = interpolate(30, 50000, (holdTime - 0.5) / 10, 3);
 	}
+
+	function interpolate(start:Float, end:Float, value:Float, exponent:Float = 1):Float {
+		var normalizedValue = Math.max(0, Math.min(1, value));
+		var power = Math.pow(normalizedValue, exponent);
+		return start + (end - start) * power;
+	}
 }
