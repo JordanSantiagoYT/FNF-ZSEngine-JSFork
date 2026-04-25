@@ -1550,9 +1550,9 @@ class PlayState extends MusicBeatState
 				swagNote.mustPress = gottaHitNote;
 				swagNote.sustainLength = holdLength;
 				swagNote.noteType = noteType;
-	
+
 				swagNote.scrollFactor.set();
-				
+
 				// H-Slice optimization: Apply note limit
 				if (limitNotes == 0) limitNotes = 2147483647;
 				if (unspawnNotes.length < limitNotes) {
@@ -1649,7 +1649,7 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 		unspawnNotes.sort(sortByTime);
 		trace('[FAST NOTE PARSING] Generated ${unspawnNotes.length} Notes for song "${SONG.song}"');
 		trace('Loading ${SONG.song} (${unspawnNotes.length} notes)');
-		
+
 		#if sys
 		if (ClientPrefs.data.disableGC) {
 			MemoryUtil.enable();
@@ -1720,10 +1720,10 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 		availNoteData = note.noteData + (castMust ? 4 : 0);
 		prevSus[availNoteData] = currSus[availNoteData];
 		currSus[availNoteData] = castHold;
-		
+
 		shownTime = showNotes ? castHold ? Math.max(spawnTime / songSpeed, globalElapsed * 1000) : spawnTime / songSpeed : 0;
 		shownRealTime = shownTime * 0.001;
-		
+
 		isDisplay = castHold ? note.strumTime - fixedPosition < shownTime : fixedPosition > note.strumTime - shownTime;
 	}
 
@@ -1732,12 +1732,12 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 
 		lDist = []; dist = [];
 		lDist.resize(8); dist.resize(8);
-		
+
 		if (unspawnNotes.length > totalCnt) {
 			limitCount = notes.countLiving();
 			targetNote = unspawnNotes[totalCnt];
 			fixedPosition = Conductor.songPosition - ClientPrefs.data.noteOffset;
-			
+
 			// for initialize
 			initSpawnInfo(targetNote);
 
@@ -1761,9 +1761,9 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 				if ((!noteJudge || !optimizeSpawnNote) && isCanPass) {
 					dunceNote = targetNote;
 					notes.add(dunceNote);
-	
+
 					strumGroup = dunceNote.mustPress ? playerStrums : opponentStrums;
-					
+
 					dist[availNoteData] = 0.45 * (Conductor.songPosition - dunceNote.strumTime) * songSpeed;
 
 					if (hideOverlapped > 0) {
@@ -1814,7 +1814,7 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 					} else castMust ? noteMissCommon(availNoteData) : ++skipOp;
 
 					// enableHoldSplash functionality removed - variable not defined
-					
+
 					if (enableSplash) {
 						if (!castHold && (cpuControlled || !castMust) &&
 							splashMoment[availNoteData] < splashCount && splashUsing[availNoteData].length < splashCount)
@@ -1827,7 +1827,7 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 						}
 					}
 				}
-				
+
 				++totalCnt;
 				if (unspawnNotes.length > totalCnt) {
 					targetNote = unspawnNotes[totalCnt];
@@ -1844,11 +1844,11 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 					lDist = []; dist = [];
 					lDist.resize(8); dist.resize(8);
 				}
-				
+
 				notes.forEachAlive(daNote -> {
 					canBeHit = Conductor.songPosition - daNote.strumTime > 0;
 					tooLate = Conductor.songPosition - daNote.strumTime > noteKillOffset;
-					
+
 					if (tooLate) {
 						// Kill extremely late notes and cause misses
 						if (daNote.mustPress) {
@@ -1865,7 +1865,7 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 					} else if (hideOverlapped > 0) {
 						availNoteData = daNote.noteData + (daNote.mustPress ? 4 : 0);
 						dist[availNoteData] = 0.45 * (Conductor.songPosition - daNote.strumTime) * songSpeed;
-						
+
 						if (lastSongSpeed != songSpeed) {
 							currSus[availNoteData] = daNote.isSustainNote;
 							iDist[availNoteData] = dist[availNoteData] - lDist[availNoteData];
@@ -1891,7 +1891,7 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 						var strumGroup = daNote.mustPress ? playerStrums : opponentStrums;
 						daNote.followStrumNote(strumGroup.members[daNote.noteData], songSpeed, 0.45 * (Conductor.songPosition - daNote.strumTime) * songSpeed); ++shownCnt;
 					}
-				
+
 					if (canBeHit) {
 						if (daNote.mustPress) {
 							if (!daNote.blockHit || daNote.isSustainNote) {
@@ -2212,16 +2212,16 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 			}
 			noteFinalize();
 			/* --- main process --- */
-			
+
 			if (sortingWay >= 3) {
 				noteSort(sortingWay == 4);
 			}
-			
+
 			if(!cpuControlled)
 				keysCheck();
 			else
 				playerDance();
-			
+
 			checkEventNote();
 		}
 
