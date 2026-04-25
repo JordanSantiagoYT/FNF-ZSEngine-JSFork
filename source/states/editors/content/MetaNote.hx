@@ -15,11 +15,29 @@ class MetaNote extends Note
 
 	public function new(time:Float, data:Int, songData:Array<Dynamic>)
 	{
+		trace('[MetaNote] Constructor - time: $time, data: $data, songData: $songData');
+		
+		// Debug: Check for null parameters
+		if (Math.isNaN(time)) {
+			trace('[MetaNote] ERROR: time is NaN!');
+			time = 0;
+		}
+		if (songData == null) {
+			trace('[MetaNote] ERROR: songData is null!');
+			songData = [time, data, 0];
+		}
+		if (songData.length < 3) {
+			trace('[MetaNote] ERROR: songData has insufficient length (${songData.length}), padding with zeros');
+			while (songData.length < 3) songData.push(0);
+		}
+
 		super(time, data, null, false, true);
 
 		this.songData = songData;
 		this.strumTime = time;
 		this.chartNoteData = data;
+		
+		trace('[MetaNote] Constructor completed - strumTime: ${this.strumTime}, noteData: ${this.noteData}');
 	}
 
 	public function changeNoteData(v:Int)
@@ -141,6 +159,22 @@ class EventMetaNote extends MetaNote
 	public var eventText:FlxText;
 	public function new(time:Float, eventData:Dynamic)
 	{
+		trace('[EventMetaNote] Constructor - time: $time, eventData: $eventData');
+		
+		// Debug: Check for null parameters
+		if (Math.isNaN(time)) {
+			trace('[EventMetaNote] ERROR: time is NaN!');
+			time = 0;
+		}
+		if (eventData == null) {
+			trace('[EventMetaNote] ERROR: eventData is null!');
+			eventData = [time, []];
+		}
+		if (eventData.length < 2) {
+			trace('[EventMetaNote] ERROR: eventData has insufficient length (${eventData.length}), padding with empty array');
+			while (eventData.length < 2) eventData.push([]);
+		}
+
 		super(time, -1, eventData);
 		this.isEvent = true;
 		// Some charts may contain malformed/partial event entries.
@@ -151,24 +185,32 @@ class EventMetaNote extends MetaNote
 			// expected shape from ChartingState.createEvent:
 			// eventData = [strumTime, [[eventName, value1, value2], ...]]
 			var outer:Dynamic = (eventData != null) ? eventData[1] : null;
+			trace('[EventMetaNote] Processing events - outer: $outer');
+			
 			if (outer != null && Std.isOfType(outer, Array))
 			{
 				var outerArr:Array<Dynamic> = cast outer;
+				trace('[EventMetaNote] Found ${outerArr.length} event entries');
 				for (entry in outerArr)
 				{
 					// tolerate malformed entries: if it's already an array, keep it, otherwise wrap.
-					if (entry != null && Std.isOfType(entry, Array))
+					if (entry != null && Std.isOfType(entry, Array)) {
+						trace('[EventMetaNote] Adding valid event entry: $entry');
 						events.push(cast entry);
-					else
+					} else {
+						trace('[EventMetaNote] Wrapping malformed entry: $entry');
 						events.push([entry]);
+					}
 				}
+			} else {
+				trace('[EventMetaNote] No valid event array found in eventData[1]');
 			}
 		}
 		catch (e:Dynamic)
 		{
-			trace('Error: $e');
+			trace('[EventMetaNote] ERROR processing events: $e');
 		}
-		//trace('events: $events');
+		trace('[EventMetaNote] Final events array: $events');
 		
 		loadGraphic(Paths.image('editors/eventIcon'));
 		setGraphicSize(ChartingState.GRID_SIZE);

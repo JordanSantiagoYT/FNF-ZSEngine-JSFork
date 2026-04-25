@@ -2601,12 +2601,19 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 	function createNote(note:Dynamic, ?secNum:Null<Int> = null)
 	{
+		trace('[ChartingState] createNote called - note: $note, secNum: $secNum');
+
 		if(secNum == null) secNum = curSec;
 		var section = PlayState.SONG.notes[secNum];
+
+		trace('[ChartingState] Section: $section, curSec: $curSec');
 
 		var daStrumTime:Float = note[0];
 		var daNoteData:Int = Std.int(note[1] % GRID_COLUMNS_PER_PLAYER);
 		var gottaHitNote:Bool = (note[1] < GRID_COLUMNS_PER_PLAYER);
+
+		trace('[ChartingState] Creating MetaNote - daStrumTime: $daStrumTime, daNoteData: $daNoteData, gottaHitNote: $gottaHitNote');
+		trace('[ChartingState] Note data array: $note');
 
 		var swagNote:MetaNote = new MetaNote(daStrumTime, daNoteData, note);
 		swagNote.mustPress = gottaHitNote;
@@ -2633,7 +2640,12 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 	function createEvent(event:Dynamic)
 	{
+		trace('[ChartingState] createEvent called - event: $event');
+
 		var daStrumTime:Float = event[0];
+		trace('[ChartingState] Creating EventMetaNote - daStrumTime: $daStrumTime');
+		trace('[ChartingState] Event data array: $event');
+
 		var swagEvent:EventMetaNote = new EventMetaNote(daStrumTime, event);
 		swagEvent.x = gridBg.x;
 		swagEvent.eventText.x = swagEvent.x - swagEvent.eventText.width - 10;
@@ -2789,7 +2801,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 				Sys.stdout().flush();
 				syncTime = currentTime;
 			}
-		} 
+		}
 		else if (isDesktop && force) 
 		{
 			var totalSections = (PlayState.SONG != null && PlayState.SONG.notes != null) ? PlayState.SONG.notes.length : 0;
