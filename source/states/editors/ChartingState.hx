@@ -2560,13 +2560,14 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			var event = PlayState.SONG.events[i];
 			if(event != null && (cachedLen < 1 || (event[0] != null && event[0] < lastTime)))
 			{
-				if(event.length < 2 || event[1] == null || event[1].length <= 0) {
+				var eventNote:EventMetaNote;
+				if(event.length < 2 || event[1] == null || (event[1] != null && !Std.isOfType(event[1], Array) && event[1].length <= 0)) {
 					// Create minimal event data for malformed events
 					var minimalEvent:Array<Dynamic> = [event[0], []];
-					var eventNote:EventMetaNote = new EventMetaNote(event[0], minimalEvent);
+					eventNote = new EventMetaNote(event[0], minimalEvent);
 				} else {
 					// JS-Engine: Create EventMetaNote with proper event data storage
-					var eventNote:EventMetaNote = new EventMetaNote(event[0], event);
+					eventNote = new EventMetaNote(event[0], event);
 				}
 				eventNote.x = gridBg.x;
 				eventNote.eventText.x = eventNote.x - eventNote.eventText.width - 10;
@@ -2617,7 +2618,6 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 	{
 		if(secNum == null) secNum = curSec;
 		var section = PlayState.SONG.notes[secNum];
-
 
 		var daStrumTime:Float = note[0];
 		var daNoteData:Int = Std.int(note[1] % GRID_COLUMNS_PER_PLAYER);
