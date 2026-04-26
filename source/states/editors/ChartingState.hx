@@ -2493,8 +2493,8 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		var sectionNoteCnt:Int = 0;
 
 		// Calculate range of sections to load (current + 2 for smooth scrolling)
-		var startSection:Int = Math.max(0, curSec - 1);
-		var endSection:Int = Math.min(PlayState.SONG.notes.length - 1, curSec + 2);
+		var startSection:Int = Std.int(Math.max(0, curSec - 1));
+		var endSection:Int = Std.int(Math.min(PlayState.SONG.notes.length - 1, curSec + 2));
 
 		for (secNum => section in PlayState.SONG.notes)
 		{
@@ -2540,7 +2540,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 					if(swagNote.width > swagNote.height)
 						swagNote.setGraphicSize(GRID_SIZE);
 					else
-						swagNote.setGraphicSize(GRID_SIZE, GRID_SIZE);
+						swagNote.setGraphicSize(0, GRID_SIZE);
 
 					// Add directly to visible notes (only for current section range)
 					notes.push(swagNote);
@@ -2550,16 +2550,15 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			}
 		}
 
+		var eventsLen:Int = PlayState.SONG.events.length;
+		var cachedLen:Int = cachedSectionTimes.length;
 		var lastTime:Float = (cachedLen > 0) ? cachedSectionTimes[cachedLen-1] : 0;
 
 		// JS-Engine OPTIMIZATION 3: Batch create events with optimized timing
-		var eventsLen:Int = PlayState.SONG.events.length;
-		var cachedLen:Int = cachedSectionTimes.length;
-
 		for (i in 0...eventsLen)
 		{
 			var event = PlayState.SONG.events[i];
-			if(event != null && (cachedLen < 1 || event[0] < lastTime))
+			if(event != null && (cachedLen < 1 || (event[0] != null && event[0] < lastTime)))
 			{
 				if(event.length < 2 || event[1] == null || event[1].length <= 0) {
 					// Create minimal event data for malformed events
