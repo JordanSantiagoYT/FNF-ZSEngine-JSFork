@@ -2480,7 +2480,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		#if sys
 		// Force major garbage collection before loading
 		cpp.vm.Gc.run(true);
-		
+
 		// Conditional GC disabling for large charts (JS Engine method)
 		if (estimatedNotes > 1000000) {
 			cpp.vm.Gc.enable(false);
@@ -2493,15 +2493,15 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		// PlayState approach: Load only current section and adjacent sections (memory efficient)
 		var cnt:Int = 0;
 		var sectionNoteCnt:Int = 0;
-		
+
 		// Calculate range of sections to load (current + 2 for smooth scrolling)
 		var startSection:Int = Std.int(Math.max(0, curSec - 1));
 		var endSection:Int = Std.int(Math.min(PlayState.SONG.notes.length - 1, curSec + 2));
-		
+
 		for (secNum => section in PlayState.SONG.notes)
 		{
 			if (secNum < startSection || secNum > endSection) continue; // Skip sections outside range
-			
+
 			++cnt;
 			sectionNoteCnt = 0;
 
@@ -2520,7 +2520,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 					var daStrumTime = note[0];
 					var daNoteData = Std.int(daNoteInfo % GRID_COLUMNS_PER_PLAYER);
 					var gottaHitNote = (note[1] < GRID_COLUMNS_PER_PLAYER);
-					
+
 					var swagNote:MetaNote = new MetaNote(daStrumTime, daNoteData, note);
 					swagNote.mustPress = gottaHitNote;
 					swagNote.setSustainLength(note[2], cachedSectionCrochets[secNum] / 4, curZoom);
@@ -2543,7 +2543,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 						swagNote.setGraphicSize(GRID_SIZE);
 					else
 						swagNote.setGraphicSize(0, GRID_SIZE);
-					
+
 					// Add directly to visible notes (only for current section range)
 					notes.push(swagNote);
 					++sectionNoteCnt;
@@ -2620,12 +2620,11 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 	{
 		if(secNum == null) secNum = curSec;
 		var section = PlayState.SONG.notes[secNum];
-		
 
 		var daStrumTime:Float = note[0];
 		var daNoteData:Int = Std.int(note[1] % GRID_COLUMNS_PER_PLAYER);
 		var gottaHitNote:Bool = (note[1] < GRID_COLUMNS_PER_PLAYER);
-		
+
 		var swagNote:MetaNote = new MetaNote(daStrumTime, daNoteData, note);
 		swagNote.mustPress = gottaHitNote;
 		swagNote.setSustainLength(note[2], cachedSectionCrochets[secNum] / 4, curZoom);
@@ -2652,7 +2651,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 	function createEvent(event:Dynamic)
 	{
 		var daStrumTime:Float = event[0];
-		
+
 		var swagEvent:EventMetaNote = new EventMetaNote(daStrumTime, event);
 		swagEvent.x = gridBg.x;
 		swagEvent.eventText.x = swagEvent.x - swagEvent.eventText.width - 10;
@@ -2808,7 +2807,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 				Sys.stdout().flush();
 				syncTime = currentTime;
 			}
-		} 
+		}
 		else if (isDesktop && force) 
 		{
 			var totalSections = (PlayState.SONG != null && PlayState.SONG.notes != null) ? PlayState.SONG.notes.length : 0;
@@ -4538,7 +4537,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			// JS Engine approach: Force major GC before massive operation
 			#if sys
 			cpp.vm.Gc.run(true);
-			
+
 			// Conditional GC disabling for massive operations (JS Engine method)
 			var totalNewNotes:Int = Std.int(stepperDuplicateAmount.value) * sec.sectionNotes.length;
 			if (totalNewNotes > 1000000) {
@@ -5966,7 +5965,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		#if sys
 		cpp.vm.Gc.run(true);
 		#end
-		
+
 		var noteCount:Int = notes.length;
 		#if sys
 		// Conditional GC disabling for large charts (JS Engine method)
@@ -6000,7 +5999,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		#if sys
 		// Always re-enable GC after saving
 		cpp.vm.Gc.enable(true);
-		
+
 		// Force major garbage collection after saving
 		cpp.vm.Gc.run(true);
 		#end
