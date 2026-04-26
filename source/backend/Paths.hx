@@ -18,6 +18,13 @@ import flash.media.Sound;
 
 import haxe.Json;
 
+#if cpp
+import cpp.vm.Gc;
+#elseif hl
+import hl.Gc;
+#elseif neko
+import neko.vm.Gc;
+#end
 
 #if MODS_ALLOWED
 import backend.Mods;
@@ -35,6 +42,30 @@ class Paths
 	}
 
 	public static var dumpExclusions:Array<String> = ['assets/shared/music/freakyMenu.$SOUND_EXT'];
+
+	// JS Engine GC functions
+	@:noCompletion private inline static function _gc(major:Bool) {
+		#if (cpp || neko)
+		Gc.run(major);
+		#elseif hl
+		Gc.major();
+		#end
+	}
+
+	@:noCompletion public inline static function compress() {
+		#if cpp
+		Gc.compact();
+		#elseif hl
+		Gc.major();
+		#elseif neko
+		Gc.run(true);
+		#end
+	}
+
+	public inline static function gc(major:Bool = false, repeat:Int = 1) {
+		while(repeat-- > 0) _gc(major);
+	}
+
 	// haya I love you for the base cache dump I took to the max
 	public static function clearUnusedMemory()
 	{
@@ -49,8 +80,9 @@ class Paths
 			}
 		}
 
-		// run the garbage collector for good measure lmfao
-		System.gc();
+		// JS Engine approach: run the garbage collector for good measure lmfao
+		compress();
+		gc(true);
 	}
 
 	// define the locally tracked assets
@@ -78,6 +110,10 @@ class Paths
 		// flags everything to be cleared out next unused memory clear
 		localTrackedAssets = [];
 		#if !html5 openfl.Assets.cache.clear("songs"); #end
+
+		// JS Engine approach: force garbage collection
+		gc(true);
+		compress();
 	}
 
 	public static function freeGraphicsFromMemory()
