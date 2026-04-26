@@ -1657,7 +1657,7 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 			MemoryUtil.disable();
 		}
 		#end
-		
+
 		generatedMusic = true;
 	}
 
@@ -1768,11 +1768,14 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 
 					if (hideOverlapped > 0) {
 						iDist[availNoteData] = dist[availNoteData] - lDist[availNoteData];
-						dunceNote.visible = prevSus[availNoteData] != currSus[availNoteData] || Math.abs(iDist[availNoteData]) >= hideOverlapped;
-						if (dunceNote.visible) {
-							lDist[availNoteData] = dist[availNoteData];
-							if (ClientPrefs.data.shaders) {
-								dunceNote.rgbShader.enabled = true;
+						var shouldBeVisible = prevSus[availNoteData] != currSus[availNoteData] || Math.abs(iDist[availNoteData]) >= hideOverlapped;
+						dunceNote.visible = shouldBeVisible;
+
+						// Fix: Keep shader enabled even when hidden to prevent crashes during resize
+						if (ClientPrefs.data.shaders) {
+							dunceNote.rgbShader.enabled = true;
+							if (shouldBeVisible) {
+								lDist[availNoteData] = dist[availNoteData];
 								dunceNote.defaultRGB();
 								if (dunceNote.hitCausesMiss) {
 									dunceNote.rgbShader.r = 0xFF101010;
@@ -1780,7 +1783,7 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 									dunceNote.rgbShader.b = 0xFF990022;
 								}
 							}
-						} else dunceNote.rgbShader.enabled = false;
+						}
 					} else dunceNote.visible = true;
 
 					if (spawnNoteEvent) {
@@ -1870,14 +1873,17 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 							currSus[availNoteData] = daNote.isSustainNote;
 							iDist[availNoteData] = dist[availNoteData] - lDist[availNoteData];
 
-							daNote.visible = prevSus[availNoteData] != currSus[availNoteData] || Math.abs(iDist[availNoteData]) >= hideOverlapped;
-							if (daNote.visible) {
-								lDist[availNoteData] = dist[availNoteData];
-								if (ClientPrefs.data.shaders) {
-									daNote.rgbShader.enabled = true;
+							var shouldBeVisible = prevSus[availNoteData] != currSus[availNoteData] || Math.abs(iDist[availNoteData]) >= hideOverlapped;
+							daNote.visible = shouldBeVisible;
+
+							// Fix: Keep shader enabled even when hidden to prevent crashes during resize
+							if (ClientPrefs.data.shaders) {
+								daNote.rgbShader.enabled = true;
+								if (shouldBeVisible) {
+									lDist[availNoteData] = dist[availNoteData];
 									daNote.defaultRGB();
 								}
-							} else daNote.rgbShader.enabled = false;
+							}
 
 							prevSus[availNoteData] = currSus[availNoteData];
 						}

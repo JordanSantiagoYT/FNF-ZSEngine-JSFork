@@ -2488,11 +2488,18 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		if (estimatedNotes > 0) notes = [];
 		if (estimatedEvents > 0) events = [];
 
-		// JS-Engine OPTIMIZATION 2: Direct note creation without function call overhead
+		// PlayState approach: Load only current section and adjacent sections (memory efficient)
 		var cnt:Int = 0;
 		var sectionNoteCnt:Int = 0;
+
+		// Calculate range of sections to load (current + 2 for smooth scrolling)
+		var startSection:Int = Math.max(0, curSec - 1);
+		var endSection:Int = Math.min(PlayState.SONG.notes.length - 1, curSec + 2);
+
 		for (secNum => section in PlayState.SONG.notes)
 		{
+			if (secNum < startSection || secNum > endSection) continue; // Skip sections outside range
+
 			++cnt;
 			sectionNoteCnt = 0;
 
@@ -2506,12 +2513,12 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 				var note = sectionNotes[i];
 				if(note != null)
 				{
-					// JS-Engine: Direct inline note creation
+					// PlayState approach: Only create notes for visible sections
 					var daNoteInfo = note[1];
 					var daStrumTime = note[0];
 					var daNoteData = Std.int(daNoteInfo % GRID_COLUMNS_PER_PLAYER);
 					var gottaHitNote = (note[1] < GRID_COLUMNS_PER_PLAYER);
-					
+
 					var swagNote:MetaNote = new MetaNote(daStrumTime, daNoteData, note);
 					swagNote.mustPress = gottaHitNote;
 					swagNote.setSustainLength(note[2], cachedSectionCrochets[secNum] / 4, curZoom);
@@ -2534,7 +2541,8 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 						swagNote.setGraphicSize(GRID_SIZE);
 					else
 						swagNote.setGraphicSize(GRID_SIZE, GRID_SIZE);
-					
+
+					// Add directly to visible notes (only for current section range)
 					notes.push(swagNote);
 					++sectionNoteCnt;
 					++parsedNotes;
@@ -2542,23 +2550,30 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			}
 		}
 
+		var lastTime:Float = (cachedLen > 0) ? cachedSectionTimes[cachedLen-1] : 0;
+
 		// JS-Engine OPTIMIZATION 3: Batch create events with optimized timing
 		var eventsLen:Int = PlayState.SONG.events.length;
 		var cachedLen:Int = cachedSectionTimes.length;
-		var lastTime:Float = (cachedLen > 0) ? cachedSectionTimes[cachedLen-1] : 0;
 
 		for (i in 0...eventsLen)
 		{
 			var event = PlayState.SONG.events[i];
 			if(event != null && (cachedLen < 1 || event[0] < lastTime))
 			{
-				// JS-Engine: Create EventMetaNote with proper event data storage
-				var eventNote:EventMetaNote = new EventMetaNote(event[0], event);
+				if(event.length < 2 || event[1] == null || event[1].length <= 0) {
+					// Create minimal event data for malformed events
+					var minimalEvent:Array<Dynamic> = [event[0], []];
+					var eventNote:EventMetaNote = new EventMetaNote(event[0], minimalEvent);
+				} else {
+					// JS-Engine: Create EventMetaNote with proper event data storage
+					var eventNote:EventMetaNote = new EventMetaNote(event[0], event);
+				}
 				eventNote.x = gridBg.x;
 				eventNote.eventText.x = eventNote.x - eventNote.eventText.width - 10;
 				eventNote.scrollFactor.x = 0;
 				eventNote.active = false;
-				
+
 				// Calculate section for positioning
 				var secNum:Int = 0;
 				for (j in 1...cachedSectionTimes.length)
@@ -2601,19 +2616,13 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 	function createNote(note:Dynamic, ?secNum:Null<Int> = null)
 	{
-		trace('[ChartingState] createNote called - note: $note, secNum: $secNum');
-
 		if(secNum == null) secNum = curSec;
 		var section = PlayState.SONG.notes[secNum];
 
-		trace('[ChartingState] Section: $section, curSec: $curSec');
 
 		var daStrumTime:Float = note[0];
 		var daNoteData:Int = Std.int(note[1] % GRID_COLUMNS_PER_PLAYER);
 		var gottaHitNote:Bool = (note[1] < GRID_COLUMNS_PER_PLAYER);
-
-		trace('[ChartingState] Creating MetaNote - daStrumTime: $daStrumTime, daNoteData: $daNoteData, gottaHitNote: $gottaHitNote');
-		trace('[ChartingState] Note data array: $note');
 
 		var swagNote:MetaNote = new MetaNote(daStrumTime, daNoteData, note);
 		swagNote.mustPress = gottaHitNote;
@@ -2640,11 +2649,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 	function createEvent(event:Dynamic)
 	{
-		trace('[ChartingState] createEvent called - event: $event');
-
 		var daStrumTime:Float = event[0];
-		trace('[ChartingState] Creating EventMetaNote - daStrumTime: $daStrumTime');
-		trace('[ChartingState] Event data array: $event');
 
 		var swagEvent:EventMetaNote = new EventMetaNote(daStrumTime, event);
 		swagEvent.x = gridBg.x;
@@ -4972,7 +4977,11 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 			openfl.system.System.gc();
 			#if cpp
-			if(expectedCount > 1000000) cpp.vm.Gc.enable(false);
+			if(expectedCount > 1000000) 
+			{
+				cpp.vm.Gc.enable(false);
+				cpp.vm.Gc.enable(true);
+			}
 			#end
 
 			var oldChart:Dynamic = convertToOldFormat(PlayState.SONG);
@@ -4980,13 +4989,6 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			if(Song.chartPath != null) chartName = Song.chartPath.substr(Song.chartPath.lastIndexOf('/')).trim();
 
 			var data:String = PsychJsonPrinter.print({song: oldChart}, ['sectionNotes', 'events']);
-			#if cpp
-			if(expectedCount > 1000000)
-			{
-				cpp.vm.Gc.enable(true);
-				openfl.system.System.gc();
-			}
-			#end
 
 			fileDialog.save(chartName, data,
 				function()
@@ -5958,6 +5960,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		if (noteCount > 1000000)
 		{
 			cpp.vm.Gc.enable(false);
+			cpp.vm.Gc.enable(true);
 		}
 		#end
 
