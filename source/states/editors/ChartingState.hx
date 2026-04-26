@@ -2563,7 +2563,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			if(event != null && (cachedLen < 1 || (event[0] != null && event[0] < lastTime)))
 			{
 				var eventNote:EventMetaNote;
-				if(event.length < 2 || event[1] == null || (Std.isOfType(event[1], Array) && event[1].length <= 0)) {
+				if(event.length < 2 || event[1] == null || (Std.isOfType(event[1], Array) && cast(event[1], Array<Dynamic>).length <= 0)) {
 					// Create minimal event data for malformed events
 					var minimalEvent:Array<Dynamic> = [event[0], []];
 					eventNote = new EventMetaNote(event[0], minimalEvent);
