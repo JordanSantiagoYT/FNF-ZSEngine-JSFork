@@ -2490,18 +2490,12 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		if (estimatedNotes > 0) notes = [];
 		if (estimatedEvents > 0) events = [];
 
-		// PlayState approach: Load only current section and adjacent sections (memory efficient)
+		// JS-Engine approach: Load all notes with optimizations
 		var cnt:Int = 0;
 		var sectionNoteCnt:Int = 0;
 
-		// Calculate range of sections to load (current + 2 for smooth scrolling)
-		var startSection:Int = Std.int(Math.max(0, curSec - 1));
-		var endSection:Int = Std.int(Math.min(PlayState.SONG.notes.length - 1, curSec + 2));
-
 		for (secNum => section in PlayState.SONG.notes)
 		{
-			if (secNum < startSection || secNum > endSection) continue; // Skip sections outside range
-
 			++cnt;
 			sectionNoteCnt = 0;
 
@@ -2515,7 +2509,6 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 				var note = sectionNotes[i];
 				if(note != null)
 				{
-					// PlayState approach: Only create notes for visible sections
 					var daNoteInfo = note[1];
 					var daStrumTime = note[0];
 					var daNoteData = Std.int(daNoteInfo % GRID_COLUMNS_PER_PLAYER);
@@ -2544,7 +2537,6 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 					else
 						swagNote.setGraphicSize(0, GRID_SIZE);
 
-					// Add directly to visible notes (only for current section range)
 					notes.push(swagNote);
 					++sectionNoteCnt;
 					++parsedNotes;

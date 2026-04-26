@@ -1559,6 +1559,7 @@ class PlayState extends MusicBeatState
 					unspawnNotes.push(swagNote);
 					++sectionNoteCnt;
 					++parsedNotes;
+					trace('[NOTE GEN] Generated note: time=$spawnTime, column=$noteColumn, mustHit=$gottaHitNote, totalNotes=${unspawnNotes.length}');
 				}
 
 				var curStepCrochet:Float = 60 / daBpm * 1000 / 4.0;
@@ -1733,6 +1734,11 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 		lDist = []; dist = [];
 		lDist.resize(8); dist.resize(8);
 
+		// Debug: Show key optimization settings
+		if (totalCnt == 0) {
+			trace('[NOTE SPAWN DEBUG] Optimization settings: hideOverlapped=$hideOverlapped, limitNotes=$limitNotes, keepNotes=$keepNotes, skipSpawnNote=$skipSpawnNote, optimizeSpawnNote=$optimizeSpawnNote, showNotes=$showNotes');
+		}
+
 		if (unspawnNotes.length > totalCnt) {
 			limitCount = notes.countLiving();
 			targetNote = unspawnNotes[totalCnt];
@@ -1761,6 +1767,7 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 				if ((!noteJudge || !optimizeSpawnNote) && isCanPass) {
 					dunceNote = targetNote;
 					notes.add(dunceNote);
+					trace('[NOTE SPAWN] Spawned note: time=${dunceNote.strumTime}, column=${dunceNote.noteData}, mustHit=${dunceNote.mustPress}, visible=${dunceNote.visible}, totalVisible=${notes.countLiving()}');
 
 					strumGroup = dunceNote.mustPress ? playerStrums : opponentStrums;
 
