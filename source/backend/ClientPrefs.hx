@@ -72,7 +72,6 @@ import states.TitleState;
 	];
 
 	public var comboOffset:Array<Int> = [0, 0, 0, 0];
-	public var disableGC:Bool = false;
 	public var ratingOffset:Int = 0;
 	public var sickWindow:Float = 45.0;
 	public var goodWindow:Float = 90.0;
@@ -82,10 +81,13 @@ import states.TitleState;
 	public var discordRPC:Bool = true;
 	public var loadingScreen:Bool = true;
 	public var language:String = 'en-US';
+
+	// Custom options
 	public var zsScript:Bool = true;
 	// public var lessBotLag:Bool = false;
 
 	// H-Slice optimization settings
+	public var openDoor:String = '!';
 	public var showNotes:Bool = true;
 	public var showAfter:Bool = false;
 	public var keepNotes:Bool = true;
@@ -103,6 +105,7 @@ import states.TitleState;
 	public var spawnNoteEvent:Bool = true;
 	public var noteHitStage:Bool = true;
 	public var skipNoteEvent:Bool = true;
+	public var disableGC:Bool = false;
 }
 
 class ClientPrefs {

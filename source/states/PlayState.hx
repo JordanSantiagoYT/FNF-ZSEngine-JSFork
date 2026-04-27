@@ -347,7 +347,9 @@ class PlayState extends MusicBeatState
 
 	private var globalElapsed:Float = 0;
 
+	#if ZS_ALLOWED
 	public var zsScript:Bool = ClientPrefs.data.zsScript;
+	#end
 
 	override public function create()
 	{
@@ -1726,6 +1728,11 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 		shownRealTime = shownTime * 0.001;
 
 		isDisplay = castHold ? note.strumTime - fixedPosition < shownTime : fixedPosition > note.strumTime - shownTime;
+
+		// Debug: Show isDisplay calculation for first few notes
+		if (totalCnt < 3) {
+			trace('[INIT SPAWN #$totalCnt] noteTime=${note.strumTime}, fixedPosition=$fixedPosition, shownTime=$shownTime, castHold=$castHold, showNotes=$showNotes, isDisplay=$isDisplay');
+		}
 	}
 
 	public function noteSpawn() {
@@ -1753,7 +1760,13 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 				noteJudge = castHold ? tooLate : canBeHit;
 				timeLimit = breakTimeLimit ? true : (nanoPosition ? haxe.Timer.stamp() : haxe.Timer.stamp()) - timeout < shownRealTime;
 
+				// H-Slice approach: Use the same isCanPass logic that works in H-Slice
 				isCanPass = !skipSpawnNote || (keepNotes ? !tooLate : timeLimit);
+
+				// Debug: Show detailed spawning logic for first few notes
+				if (totalCnt < 5) {
+					trace('[SPAWN DEBUG #$totalCnt] isDisplay=$isDisplay, limitCount=$limitCount, limitNotes=$limitNotes, canBeHit=$canBeHit, tooLate=$tooLate, noteJudge=$noteJudge, timeLimit=$timeLimit, isCanPass=$isCanPass, optimizeSpawnNote=$optimizeSpawnNote');
+				}
 
 				if (showAfter) {
 					if (!showAgain && !canBeHit) {
@@ -1764,7 +1777,8 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 					}
 				}
 
-				if ((!noteJudge || !optimizeSpawnNote) && isCanPass) {
+				// Fix: Less restrictive spawning condition to prevent notes from being hidden by optimizations
+				if (isCanPass && (!optimizeSpawnNote || !noteJudge || canBeHit)) {
 					dunceNote = targetNote;
 					notes.add(dunceNote);
 					trace('[NOTE SPAWN] Spawned note: time=${dunceNote.strumTime}, column=${dunceNote.noteData}, mustHit=${dunceNote.mustPress}, visible=${dunceNote.visible}, totalVisible=${notes.countLiving()}');

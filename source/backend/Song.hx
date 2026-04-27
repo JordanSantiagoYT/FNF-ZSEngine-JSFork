@@ -167,9 +167,6 @@ class Song
 
 		try
 		{
-			// Parse and convert in one step (same as non-streaming path). Do not call getChart() here:
-			// getChart expects string song/folder names and reloads from disk; passing the parsed object
-			// stringifies the whole JSON and breaks Assets.getText with a bogus path.
 			SongJson.log = true; // Enable JSON parsing progress
 			result = parseJSON(content, songName, 'psych_v1', metadataOnly);
 			SongJson.log = false; // Disable after parsing
@@ -197,6 +194,8 @@ class Song
 				if (totalNotes > 300000) trace('Loading large chart with ' + totalNotes + ' notes');
 				else if (totalNotes > 100000) trace('Loading medium chart with ' + totalNotes + ' notes');
 				else if (totalNotes > 1000000) trace('Loading huge chart with ' + totalNotes + ' notes');
+				else if (totalNotes == 0) trace('Loading chart with no notes');
+				else if (totalNotes >= 8000000) trace('Loading giant chart with ' + totalNotes + ' notes');
 				else trace('Loading normal chart with ' + totalNotes + ' notes');
 
 				var chunkSize:Int = 5000;
