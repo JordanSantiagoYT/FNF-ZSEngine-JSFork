@@ -1724,14 +1724,15 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 		prevSus[availNoteData] = currSus[availNoteData];
 		currSus[availNoteData] = castHold;
 
-		shownTime = showNotes ? castHold ? Math.max(spawnTime / songSpeed, globalElapsed * 1000) : spawnTime / songSpeed : 0;
+		// Fix: Ensure minimum shownTime during countdown phase to prevent notes from being hidden
+		shownTime = showNotes ? castHold ? Math.max(spawnTime / songSpeed, Math.max(globalElapsed * 1000, 2000)) : Math.max(spawnTime / songSpeed, 2000) : 0;
 		shownRealTime = shownTime * 0.001;
 
 		isDisplay = castHold ? note.strumTime - fixedPosition < shownTime : fixedPosition > note.strumTime - shownTime;
 
 		// Debug: Show isDisplay calculation for first few notes
 		if (totalCnt < 3) {
-			trace('[INIT SPAWN #$totalCnt] noteTime=${note.strumTime}, fixedPosition=$fixedPosition, shownTime=$shownTime, castHold=$castHold, showNotes=$showNotes, isDisplay=$isDisplay');
+			trace('[INIT SPAWN #$totalCnt] noteTime=${note.strumTime}, fixedPosition=$fixedPosition, shownTime=$shownTime, castHold=$castHold, showNotes=$showNotes, globalElapsed=$globalElapsed, songSpeed=$songSpeed, isDisplay=$isDisplay');
 		}
 	}
 
@@ -2111,6 +2112,9 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 
 	override public function update(elapsed:Float)
 	{
+		// Fix: Update globalElapsed for proper shownTime calculation
+		globalElapsed += elapsed * 1000;
+
 		if(!inCutscene && !paused && !freezeCamera) {
 			FlxG.camera.followLerp = 0.04 * cameraSpeed * playbackRate;
 			var idleAnim:Bool = (boyfriend.getAnimationName().startsWith('idle') || boyfriend.getAnimationName().startsWith('danceLeft') || boyfriend.getAnimationName().startsWith('danceRight'));

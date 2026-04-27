@@ -2490,7 +2490,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		if (estimatedNotes > 0) notes = [];
 		if (estimatedEvents > 0) events = [];
 
-		// JS-Engine approach: Load all notes with optimizations
+		// JS-Engine approach: Load all notes with aggressive memory management
 		var cnt:Int = 0;
 		var sectionNoteCnt:Int = 0;
 
@@ -2501,6 +2501,13 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 			// Show progress at start of each section
 			showProgress(false);
+
+			// Aggressive GC every 50 sections to prevent memory buildup
+			if (cnt % 50 == 0) {
+				#if sys
+				cpp.vm.Gc.run(true);
+				#end
+			}
 
 			var sectionNotes = section.sectionNotes;
 			var len:Int = sectionNotes.length;

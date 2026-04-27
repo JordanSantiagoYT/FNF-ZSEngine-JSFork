@@ -111,10 +111,11 @@ class FPSCounter extends TextField
 				return ::String("Unknown");
 		}
 	')
-	#elseif (ios || mac)
+	#elseif (ios || mac || linux)
 	@:functionCode('
-		const NXArchInfo *archInfo = NXGetLocalArchInfo();
-    	return ::String(archInfo == NULL ? "Unknown" : archInfo->name);
+		struct utsname osInfo{};
+		uname(&osInfo);
+		return ::String(osInfo.machine);
 	')
 	#else
 	@:functionCode('
