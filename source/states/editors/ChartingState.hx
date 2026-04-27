@@ -2511,33 +2511,44 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 			var sectionNotes = section.sectionNotes;
 			var len:Int = sectionNotes.length;
+			// OPTIMIZATION: Pre-calculate section values to reduce per-note calculations
+			var sectionCrochet:Float = cachedSectionCrochets[secNum] / 4;
+			var gfSectionVal:Bool = section.gfSection;
+			var mustHitSectionVal:Bool = section.mustHitSection;
+			var defaultTypes:Array<String> = Note.defaultNoteTypes;
+
 			for (i in 0...len)
 			{
 				var note = sectionNotes[i];
 				if(note != null)
 				{
-					var daNoteInfo = note[1];
-					var daStrumTime = note[0];
-					var daNoteData = Std.int(daNoteInfo % GRID_COLUMNS_PER_PLAYER);
-					var gottaHitNote = (note[1] < GRID_COLUMNS_PER_PLAYER);
+					// OPTIMIZATION: Cache note data to avoid repeated array access
+					var noteInfo = note[1];
+					var strumTime = note[0];
+					var noteData = Std.int(noteInfo % GRID_COLUMNS_PER_PLAYER);
+					var gottaHitNote = (noteInfo < GRID_COLUMNS_PER_PLAYER);
 
-					var swagNote:MetaNote = new MetaNote(daStrumTime, daNoteData, note);
+					// OPTIMIZATION: Inline MetaNote creation with cached values
+					var swagNote:MetaNote = new MetaNote(strumTime, noteData, note);
 					swagNote.mustPress = gottaHitNote;
-					swagNote.setSustainLength(note[2], cachedSectionCrochets[secNum] / 4, curZoom);
-					swagNote.gfNote = (section.gfSection && gottaHitNote == section.mustHitSection);
-					var noteTypeValue:String = '';
-					if (!Std.isOfType(note[3], String)) {
-						var noteTypeIndex:Int = Std.int(note[3]);
-						if (noteTypeIndex >= 0 && noteTypeIndex < Note.defaultNoteTypes.length) {
-							noteTypeValue = Note.defaultNoteTypes[noteTypeIndex];
-						}
-					} else {
-						noteTypeValue = Std.string(note[3]);
-					}
+					swagNote.setSustainLength(note[2], sectionCrochet, curZoom);
+					swagNote.gfNote = (gfSectionVal && gottaHitNote == mustHitSectionVal);
+
+					// OPTIMIZATION: Simplified note type handling
+					var noteTypeValue:String = Std.isOfType(note[3], String) ? 
+						Std.string(note[3]) : 
+						((note[3] >= 0 && note[3] < defaultTypes.length) ? defaultTypes[Std.int(note[3])] : '');
+
 					swagNote.noteType = noteTypeValue;
 					swagNote.scrollFactor.x = 0;
-					var txt:FlxText = swagNote.findNoteTypeText(swagNote.noteType != null ? noteTypes.indexOf(swagNote.noteType) : 0);
-					if(txt != null) txt.visible = showNoteTypeLabels;
+
+					// OPTIMIZATION: Only find text if labels are shown
+					if(showNoteTypeLabels) {
+						var txt:FlxText = swagNote.findNoteTypeText(swagNote.noteType != null ? noteTypes.indexOf(swagNote.noteType) : 0);
+						if(txt != null) txt.visible = true;
+					}
+
+					// OPTIMIZATION: Simplified graphic sizing
 					swagNote.updateHitbox();
 					if(swagNote.width > swagNote.height)
 						swagNote.setGraphicSize(GRID_SIZE);
@@ -2651,7 +2662,15 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 	{
 		var daStrumTime:Float = event[0];
 
-		var swagEvent:EventMetaNote = new EventMetaNote(daStrumTime, event);
+		// Fix: Use proper EventMetaNote constructor to prevent songData padding errors
+		var swagEvent:EventMetaNote;
+		if(event.length < 2 || event[1] == null || (Std.isOfType(event[1], Array) && cast(event[1], Array<Dynamic>).length <= 0)) {
+			var minimalEvent:Array<Dynamic> = [event[0], []];
+			swagEvent = new EventMetaNote(event[0], minimalEvent);
+		} else {
+			swagEvent = new EventMetaNote(event[0], event);
+		}
+
 		swagEvent.x = gridBg.x;
 		swagEvent.eventText.x = swagEvent.x - swagEvent.eventText.width - 10;
 		swagEvent.scrollFactor.x = 0;
@@ -2898,8 +2917,9 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		if(skipFullRender)
 		{
 			var visibleTimeRange:Float = 5000;
-			var minVisibleTime:Float = Conductor.songPosition - visibleTimeRange;
-			var maxVisibleTime:Float = Conductor.songPosition + visibleTimeRange;
+			// Fix: Use current section time range instead of song position to ensure notes are visible
+			var minVisibleTime:Float = minTime;
+			var maxVisibleTime:Float = maxTime;
 
 			for (num => note in notes)
 			{
@@ -2914,11 +2934,13 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 					if(note.strumTime >= minVisibleTime && note.strumTime <= maxVisibleTime)
 					{
 						note.alpha = (note.strumTime >= Conductor.songPosition) ? 1 : 0.6;
+						note.visible = true; // CRITICAL FIX: Make notes visible
 						if(note.hasSustain) note.updateSustainToZoom(cachedSectionCrochets[curSec] / 4, curZoom);
 					}
 					else
 					{
 						note.alpha = 0.4; // Reduced visibility but still visible
+						note.visible = true; // CRITICAL FIX: Make notes visible
 						if(note.hasSustain) note.updateSustainToZoom(cachedSectionCrochets[curSec] / 4, curZoom);
 					}
 				}
@@ -2933,6 +2955,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 					if(!firstNote) sectionFirstNoteID = num;
 					curRenderedNotes.add(note);
 					note.alpha = (note.strumTime >= Conductor.songPosition) ? 1 : 0.6;
+					note.visible = true; // CRITICAL FIX: Make notes visible
 					if(note.hasSustain) note.updateSustainToZoom(cachedSectionCrochets[curSec] / 4, curZoom);
 				}
 			}

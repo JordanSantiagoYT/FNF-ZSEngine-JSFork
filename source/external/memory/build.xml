@@ -3,5 +3,6 @@
 	
 	<files id='haxe'>
 		<compilervalue name="-I" value="${PROJECT_DIR}/include/" />
+		<compilervalue name="-D" value="HXCPP_GC_BIG_BLOCKS" />
 	</files>
 </xml>

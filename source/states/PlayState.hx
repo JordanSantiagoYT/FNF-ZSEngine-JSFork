@@ -1724,8 +1724,12 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 		prevSus[availNoteData] = currSus[availNoteData];
 		currSus[availNoteData] = castHold;
 
-		// Fix: Ensure minimum shownTime during countdown phase to prevent notes from being hidden
-		shownTime = showNotes ? castHold ? Math.max(spawnTime / songSpeed, Math.max(globalElapsed * 1000, 2000)) : Math.max(spawnTime / songSpeed, 2000) : 0;
+		// Fix: Ensure minimum shownTime with songSpeed multiplier for dynamic scaling
+		var baseShownTime:Float = 2000; // Base time in milliseconds
+		var speedMultiplier:Float = Math.max(1, songSpeed / 2); // Scale with song speed, minimum 1x
+		var minimumShownTime:Float = baseShownTime * speedMultiplier;
+
+		shownTime = showNotes ? castHold ? Math.max(spawnTime / songSpeed, Math.max(globalElapsed * 1000, minimumShownTime)) : Math.max(spawnTime / songSpeed, minimumShownTime) : 0;
 		shownRealTime = shownTime * 0.001;
 
 		isDisplay = castHold ? note.strumTime - fixedPosition < shownTime : fixedPosition > note.strumTime - shownTime;
