@@ -737,7 +737,7 @@ class PlayState extends MusicBeatState
 		if(eventNotes.length > 0)
 		{
 			for (event in eventNotes) event.strumTime -= eventEarlyTrigger(event);
-			eventNotes.sort((event1, event2) -> FlxSort.byValues(FlxSort.ASCENDING, event1.strumTime, event2.strumTime));
+			eventNotes.sort(cast sortByTime);
 		}
 
 		startCallback();
@@ -1649,7 +1649,7 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 			for (i in 0...event[1].length)
 				makeEvent(event, i);
 
-		unspawnNotes.sort((note1, note2) -> FlxSort.byValues(FlxSort.ASCENDING, note1.strumTime, note2.strumTime));
+		unspawnNotes.sort(cast sortByTime);
 		trace('[FAST NOTE PARSING] Generated ${unspawnNotes.length} Notes for song "${SONG.song}"');
 		trace('Loading ${SONG.song} (${unspawnNotes.length} notes)');
 

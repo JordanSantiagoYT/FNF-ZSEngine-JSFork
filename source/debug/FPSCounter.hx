@@ -6,7 +6,16 @@ import openfl.text.TextFormat;
 import openfl.system.System;
 import external.memory.Memory;
 import lime.system.System as LimeSystem;
-import backend.MemoryUtil;
+
+#if cpp
+#if windows
+@:cppFileCode('#include <windows.h>')
+#elseif (ios || mac)
+@:cppFileCode('#include <mach-o/arch.h>')
+#else
+@:headerInclude('sys/utsname.h')
+#end
+#end
 
 /**
 	The FPS class provides an easy-to-use monitor to display
@@ -111,17 +120,14 @@ class FPSCounter extends TextField
 				return ::String("Unknown");
 		}
 	')
-	#elseif (ios || mac || linux)
+	#elseif (ios || mac)
 	@:functionCode('
-		#include <sys/utsname.h>
-		struct utsname osInfo;
-		uname(&osInfo);
-		return ::String(osInfo.machine);
+		const NXArchInfo *archInfo = NXGetLocalArchInfo();
+		return ::String(archInfo == NULL ? "Unknown" : archInfo->name);
 	')
 	#else
 	@:functionCode('
-		#include <sys/utsname.h>
-		struct utsname osInfo;
+		struct utsname osInfo{};
 		uname(&osInfo);
 		return ::String(osInfo.machine);
 	')
