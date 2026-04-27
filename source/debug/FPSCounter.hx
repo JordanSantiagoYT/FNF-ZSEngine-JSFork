@@ -6,6 +6,7 @@ import openfl.text.TextFormat;
 import openfl.system.System;
 import external.memory.Memory;
 import lime.system.System as LimeSystem;
+import backend.MemoryUtil;
 
 #if cpp
 #if windows
