@@ -113,13 +113,15 @@ class FPSCounter extends TextField
 	')
 	#elseif (ios || mac || linux)
 	@:functionCode('
-		struct utsname osInfo{};
+		#include <sys/utsname.h>
+		struct utsname osInfo;
 		uname(&osInfo);
 		return ::String(osInfo.machine);
 	')
 	#else
 	@:functionCode('
-		struct utsname osInfo{};
+		#include <sys/utsname.h>
+		struct utsname osInfo;
 		uname(&osInfo);
 		return ::String(osInfo.machine);
 	')
