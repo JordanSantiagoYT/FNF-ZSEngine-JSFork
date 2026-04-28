@@ -219,6 +219,7 @@ class Main extends Sprite
 	// Modified and improved by SuperHero2010 for ZS Engine
 	// very cool person for real they don't get enough credit for their work
 	#if CRASH_HANDLER
+	/* Old function if you want to show the exact line of code that caused the crash, but it won't work
 	function getSourceLine(filePath:String, lineNumber:Int):String
 	{
 		try
@@ -255,7 +256,6 @@ class Main extends Sprite
 			if (lineNumber - 1 >= 0 && lineNumber - 1 < lines.length)
 			{
 				var line = lines[lineNumber - 1];
-				// Trim trailing spaces but keep leading spaces for indentation
 				var trimmedLine = rtrim(line);
 				return "     -> " + trimmedLine;
 			}
@@ -273,6 +273,7 @@ class Main extends Sprite
 		while (i >= 0 && str.charAt(i) == ' ') i--;
 		return str.substr(0, i + 1);
 	}
+	*/
 
 	function onCrash(e:UncaughtErrorEvent):Void
 	{
@@ -280,14 +281,6 @@ class Main extends Sprite
 		var path:String;
 		var callStack:Array<StackItem> = CallStack.exceptionStack(true);
 		var dateNow:String = Date.now().toString();
-
-		// DEBUG: Print raw stack to console first
-		Sys.println("=== RAW STACK TRACE (DEBUG) ===");
-		for (stackItem in callStack)
-		{
-			Sys.println("  " + stackItem);
-		}
-		Sys.println("================================");
 
 		var memInfo:String = "";
 		#if cpp
