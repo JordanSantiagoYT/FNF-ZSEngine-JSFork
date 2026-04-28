@@ -1713,8 +1713,23 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 		return 0;
 	}
 
-	public static function sortByTime(id:Int, note1:Note, note2:Note):Int
+	public static function sortByTime(id:Int, note1:Note, note2:Note):Int {
+		// Fix: Add null checks to prevent null reference crashes
+		if (note1 == null && note2 == null) {
+			trace('[SORTBYTIME DEBUG] Both notes are null at index $id');
+			return 0;
+		}
+		if (note1 == null) {
+			trace('[SORTBYTIME DEBUG] note1 is null at index $id, note2 time=${note2.strumTime}');
+			return 1;
+		}
+		if (note2 == null) {
+			trace('[SORTBYTIME DEBUG] note2 is null at index $id, note1 time=${note1.strumTime}');
+			return -1;
+		}
+
 		return FlxSort.byValues(FlxSort.ASCENDING, note1.strumTime, note2.strumTime);
+	}
 
 	// H-Slice functions
 	inline function initSpawnInfo(note:Note) {
