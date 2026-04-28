@@ -281,6 +281,14 @@ class Main extends Sprite
 		var callStack:Array<StackItem> = CallStack.exceptionStack(true);
 		var dateNow:String = Date.now().toString();
 
+		// DEBUG: Print raw stack to console first
+		Sys.println("=== RAW STACK TRACE (DEBUG) ===");
+		for (stackItem in callStack)
+		{
+			Sys.println("  " + stackItem);
+		}
+		Sys.println("================================");
+
 		var memInfo:String = "";
 		#if cpp
 		var memUsage = cpp.vm.Gc.memUsage();
@@ -321,16 +329,7 @@ class Main extends Sprite
 		for (stackItem in callStack)
 		{
 			stackIndex++;
-			switch (stackItem)
-			{
-				case FilePos(s, file, line, column):
-					errMsg += '[$stackIndex] $file (line $line:$column)\n';
-					var sourceLine = getSourceLine(file, line);
-					if (sourceLine != "")
-						errMsg += sourceLine + "\n";
-				case _:
-					errMsg += '[$stackIndex] $stackItem\n';
-			}
+			errMsg += '[$stackIndex] $stackItem\n';
 		}
 
 		errMsg += "\n=== ERROR ===\n";
