@@ -281,23 +281,13 @@ class Main extends Sprite
 		var callStack:Array<StackItem> = CallStack.exceptionStack(true);
 		var dateNow:String = Date.now().toString();
 
-		// Memory information
 		var memInfo:String = "";
 		#if cpp
 		var memUsage = cpp.vm.Gc.memUsage();
-		var memTotal = cpp.vm.Gc.totalMemory();
 		memInfo = "\n\n=== MEMORY INFO ===\n";
 		memInfo += "Memory Usage: " + (memUsage / (1024 * 1024)) + " MB\n";
-		memInfo += "Total Memory: " + (memTotal / (1024 * 1024)) + " MB\n";
-
-		// Get GC stats if available
-		try {
-			var gcStats = cpp.vm.Gc.getStats();
-			memInfo += "GC Stats: " + gcStats + "\n";
-		} catch(e2:Dynamic) {}
 		#end
 
-		// Chart information
 		var chartInfo:String = "";
 		if (PlayState.SONG != null)
 		{
@@ -316,14 +306,12 @@ class Main extends Sprite
 			}
 		}
 
-		// Format date for filename
 		dateNow = dateNow.replace(" ", "_");
 		dateNow = dateNow.replace(":", "'");
 		dateNow = dateNow.replace("/", "-");
 
 		path = "./crash/" + "ZSEngine_" + dateNow + ".txt";
 
-		// Build error message
 		errMsg += "=== ZS ENGINE CRASH REPORT ===\n";
 		errMsg += "Date: " + Date.now().toString() + "\n";
 		errMsg += "Platform: " + Sys.systemName() + "\n";
@@ -337,17 +325,10 @@ class Main extends Sprite
 			{
 				case FilePos(s, file, line, column):
 					errMsg += '[$stackIndex] $file (line $line:$column)\n';
-					// Show the actual source code line
 					var sourceLine = getSourceLine(file, line);
 					if (sourceLine != "")
 						errMsg += sourceLine + "\n";
-				case Method(s, className, method):
-					errMsg += '[$stackIndex] $className.$method()\n';
-				case LocalFunction(s, functionName):
-					errMsg += '[$stackIndex] $functionName()\n';
-				case GlobalFunction(s, functionName):
-					errMsg += '[$stackIndex] $functionName()\n';
-				default:
+				case _:
 					errMsg += '[$stackIndex] $stackItem\n';
 			}
 		}
