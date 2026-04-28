@@ -216,8 +216,64 @@ class Main extends Sprite
 	}
 
 	// Code was entirely made by sqirra-rng for their fnf engine named "Izzy Engine", big props to them!!!
+	// Modified and improved by SuperHero2010 for ZS Engine
 	// very cool person for real they don't get enough credit for their work
 	#if CRASH_HANDLER
+	function getSourceLine(filePath:String, lineNumber:Int):String
+	{
+		try
+		{
+			// Remove leading ./ or ../ from path if present
+			var cleanPath = filePath;
+			if (cleanPath.startsWith("./")) cleanPath = cleanPath.substr(2);
+			if (cleanPath.startsWith("../")) cleanPath = cleanPath.substr(3);
+
+			var possiblePaths = [
+				cleanPath,
+				"src/" + cleanPath,
+				"source/" + cleanPath,
+				"../" + cleanPath,
+				"./" + cleanPath
+			];
+
+			var foundPath:String = null;
+			for (path in possiblePaths)
+			{
+				if (FileSystem.exists(path))
+				{
+					foundPath = path;
+					break;
+				}
+			}
+
+			if (foundPath == null)
+				return "     [Source file not found: " + filePath + "]";
+
+			var content = sys.io.File.getContent(foundPath);
+			var lines = content.split("\n");
+
+			if (lineNumber - 1 >= 0 && lineNumber - 1 < lines.length)
+			{
+				var line = lines[lineNumber - 1];
+				// Trim trailing spaces but keep leading spaces for indentation
+				var trimmedLine = rtrim(line);
+				return "     -> " + trimmedLine;
+			}
+			return "     [Line " + lineNumber + " not found]";
+		}
+		catch(e:Dynamic)
+		{
+			return "     [Could not read source: " + e + "]";
+		}
+	}
+
+	function rtrim(str:String):String
+	{
+		var i = str.length - 1;
+		while (i >= 0 && str.charAt(i) == ' ') i--;
+		return str.substr(0, i + 1);
+	}
+
 	function onCrash(e:UncaughtErrorEvent):Void
 	{
 		var errMsg:String = "";
@@ -225,42 +281,113 @@ class Main extends Sprite
 		var callStack:Array<StackItem> = CallStack.exceptionStack(true);
 		var dateNow:String = Date.now().toString();
 
-		dateNow = dateNow.replace(" ", "_");
-		dateNow = dateNow.replace(":", "'");
+		// Memory information
+		var memInfo:String = "";
+		#if cpp
+		var memUsage = cpp.vm.Gc.memUsage();
+		var memTotal = cpp.vm.Gc.totalMemory();
+		memInfo = "\n\n=== MEMORY INFO ===\n";
+		memInfo += "Memory Usage: " + (memUsage / (1024 * 1024)) + " MB\n";
+		memInfo += "Total Memory: " + (memTotal / (1024 * 1024)) + " MB\n";
 
-		path = "./crash/" + "ZSEngine_" + dateNow + ".txt";
+		// Get GC stats if available
+		try {
+			var gcStats = cpp.vm.Gc.getStats();
+			memInfo += "GC Stats: " + gcStats + "\n";
+		} catch(e2:Dynamic) {}
+		#end
 
-		for (stackItem in callStack)
+		// Chart information
+		var chartInfo:String = "";
+		if (PlayState.SONG != null)
 		{
-			switch (stackItem)
+			chartInfo = "\n\n=== CHART INFO ===\n";
+			chartInfo += "Song: " + PlayState.SONG.song + "\n";
+			if (PlayState.SONG.notes != null)
 			{
-				case FilePos(s, file, line, column):
-					errMsg += file + " (line " + line + ")\n";
-				default:
-					Sys.println(stackItem);
+				var totalNotes:Int = 0;
+				for (section in PlayState.SONG.notes)
+				{
+					if (section != null && section.sectionNotes != null)
+						totalNotes += section.sectionNotes.length;
+				}
+				chartInfo += "Total Notes: " + totalNotes + "\n";
+				chartInfo += "Total Sections: " + PlayState.SONG.notes.length + "\n";
 			}
 		}
 
-		errMsg += "\nUncaught Error: " + e.error;
-		// remove if you're modding and want the crash log message to contain the link
-		// please remember to actually modify the link for the github page to report the issues to.
+		// Format date for filename
+		dateNow = dateNow.replace(" ", "_");
+		dateNow = dateNow.replace(":", "'");
+		dateNow = dateNow.replace("/", "-");
+
+		path = "./crash/" + "ZSEngine_" + dateNow + ".txt";
+
+		// Build error message
+		errMsg += "=== ZS ENGINE CRASH REPORT ===\n";
+		errMsg += "Date: " + Date.now().toString() + "\n";
+		errMsg += "Platform: " + Sys.systemName() + "\n";
+		errMsg += "\n=== STACK TRACE ===\n";
+
+		var stackIndex:Int = 0;
+		for (stackItem in callStack)
+		{
+			stackIndex++;
+			switch (stackItem)
+			{
+				case FilePos(s, file, line, column):
+					errMsg += '[$stackIndex] $file (line $line:$column)\n';
+					// Show the actual source code line
+					var sourceLine = getSourceLine(file, line);
+					if (sourceLine != "")
+						errMsg += sourceLine + "\n";
+				case Method(s, className, method):
+					errMsg += '[$stackIndex] $className.$method()\n';
+				case LocalFunction(s, functionName):
+					errMsg += '[$stackIndex] $functionName()\n';
+				case GlobalFunction(s, functionName):
+					errMsg += '[$stackIndex] $functionName()\n';
+				default:
+					errMsg += '[$stackIndex] $stackItem\n';
+			}
+		}
+
+		errMsg += "\n=== ERROR ===\n";
+		errMsg += "Uncaught Error: " + e.error + "\n";
+
+		errMsg += memInfo;
+		errMsg += chartInfo;
+
+		errMsg += "\n=== CRASH HANDLER INFO ===\n";
+		errMsg += "Original crash handler by: sqirra-rng (Izzy Engine)\n";
+		errMsg += "Modified and improved by: SuperHero2010 (ZS Engine)\n";
+
 		#if officialBuild
-		errMsg += "\nPlease report this error to the GitHub page: https://github.com/SuperHero2010/FNF-ZSEngine/issues";
+		errMsg += "\nPlease report this error to the GitHub page: https://github.com/SuperHero2010/FNF-ZSEngine/issues\n";
 		#end
-		errMsg += "\n\n> Crash Handler written by: sqirra-rng";
 
 		if (!FileSystem.exists("./crash/"))
 			FileSystem.createDirectory("./crash/");
 
-		File.saveContent(path, errMsg + "\n");
+		try {
+			File.saveContent(path, errMsg);
+			Sys.println("Crash dump saved in " + Path.normalize(path));
+		} catch(saveError:Dynamic) {
+			Sys.println("Failed to save crash dump: " + saveError);
+		}
 
 		Sys.println(errMsg);
-		Sys.println("Crash dump saved in " + Path.normalize(path));
 
-		Application.current.window.alert(errMsg, "Error!");
+		#if !html5
+		try {
+			Application.current.window.alert("ZSEngine has crashed!\n\nCrash log saved to:\n" + Path.normalize(path) + "\n\nPlease report this error if you continue to experience issues.", "ZS Engine - Crash");
+		} catch(alertError:Dynamic) {}
+		#end
+
 		#if DISCORD_ALLOWED
 		DiscordClient.shutdown();
 		#end
+
 		Sys.exit(1);
 	}
 	#end
