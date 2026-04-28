@@ -219,59 +219,73 @@ class Main extends Sprite
 	// Modified and improved by SuperHero2010 for ZS Engine
 	// very cool person for real they don't get enough credit for their work
 	#if CRASH_HANDLER
-	function getSourceLine(filePath:String, lineNumber:Int):String
+	function findHaxeSourceFile(fileName:String):String
+	{
+		var searchPaths = [
+			fileName,
+			"source/" + fileName,
+			"src/" + fileName,
+			"../source/" + fileName,
+			"./source/" + fileName,
+			"source/states/" + fileName.split("/").pop(),
+			"states/" + fileName.split("/").pop()
+		];
+
+		for (path in searchPaths)
+		{
+			if (FileSystem.exists(path))
+				return path;
+		}
+
+		function searchDir(dir:String, target:String):String
+		{
+			if (!FileSystem.exists(dir)) return null;
+			var files = FileSystem.readDirectory(dir);
+			for (file in files)
+			{
+				var full = dir + "/" + file;
+				if (FileSystem.isDirectory(full))
+				{
+					var result = searchDir(full, target);
+					if (result != null) return result;
+				}
+				else if (file == target)
+				{
+					return full;
+				}
+			}
+			return null;
+		}
+
+		var targetFile = fileName.split("/").pop();
+		return searchDir("source", targetFile);
+	}
+
+	function getSourceLineFromFile(filePath:String, lineNumber:Int):String
 	{
 		try
 		{
-			// Remove leading ./ or ../ from path if present
-			var cleanPath = filePath;
-			if (cleanPath.startsWith("./")) cleanPath = cleanPath.substr(2);
-			if (cleanPath.startsWith("../")) cleanPath = cleanPath.substr(3);
-
-			var possiblePaths = [
-				cleanPath,
-				"src/" + cleanPath,
-				"source/" + cleanPath,
-				"../" + cleanPath,
-				"./" + cleanPath
-			];
-
-			var foundPath:String = null;
-			for (path in possiblePaths)
-			{
-				if (FileSystem.exists(path))
-				{
-					foundPath = path;
-					break;
-				}
-			}
-
-			if (foundPath == null)
+			var haxeFile = findHaxeSourceFile(filePath);
+			if (haxeFile == null)
 				return "     [Source file not found: " + filePath + "]";
 
-			var content = sys.io.File.getContent(foundPath);
+			var content = sys.io.File.getContent(haxeFile);
 			var lines = content.split("\n");
 
-			if (lineNumber - 1 >= 0 && lineNumber - 1 < lines.length)
+			if (lineNumber >= 1 && lineNumber <= lines.length)
 			{
 				var line = lines[lineNumber - 1];
-				// Trim trailing spaces but keep leading spaces for indentation
-				var trimmedLine = rtrim(line);
-				return "     -> " + trimmedLine;
+				var trimmed = line;
+				while (trimmed.endsWith(" ")) trimmed = trimmed.substr(0, trimmed.length - 1);
+				trimmed = trimmed.replace("\t", "    ");
+				return "     -> " + trimmed;
 			}
-			return "     [Line " + lineNumber + " not found]";
+			return "     [Line " + lineNumber + " out of range (file has " + lines.length + " lines)]";
 		}
 		catch(e:Dynamic)
 		{
-			return "     [Could not read source: " + e + "]";
+			return "     [Error reading source: " + e + "]";
 		}
-	}
-
-	function rtrim(str:String):String
-	{
-		var i = str.length - 1;
-		while (i >= 0 && str.charAt(i) == ' ') i--;
-		return str.substr(0, i + 1);
 	}
 
 	function onCrash(e:UncaughtErrorEvent):Void
@@ -280,14 +294,6 @@ class Main extends Sprite
 		var path:String;
 		var callStack:Array<StackItem> = CallStack.exceptionStack(true);
 		var dateNow:String = Date.now().toString();
-
-		// DEBUG: Print raw stack to console first
-		Sys.println("=== RAW STACK TRACE (DEBUG) ===");
-		for (stackItem in callStack)
-		{
-			Sys.println("  " + stackItem);
-		}
-		Sys.println("================================");
 
 		var memInfo:String = "";
 		#if cpp
@@ -323,13 +329,60 @@ class Main extends Sprite
 		errMsg += "=== ZS ENGINE CRASH REPORT ===\n";
 		errMsg += "Date: " + Date.now().toString() + "\n";
 		errMsg += "Platform: " + Sys.systemName() + "\n";
-		errMsg += "\n=== STACK TRACE ===\n";
+		errMsg += "\n=== STACK TRACE WITH CODE ===\n";
 
 		var stackIndex:Int = 0;
 		for (stackItem in callStack)
 		{
 			stackIndex++;
-			errMsg += '[$stackIndex] $stackItem\n';
+			var itemStr = Std.string(stackItem);
+
+			if (itemStr.startsWith("FilePos"))
+			{
+				var fileStart = -1;
+				var commaCount = 0;
+				var filePath = "";
+				var lineNum = "";
+
+				var parts = itemStr.split(",");
+				if (parts.length >= 3)
+				{
+					for (i in 0...parts.length)
+					{
+						if (parts[i].indexOf("Method") != -1) continue;
+						if (parts[i].indexOf("FilePos") != -1) continue;
+
+						if (parts[i].indexOf(".hx") != -1)
+						{
+							filePath = parts[i];
+						}
+						else if (Std.parseInt(parts[i]) != null)
+						{
+							lineNum = parts[i];
+						}
+					}
+
+					filePath = StringTools.trim(filePath);
+					if (filePath.startsWith("'")) filePath = filePath.substr(1);
+					if (filePath.endsWith("'")) filePath = filePath.substr(0, filePath.length - 1);
+
+					errMsg += "\n[$stackIndex] $filePath:$lineNum\n";
+
+					if (filePath != "" && lineNum != "" && lineNum != "null")
+					{
+						var sourceLine = getSourceLineFromFile(filePath, Std.parseInt(lineNum));
+						errMsg += sourceLine + "\n";
+					}
+				}
+				else
+				{
+					errMsg += "\n[$stackIndex] $itemStr\n";
+				}
+			}
+			else
+			{
+				errMsg += "\n[$stackIndex] $itemStr\n";
+			}
 		}
 
 		errMsg += "\n=== ERROR ===\n";
