@@ -2443,6 +2443,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			if(note == null) continue;
 
 			var inCurrentSection = (note.strumTime >= minTime && note.strumTime < maxTime);
+			trace('[CHARTING VISIBILITY] Note time=${note.strumTime}, minTime=$minTime, maxTime=$maxTime, inCurrentSection=$inCurrentSection, visible=${note.visible}');
 			note.visible = inCurrentSection;
 
 			if (inCurrentSection && !note.isEvent)
@@ -2912,6 +2913,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 		var minTime:Float = getMinNoteTime(curSec);
 		var maxTime:Float = getMaxNoteTime(curSec);
+		trace('[SOFT RELOAD DEBUG] Section $curSec: minTime=$minTime, maxTime=$maxTime, totalNotes=${notes.length}');
 		inline function curSecFilter(note:MetaNote)
 		{
 			return (note.strumTime >= minTime && note.strumTime < maxTime);
@@ -2947,12 +2949,14 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 					{
 						note.alpha = (note.strumTime >= Conductor.songPosition) ? 1 : 0.6;
 						note.visible = true; // CRITICAL FIX: Make notes visible
+						trace('[RENDER DEBUG] Note ${note.strumTime} in visible range [$minVisibleTime, $maxVisibleTime], visible=true');
 						if(note.hasSustain) note.updateSustainToZoom(cachedSectionCrochets[curSec] / 4, curZoom);
 					}
 					else
 					{
 						note.alpha = 0.4; // Reduced visibility but still visible
 						note.visible = true; // CRITICAL FIX: Make notes visible
+						trace('[RENDER DEBUG] Note ${note.strumTime} outside visible range [$minVisibleTime, $maxVisibleTime], visible=true');
 						if(note.hasSustain) note.updateSustainToZoom(cachedSectionCrochets[curSec] / 4, curZoom);
 					}
 				}

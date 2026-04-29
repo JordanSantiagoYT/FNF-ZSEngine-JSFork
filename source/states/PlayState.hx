@@ -1545,7 +1545,9 @@ class PlayState extends MusicBeatState
 
 				// JS Engine approach - no ghost note detection for simplicity
 
+				trace('[NOTE GEN DEBUG] Creating regular note: time=$spawnTime, column=$noteColumn, oldNote=${oldNote != null ? "valid" : "NULL"}');
 				var swagNote:Note = new Note(spawnTime, noteColumn, oldNote);
+				trace('[NOTE GEN DEBUG] Created swagNote: ${swagNote != null ? "valid" : "NULL"}');
 				var isAlt: Bool = section.altAnim && !gottaHitNote;
 				swagNote.gfNote = (section.gfSection && gottaHitNote == section.mustHitSection);
 				swagNote.animSuffix = isAlt ? "-alt" : "";
@@ -1557,7 +1559,8 @@ class PlayState extends MusicBeatState
 
 				// H-Slice optimization: Apply note limit
 				if (limitNotes == 0) limitNotes = 2147483647;
-				if (unspawnNotes.length < limitNotes) {
+				// Fix: Don't push null regular notes to array
+				if (swagNote != null && unspawnNotes.length < limitNotes) {
 					unspawnNotes.push(swagNote);
 					++sectionNoteCnt;
 					++parsedNotes;
