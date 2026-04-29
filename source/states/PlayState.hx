@@ -1572,7 +1572,9 @@ class PlayState extends MusicBeatState
 					{
 						oldNote = unspawnNotes[Std.int(unspawnNotes.length - 1)];
 
+						trace('[SUSTAIN DEBUG] Creating sustain #$susNote: oldNote=${oldNote != null ? "valid" : "NULL"}, unspawnNotes.length=${unspawnNotes.length}');
 						var sustainNote:Note = new Note(spawnTime + (curStepCrochet * susNote), noteColumn, oldNote, true);
+						trace('[SUSTAIN DEBUG] Created sustainNote: ${sustainNote != null ? "valid" : "NULL"}');
 						sustainNote.animSuffix = swagNote.animSuffix;
 						sustainNote.mustPress = swagNote.mustPress;
 						sustainNote.gfNote = swagNote.gfNote;
