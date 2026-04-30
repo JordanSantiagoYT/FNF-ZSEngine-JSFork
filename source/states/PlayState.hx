@@ -1458,8 +1458,10 @@ class PlayState extends MusicBeatState
 		{
 			case "multiplicative":
 				songSpeed = SONG.speed * ClientPrefs.getGameplaySetting('scrollspeed');
+				trace('[SPEED DEBUG] Multiplicative: SONG.speed=${SONG.speed}, scrollspeed=${ClientPrefs.getGameplaySetting('scrollspeed')}, final songSpeed=$songSpeed');
 			case "constant":
 				songSpeed = ClientPrefs.getGameplaySetting('scrollspeed');
+				trace('[SPEED DEBUG] Constant: scrollspeed=${ClientPrefs.getGameplaySetting('scrollspeed')}, final songSpeed=$songSpeed');
 		}
 
 		var songData = SONG;
@@ -1773,6 +1775,7 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 		var baseShownTime:Float = 2000; // Base time in milliseconds
 		var speedMultiplier:Float = Math.max(1, songSpeed / 2); // Scale with song speed, minimum 1x
 		var minimumShownTime:Float = baseShownTime * speedMultiplier;
+		trace('[SPEED DEBUG] Base shownTime=$baseShownTime, speedMultiplier=$speedMultiplier, minimumShownTime=$minimumShownTime, songSpeed=$songSpeed');
 
 		shownTime = showNotes ? castHold ? Math.max(spawnTime / songSpeed, Math.max(globalElapsed * 1000, minimumShownTime)) : Math.max(spawnTime / songSpeed, minimumShownTime) : 0;
 		shownRealTime = shownTime * 0.001;

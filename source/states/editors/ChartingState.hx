@@ -3079,7 +3079,10 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 	{
 		var time:Float = note.strumTime - cachedSectionTimes[section];
 		var noteY:Float = (time / cachedSectionCrochets[section]) * GRID_SIZE * 4 * curZoom;
+		trace('[POSITION DEBUG] Note time=${note.strumTime}, section=$section, timeOffset=$time, crochet=${cachedSectionCrochets[section]}, curZoom=$curZoom');
+		trace('[POSITION DEBUG] Calculated noteY=$noteY (before section offset)');
 		noteY += cachedSectionRow[section] * GRID_SIZE * curZoom;
+		trace('[POSITION DEBUG] Final noteY=$noteY (after section offset ${cachedSectionRow[section] * GRID_SIZE * curZoom})');
 		noteY = Math.max(noteY, -150);
 		note.y = noteY + (GRID_SIZE/2 - note.height/2);
 		note.chartY = noteY;
