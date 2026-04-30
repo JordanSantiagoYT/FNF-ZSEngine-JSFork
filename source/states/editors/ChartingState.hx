@@ -1150,7 +1150,16 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 						curZoom = zoomList[Std.int(Math.max(zoomList.indexOf(curZoom) - 1, 0))];
 					else
 						curZoom = zoomList[Std.int(Math.min(zoomList.indexOf(curZoom) + 1, zoomList.length - 1))];
-	
+
+					// Debug: Check array state before sorting
+					trace('[CHARTING PRE-SORT DEBUG] Notes array length: ${notes.length}');
+					for (i in 0...notes.length) {
+						var note = notes[i];
+						if (note == null) {
+							trace('[CHARTING PRE-SORT DEBUG] Found null note at index $i BEFORE sorting in ChartingState');
+						}
+					}
+
 					notes.sort(cast PlayState.sortByTime);
 					var noteSec:Int = 0;
 					var nextSectionTime:Float = cachedSectionTimes[noteSec + 1];
@@ -2613,6 +2622,15 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		}
 
 		// JS-Engine OPTIMIZATION 4: Use native sort with cached function
+		// Debug: Check array state before sorting during loading
+		trace('[CHARTING LOAD PRE-SORT DEBUG] Notes array length: ${notes.length}');
+		for (i in 0...notes.length) {
+			var note = notes[i];
+			if (note == null) {
+				trace('[CHARTING LOAD PRE-SORT DEBUG] Found null note at index $i BEFORE sorting during load');
+			}
+		}
+		
 		notes.sort(cast PlayState.sortByTime);
 		events.sort(cast PlayState.sortByTime);
 
@@ -2914,66 +2932,23 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		var minTime:Float = getMinNoteTime(curSec);
 		var maxTime:Float = getMaxNoteTime(curSec);
 		trace('[SOFT RELOAD DEBUG] Section $curSec: minTime=$minTime, maxTime=$maxTime, totalNotes=${notes.length}');
-		inline function curSecFilter(note:MetaNote)
+		function curSecFilter(note:MetaNote)
 		{
 			return (note.strumTime >= minTime && note.strumTime < maxTime);
 		}
-
-		var sec = getCurChartSection();
-		var noteCount:Int = (sec != null) ? sec.sectionNotes.length : 0;
-		var skipFullRender:Bool = (noteCount > 10000);
 
 		var firstNote:Bool = false;
 		var firstEvent:Bool = false;
 		sectionFirstNoteID = 0;
 		sectionFirstEventID = 0;
-
-		if(skipFullRender)
+		for (num => note in notes)
 		{
-			var visibleTimeRange:Float = 5000;
-			// Fix: Use current section time range instead of song position to ensure notes are visible
-			var minVisibleTime:Float = minTime;
-			var maxVisibleTime:Float = maxTime;
-
-			for (num => note in notes)
+			if(note != null && curSecFilter(note))
 			{
-				if(note != null && curSecFilter(note))
-				{
-					// CRITICAL FIX: Always position and add all notes to curRenderedNotes
-					if(!firstNote) sectionFirstNoteID = num;
-					curRenderedNotes.add(note);
-					positionNoteYOnTime(note, curSec);
-					positionNoteXByData(note);
-
-					if(note.strumTime >= minVisibleTime && note.strumTime <= maxVisibleTime)
-					{
-						note.alpha = (note.strumTime >= Conductor.songPosition) ? 1 : 0.6;
-						note.visible = true; // CRITICAL FIX: Make notes visible
-						trace('[RENDER DEBUG] Note ${note.strumTime} in visible range [$minVisibleTime, $maxVisibleTime], visible=true');
-						if(note.hasSustain) note.updateSustainToZoom(cachedSectionCrochets[curSec] / 4, curZoom);
-					}
-					else
-					{
-						note.alpha = 0.4; // Reduced visibility but still visible
-						note.visible = true; // CRITICAL FIX: Make notes visible
-						trace('[RENDER DEBUG] Note ${note.strumTime} outside visible range [$minVisibleTime, $maxVisibleTime], visible=true');
-						if(note.hasSustain) note.updateSustainToZoom(cachedSectionCrochets[curSec] / 4, curZoom);
-					}
-				}
-			}
-		}
-		else
-		{
-			for (num => note in notes)
-			{
-				if(note != null && curSecFilter(note))
-				{
-					if(!firstNote) sectionFirstNoteID = num;
-					curRenderedNotes.add(note);
-					note.alpha = (note.strumTime >= Conductor.songPosition) ? 1 : 0.6;
-					note.visible = true; // CRITICAL FIX: Make notes visible
-					if(note.hasSustain) note.updateSustainToZoom(cachedSectionCrochets[curSec] / 4, curZoom);
-				}
+				if(!firstNote) sectionFirstNoteID = num;
+				curRenderedNotes.add(note);
+				note.alpha = (note.strumTime >= Conductor.songPosition) ? 1 : 0.6;
+				if(note.hasSustain) note.updateSustainToZoom(cachedSectionCrochets[curSec] / 4, curZoom);
 			}
 		}
 
@@ -2999,36 +2974,26 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 				var prevMaxTime:Float = getMaxNoteTime(curSec-1);
 				var nextMinTime:Float = getMinNoteTime(curSec+1);
 				var nextMaxTime:Float = getMaxNoteTime(curSec+1);
-
-				// FIX: Replace .filter() with manual loops
-				for (note in notes)
+				function otherSecFilter(note:MetaNote)
 				{
-					if (note == null) continue;
-					var inPrev = prevGridBg.visible && (note.strumTime >= prevMinTime && note.strumTime < prevMaxTime);
-					var inNext = nextGridBg.visible && (note.strumTime >= nextMinTime && note.strumTime < nextMaxTime);
-					
-					if (inPrev || inNext)
-					{
-						behindRenderedNotes.add(note);
-						note.alpha = 0.4;
-						if(note.hasSustain) note.updateSustainToZoom(cachedSectionCrochets[curSec] / 4, curZoom);
-					}
+					return (prevGridBg.visible && (note.strumTime >= prevMinTime && note.strumTime < prevMaxTime)) ||
+						(nextGridBg.visible && (note.strumTime >= nextMinTime && note.strumTime < nextMaxTime));
+				}
+	
+				for(note in notes.filter(otherSecFilter))
+				{
+					behindRenderedNotes.add(note);
+					note.alpha = 0.4;
+					if(note.hasSustain) note.updateSustainToZoom(cachedSectionCrochets[curSec] / 4, curZoom);
 				}
 
 				if(SHOW_EVENT_COLUMN)
 				{
-					for (event in events)
+					for(event in events.filter(otherSecFilter))
 					{
-						if (event == null) continue;
-						var inPrev = prevGridBg.visible && (event.strumTime >= prevMinTime && event.strumTime < prevMaxTime);
-						var inNext = nextGridBg.visible && (event.strumTime >= nextMinTime && event.strumTime < nextMaxTime);
-						
-						if (inPrev || inNext)
-						{
-							behindRenderedNotes.add(event);
-							event.alpha = 0.4;
-							event.eventText.visible = false;
-						}
+						behindRenderedNotes.add(event);
+						event.alpha = 0.4;
+						event.eventText.visible = false;
 					}
 				}
 			}

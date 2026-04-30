@@ -1654,6 +1654,15 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 			for (i in 0...event[1].length)
 				makeEvent(event, i);
 
+		// Debug: Check array state before sorting
+		trace('[PRE-SORT DEBUG] Array length: ${unspawnNotes.length}');
+		for (i in 0...unspawnNotes.length) {
+			var note = unspawnNotes[i];
+			if (note == null) {
+				trace('[PRE-SORT DEBUG] Found null note at index $i BEFORE sorting');
+			}
+		}
+		
 		unspawnNotes.sort(cast sortByTime);
 		trace('[FAST NOTE PARSING] Generated ${unspawnNotes.length} Notes for song "${SONG.song}"');
 		trace('Loading ${SONG.song} (${unspawnNotes.length} notes)');
