@@ -2932,6 +2932,22 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		var minTime:Float = getMinNoteTime(curSec);
 		var maxTime:Float = getMaxNoteTime(curSec);
 		trace('[SOFT RELOAD DEBUG] Section $curSec: minTime=$minTime, maxTime=$maxTime, totalNotes=${notes.length}');
+
+		// Debug: Find what section contains the first note
+		if (notes.length > 0) {
+			var firstNote = notes[0];
+			if (firstNote != null) {
+				var targetSection = 0;
+				for (i in 0...cachedSectionTimes.length) {
+					if (firstNote.strumTime >= cachedSectionTimes[i] && firstNote.strumTime < cachedSectionTimes[i + 1]) {
+						targetSection = i;
+						break;
+					}
+				}
+				trace('[SECTION DEBUG] First note time=${firstNote.strumTime}, should be in section $targetSection, current section=$curSec');
+			}
+		}
+
 		function curSecFilter(note:MetaNote)
 		{
 			return (note.strumTime >= minTime && note.strumTime < maxTime);
