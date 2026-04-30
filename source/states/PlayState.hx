@@ -1548,7 +1548,7 @@ class PlayState extends MusicBeatState
 				trace('[NOTE GEN DEBUG] Creating regular note: time=$spawnTime, column=$noteColumn, oldNote=${oldNote != null ? "valid" : "NULL"}');
 				var swagNote:Note = new Note(spawnTime, noteColumn, oldNote);
 				trace('[NOTE GEN DEBUG] Created swagNote: ${swagNote != null ? "valid" : "NULL"}');
-				trace('[NOTE GEN DEBUG] Section $sectionNum, note index $i in section, unspawnNotes.length before=${unspawnNotes.length}');
+				trace('[NOTE GEN DEBUG] Section $cnt, note index $i in section, unspawnNotes.length before=${unspawnNotes.length}');
 				var isAlt: Bool = section.altAnim && !gottaHitNote;
 				swagNote.gfNote = (section.gfSection && gottaHitNote == section.mustHitSection);
 				swagNote.animSuffix = isAlt ? "-alt" : "";
@@ -1577,7 +1577,7 @@ class PlayState extends MusicBeatState
 						oldNote = unspawnNotes[Std.int(unspawnNotes.length - 1)];
 
 						trace('[SUSTAIN DEBUG] Creating sustain #$susNote: oldNote=${oldNote != null ? "valid" : "NULL"}, unspawnNotes.length=${unspawnNotes.length}');
-						trace('[SUSTAIN DEBUG] Section $sectionNum, regular note index $i, sustain #$susNote');
+						trace('[SUSTAIN DEBUG] Section $cnt, regular note index $i, sustain #$susNote');
 						var sustainNote:Note = new Note(spawnTime + (curStepCrochet * susNote), noteColumn, oldNote, true);
 						trace('[SUSTAIN DEBUG] Created sustainNote: ${sustainNote != null ? "valid" : "NULL"}');
 						trace('[SUSTAIN DEBUG] Sustain time=${spawnTime + (curStepCrochet * susNote)}, column=$noteColumn');
