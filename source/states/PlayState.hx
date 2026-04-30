@@ -1662,8 +1662,21 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 				trace('[PRE-SORT DEBUG] Found null note at index $i BEFORE sorting');
 			}
 		}
-		
+
 		unspawnNotes.sort(cast sortByTime);
+
+		// Debug: Check array state after sorting
+		trace('[POST-SORT DEBUG] Array length after sorting: ${unspawnNotes.length}');
+		var nullCountAfter = 0;
+		for (i in 0...unspawnNotes.length) {
+			var note = unspawnNotes[i];
+			if (note == null) {
+				nullCountAfter++;
+				trace('[POST-SORT DEBUG] Found null note at index $i AFTER sorting');
+			}
+		}
+		trace('[POST-SORT DEBUG] Total null notes after sorting: $nullCountAfter');
+
 		trace('[FAST NOTE PARSING] Generated ${unspawnNotes.length} Notes for song "${SONG.song}"');
 		trace('Loading ${SONG.song} (${unspawnNotes.length} notes)');
 

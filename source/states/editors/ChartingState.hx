@@ -2941,16 +2941,34 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		var firstEvent:Bool = false;
 		sectionFirstNoteID = 0;
 		sectionFirstEventID = 0;
+		trace('[SOFT RELOAD FILTER DEBUG] Starting note filtering for section $curSec');
+		var totalNotes:Int = 0;
+		var filteredNotes:Int = 0;
+		var nullNotes:Int = 0;
+
 		for (num => note in notes)
 		{
-			if(note != null && curSecFilter(note))
+			totalNotes++;
+			if(note == null) {
+				nullNotes++;
+				trace('[SOFT RELOAD FILTER DEBUG] Null note at index $num');
+				continue;
+			}
+
+			var inSection = curSecFilter(note);
+			trace('[SOFT RELOAD FILTER DEBUG] Note $num: time=${note.strumTime}, inSection=$inSection, minTime=$minTime, maxTime=$maxTime');
+
+			if(inSection)
 			{
+				filteredNotes++;
 				if(!firstNote) sectionFirstNoteID = num;
 				curRenderedNotes.add(note);
 				note.alpha = (note.strumTime >= Conductor.songPosition) ? 1 : 0.6;
 				if(note.hasSustain) note.updateSustainToZoom(cachedSectionCrochets[curSec] / 4, curZoom);
 			}
 		}
+
+		trace('[SOFT RELOAD FILTER DEBUG] Summary: total=$totalNotes, filtered=$filteredNotes, null=$nullNotes, rendered=${curRenderedNotes.length}');
 
 		if(SHOW_EVENT_COLUMN)
 		{
