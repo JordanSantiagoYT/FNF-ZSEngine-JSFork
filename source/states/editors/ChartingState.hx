@@ -2463,7 +2463,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		sectionNoteCnt = 0;
 		syncTime = haxe.Timer.stamp() * 1000;
 
-		// JS-Engine: Clear existing notes (destructive while loop method)
+		// JS-Engine: Clear existing notes (destructive while loop method - ZS-Engine compatible)
 		selectedNotes = [];
 		while (notes.length > 0)
 		{
@@ -2708,7 +2708,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		var section = PlayState.SONG.notes[secNum];
 
 		var daStrumTime:Float = note[0];
-		var daNoteData:Int = Std.int(note[1] % GRID_COLUMNS_PER_PLAYER);
+		var daNoteData:Float = note[1] % GRID_COLUMNS_PER_PLAYER;
 		var gottaHitNote:Bool = (note[1] < GRID_COLUMNS_PER_PLAYER);
 
 		var swagNote:MetaNote = new MetaNote(daStrumTime, daNoteData, note);

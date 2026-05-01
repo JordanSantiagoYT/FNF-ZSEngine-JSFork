@@ -591,7 +591,7 @@ class PlayState extends MusicBeatState
 		add(uiGroup);
 		add(noteGroup);
 
-		Conductor.songPosition = -Conductor.crochet * 5 + Conductor.offset;
+		Conductor.songPosition = 0;
 		var showTime:Bool = (ClientPrefs.data.timeBarType != 'Disabled');
 		timeTxt = new FlxText(STRUM_X + (FlxG.width / 2) - 248, 19, 400, "", 32);
 		timeTxt.setFormat(Paths.font("vcr.ttf"), 32, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
@@ -1175,7 +1175,7 @@ class PlayState extends MusicBeatState
 			}
 
 			startedCountdown = true;
-			Conductor.songPosition = -Conductor.crochet * 5 + Conductor.offset;
+			Conductor.songPosition = 0;
 			setOnScripts('startedCountdown', true);
 			callOnScripts('onCountdownStarted');
 
@@ -2257,10 +2257,10 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 				var musicTime:Float = FlxG.sound.music.time + Conductor.offset;
 				var timeDiff:Float = Math.abs(musicTime - Conductor.songPosition);
 				trace('[SYNC DEBUG] songPos=${Conductor.songPosition}, musicTime=$musicTime, timeDiff=$timeDiff, playbackRate=$playbackRate');
-
+				
 				Conductor.songPosition = FlxMath.lerp(musicTime, Conductor.songPosition, Math.exp(-elapsed * 5));
 				timeDiff = Math.abs(musicTime - Conductor.songPosition);
-
+				
 				// Fix: Force immediate synchronization for large time differences to prevent positioning issues
 				if (timeDiff > 5000 * playbackRate) // Very large gap - force sync
 				{
