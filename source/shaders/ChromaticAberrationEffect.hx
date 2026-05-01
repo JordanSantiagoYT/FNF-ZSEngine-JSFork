@@ -6,9 +6,6 @@ import shaders.Effect;
 /**
  * RGB split post-process for cameras or sprites (Psych / JS Engine compatible Lua API).
  */
-typedef CameraStackShader = {
-	var shader:FlxShader;
-};
 
 class ChromaticAberrationShader extends FlxShader
 {
