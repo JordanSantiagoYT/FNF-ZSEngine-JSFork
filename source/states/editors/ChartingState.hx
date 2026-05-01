@@ -2467,18 +2467,16 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		selectedNotes = [];
 		while (notes.length > 0)
 		{
-			var note = notes.members[0];
+			var note = notes[0];
 			if(note != null) note.destroy();
-			notes.remove(note, true);
+			notes.splice(0, 1);
 		}
 		while (events.length > 0)
 		{
-			var event = events.members[0];
+			var event = events[0];
 			if(event != null) event.destroy();
-			events.remove(event, true);
+			events.splice(0, 1);
 		}
-		notes.clear();
-		events.clear();
 
 		// Pre-allocate arrays with exact sizing
 		var estimatedNotes:Int = 0;
