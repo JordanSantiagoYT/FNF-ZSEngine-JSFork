@@ -2,17 +2,12 @@ package shaders;
 
 import openfl.Lib;
 import flixel.system.FlxAssets.FlxShader;
+import shaders.Effect;
 
 /**
  * VCR-style distortion / scanlines (Psych / JS Engine Lua API).
  * @see https://www.shadertoy.com/view/ldjGzV and related ports used in JS Engine
  */
-class Effect {
-	public function setValue(shader:FlxShader, variable:String, value:Float) {
-		Reflect.setProperty(Reflect.getProperty(shader, variable), 'value', [value]);
-	}
-}
-
 class VCRDistortionEffect extends Effect
 {
 	public var shader:VCRDistortionShader = new VCRDistortionShader();
