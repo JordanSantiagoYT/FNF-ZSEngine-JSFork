@@ -9,7 +9,7 @@ typedef CameraStackShader = {
 	var shader:FlxShader;
 };
 
-class ChromaticAberrationShader extends FlxShader
+class ChromaticAberrationShader extends shaders.flixel.system.FlxShader
 {
 	@:glFragmentSource('
 		#pragma header

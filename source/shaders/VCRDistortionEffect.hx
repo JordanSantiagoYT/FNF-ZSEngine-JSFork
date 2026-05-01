@@ -48,7 +48,7 @@ class VCRDistortionEffect
 		shader.vignetteMoving.value[0] = state;
 }
 
-class VCRDistortionShader extends FlxShader
+class VCRDistortionShader extends shaders.flixel.system.FlxShader
 {
 	@:glFragmentSource('
     #pragma header
