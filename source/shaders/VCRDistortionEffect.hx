@@ -8,12 +8,13 @@ import shaders.Effect;
  * VCR-style distortion / scanlines (Psych / JS Engine Lua API).
  * @see https://www.shadertoy.com/view/ldjGzV and related ports used in JS Engine
  */
-class VCRDistortionEffect extends Effect
+class VCRDistortionEffect extends Effect implements CameraStackShader
 {
 	public var shader:VCRDistortionShader = new VCRDistortionShader();
 
 	public function new(glitchFactor:Float, distortion:Bool = true, perspectiveOn:Bool = true, vignetteMoving:Bool = true)
 	{
+		super();
 		shader.iTime.value = [0];
 		shader.vignetteOn.value = [true];
 		shader.perspectiveOn.value = [perspectiveOn];

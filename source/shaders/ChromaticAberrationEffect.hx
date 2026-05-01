@@ -34,7 +34,7 @@ class ChromaticAberrationShader extends FlxShader
 	}
 }
 
-class ChromaticAberrationEffect extends Effect
+class ChromaticAberrationEffect extends Effect implements CameraStackShader
 {
 	public var shader:ChromaticAberrationShader;
 
