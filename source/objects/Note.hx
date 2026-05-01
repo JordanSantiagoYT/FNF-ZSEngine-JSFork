@@ -511,7 +511,7 @@ class Note extends FlxSprite
 		var strumDirection:Float = myStrum.direction;
 
 		// Use section-based positioning like ChartingState
-		var currentSection:Int = Math.floor(Conductor.step / 16);
+		var currentSection:Int = Math.floor(Conductor.getStep(Conductor.songPosition) / 16);
 		if (currentSection >= 0 && currentSection < PlayState.SONG.notes.length) {
 			var sectionStartTime:Float = 0;
 			for (i in 0...currentSection) {
