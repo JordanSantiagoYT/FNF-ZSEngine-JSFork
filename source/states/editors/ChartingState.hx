@@ -1152,13 +1152,6 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 						curZoom = zoomList[Std.int(Math.min(zoomList.indexOf(curZoom) + 1, zoomList.length - 1))];
 
 					// Debug: Check array state before sorting
-					trace('[CHARTING PRE-SORT DEBUG] Notes array length: ${notes.length}');
-					for (i in 0...notes.length) {
-						var note = notes[i];
-						if (note == null) {
-							trace('[CHARTING PRE-SORT DEBUG] Found null note at index $i BEFORE sorting in ChartingState');
-						}
-					}
 
 					notes.sort(cast PlayState.sortByTime);
 					var noteSec:Int = 0;
@@ -2176,7 +2169,6 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
     {
         var songName:String = Paths.formatToSongPath(songOrPath);
         var diffSuffix = (diff != null && diff.length > 0 && diff != Difficulty.getDefault().toLowerCase()) ? "-" + diff : "";
-        trace('[FAST JSON] Chart editor loading: $songName with skipChart=false (editor needs full chart)');
         SongJson.skipChart = false; // Chart editor needs full chart data
         SongJson.log = true;
         var jsonPath = Paths.json((songName.toLowerCase() + diffSuffix).toLowerCase());
@@ -2184,7 +2176,6 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
         trace('Loading ${jsonSize} bytes');
         loadedChart = Song.loadFromJson(songName.toLowerCase() + diffSuffix, songName.toLowerCase());
         SongJson.log = false;
-        trace('[FAST JSON] Chart editor loaded successfully');
     }
 
     if (loadedChart != null)
@@ -2452,7 +2443,6 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			if(note == null) continue;
 
 			var inCurrentSection = (note.strumTime >= minTime && note.strumTime < maxTime);
-			trace('[CHARTING VISIBILITY] Note time=${note.strumTime}, minTime=$minTime, maxTime=$maxTime, inCurrentSection=$inCurrentSection, visible=${note.visible}');
 			note.visible = inCurrentSection;
 
 			if (inCurrentSection && !note.isEvent)
@@ -2489,20 +2479,35 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		// JS Engine approach: Aggressive GC cleanup with HXCPP_GC_BIG_BLOCKS optimization
 		#if sys
 		// Force major garbage collection before loading (HXCPP_GC_BIG_BLOCKS optimized)
-		cpp.vm.Gc.run(true);
+		if (ClientPrefs.data.disableGC) {
+			MemoryUtil.enable();
+			MemoryUtil.collect(true);
+			MemoryUtil.disable();
+		} else cpp.vm.Gc.run(true);
 
 		// Set GC parameters for large block allocation (utilizing HXCPP_GC_BIG_BLOCKS)
 		if (estimatedNotes > 500000) {
-			// More aggressive GC disabling for medium-large charts
-			cpp.vm.Gc.enable(false);
-
-			// Force memory compaction
-			cpp.vm.Gc.run(true);
+			if (ClientPrefs.data.disableGC) {
+				// More aggressive GC disabling for medium-large charts
+				MemoryUtil.enable();
+				MemoryUtil.collect(true);
+				MemoryUtil.disable();
+			} else {
+				cpp.vm.Gc.enable(false);
+				cpp.vm.Gc.run(true);
+			}
 		} else if (estimatedNotes > 1000000) {
-			// Maximum optimization for very large charts
-			cpp.vm.Gc.enable(false);
-			cpp.vm.Gc.run(true);
-			cpp.vm.Gc.run(true); // Double cleanup for massive charts
+			if (ClientPrefs.data.disableGC) {
+				// Maximum optimization for very large charts
+				MemoryUtil.enable();
+				MemoryUtil.collect(true);
+				MemoryUtil.disable();
+				MemoryUtil.collect(true); // Double cleanup for massive charts
+			} else {
+				cpp.vm.Gc.enable(false);
+				cpp.vm.Gc.run(true);
+				cpp.vm.Gc.run(true);
+			}
 		}
 		#end
 
@@ -2521,12 +2526,19 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			// Show progress at start of each section
 			showProgress(false);
 
-			// More aggressive GC with HXCPP_GC_BIG_BLOCKS optimization
+			// More aggressive GC with HXCPP_GC_BIG_BLOCKS optimization using MemoryUtil
 			if (cnt % 25 == 0) { // More frequent GC for large block allocation
 				#if sys
-				cpp.vm.Gc.run(true);
-				if (estimatedNotes > 1000000) {
-					cpp.vm.Gc.run(true); // Double cleanup for massive charts
+				if (ClientPrefs.data.disableGC) {
+					MemoryUtil.collect(true);
+					if (estimatedNotes > 1000000) {
+						MemoryUtil.collect(true); // Double cleanup for massive charts
+					}
+				} else {
+					cpp.vm.Gc.run(true);
+					if (estimatedNotes > 1000000) {
+						cpp.vm.Gc.run(true); // Double cleanup for massive charts
+					}
 				}
 				#end
 			}
@@ -2580,7 +2592,6 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 					// Position the note during loading
 					positionNoteXByData(swagNote);
 					positionNoteYOnTime(swagNote, cnt);
-					trace('[LOAD DEBUG] Note created: time=${swagNote.strumTime}, section=$cnt, curZoom=$curZoom, final pos=(${swagNote.x}, ${swagNote.y})');
 
 					notes.push(swagNote);
 					++sectionNoteCnt;
@@ -2628,13 +2639,6 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 		// JS-Engine OPTIMIZATION 4: Use native sort with cached function
 		// Debug: Check array state before sorting during loading
-		trace('[CHARTING LOAD PRE-SORT DEBUG] Notes array length: ${notes.length}');
-		for (i in 0...notes.length) {
-			var note = notes[i];
-			if (note == null) {
-				trace('[CHARTING LOAD PRE-SORT DEBUG] Found null note at index $i BEFORE sorting during load');
-			}
-		}
 		
 		notes.sort(cast PlayState.sortByTime);
 		events.sort(cast PlayState.sortByTime);
@@ -2649,13 +2653,16 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		if (estimatedNotes > 50000)
 			trace('reloadNotes() processed ' + estimatedNotes + ' notes in ' + (haxe.Timer.stamp() - startTime) + 's');
 
-		// JS Engine approach: Re-enable GC and trigger manual collection
+		// H-Slice approach: Re-enable GC and trigger manual collection using MemoryUtil
 		#if sys
-		// Always re-enable GC after loading
-		cpp.vm.Gc.enable(true);
-		
-		// Force major garbage collection after loading
-		cpp.vm.Gc.run(true);
+		if (ClientPrefs.data.disableGC) {
+			MemoryUtil.enable();
+			MemoryUtil.collect(true);
+			MemoryUtil.disable();
+		} else {
+			cpp.vm.Gc.enable(true);
+			cpp.vm.Gc.run(true);
+		}
 		#end
 
 		// Show final progress
@@ -2936,7 +2943,6 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 		var minTime:Float = getMinNoteTime(curSec);
 		var maxTime:Float = getMaxNoteTime(curSec);
-		trace('[SOFT RELOAD DEBUG] Section $curSec: minTime=$minTime, maxTime=$maxTime, totalNotes=${notes.length}');
 
 		// Debug: Find what section contains the first note
 		if (notes.length > 0) {
@@ -2949,7 +2955,6 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 						break;
 					}
 				}
-				trace('[SECTION DEBUG] First note time=${firstNote.strumTime}, should be in section $targetSection, current section=$curSec');
 			}
 		}
 
@@ -2962,7 +2967,6 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		var firstEvent:Bool = false;
 		sectionFirstNoteID = 0;
 		sectionFirstEventID = 0;
-		trace('[SOFT RELOAD FILTER DEBUG] Starting note filtering for section $curSec');
 		var totalNotes:Int = 0;
 		var filteredNotes:Int = 0;
 		var nullNotes:Int = 0;
@@ -2972,12 +2976,10 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			totalNotes++;
 			if(note == null) {
 				nullNotes++;
-				trace('[SOFT RELOAD FILTER DEBUG] Null note at index $num');
 				continue;
 			}
 
 			var inSection = curSecFilter(note);
-			trace('[SOFT RELOAD FILTER DEBUG] Note $num: time=${note.strumTime}, inSection=$inSection, minTime=$minTime, maxTime=$maxTime');
 
 			if(inSection)
 			{
@@ -2989,7 +2991,6 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			}
 		}
 
-		trace('[SOFT RELOAD FILTER DEBUG] Summary: total=$totalNotes, filtered=$filteredNotes, null=$nullNotes, rendered=${curRenderedNotes.length}');
 
 		if(SHOW_EVENT_COLUMN)
 		{
@@ -3084,11 +3085,6 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 	{
 		var time:Float = note.strumTime - cachedSectionTimes[section];
 		var noteY:Float = (time / cachedSectionCrochets[section]) * GRID_SIZE * 4 * curZoom;
-		trace('[POSITION DEBUG] Note time=${note.strumTime}, section=$section, timeOffset=$time, crochet=${cachedSectionCrochets[section]}, curZoom=$curZoom');
-		trace('[POSITION DEBUG] Calculated noteY=$noteY (before section offset)');
-		// Remove excessive section offset - notes should stay within their section bounds
-		noteY += section * GRID_SIZE * 4 * curZoom;
-		trace('[POSITION DEBUG] Final noteY=$noteY (after section offset ${section * GRID_SIZE * 4 * curZoom})');
 		noteY = Math.max(noteY, -150);
 		note.y = noteY + (GRID_SIZE/2 - note.height/2);
 		note.chartY = noteY;
