@@ -2578,7 +2578,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 					// OPTIMIZATION: Cache note data to avoid repeated array access
 					var noteInfo = note[1];
 					var strumTime = note[0];
-					var noteData = noteInfo % GRID_COLUMNS_PER_PLAYER;
+					var noteData = Std.int(noteInfo % GRID_COLUMNS_PER_PLAYER);
 					var gottaHitNote = (noteInfo < GRID_COLUMNS_PER_PLAYER);
 
 					// OPTIMIZATION: Inline MetaNote creation with cached values
@@ -2708,7 +2708,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		var section = PlayState.SONG.notes[secNum];
 
 		var daStrumTime:Float = note[0];
-		var daNoteData:Float = note[1] % GRID_COLUMNS_PER_PLAYER;
+		var daNoteData:Int = Std.int(note[1] % GRID_COLUMNS_PER_PLAYER);
 		var gottaHitNote:Bool = (note[1] < GRID_COLUMNS_PER_PLAYER);
 
 		var swagNote:MetaNote = new MetaNote(daStrumTime, daNoteData, note);
@@ -3121,6 +3121,12 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			return timeCompare > 0 ? 1 : -1;
 		}
 
+		// Comprehensive debug trace for overlapping notes
+		trace('[SORT DEBUG] Overlapping notes:');
+		trace('  Note A: time=${a.strumTime}, noteData=${a.noteData}, songData[1]=${a.songData[1]}, y=${a.y}, chartY=${a.chartY}');
+		trace('  Note B: time=${b.strumTime}, noteData=${b.noteData}, songData[1]=${b.songData[1]}, y=${b.y}, chartY=${b.chartY}');
+		trace('  Comparison: a.noteData - b.noteData = ${a.noteData - b.noteData}');
+		
 		return a.noteData - b.noteData;
 	}
 
@@ -3139,6 +3145,8 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		note.y = finalY;
 		note.chartY = noteY;
 		//trace(gridBg.y, noteY);
+		// Debug trace for positioning
+		trace('[POSITION DEBUG] Note positioned: time=${note.strumTime}, noteData=${note.noteData}, songData[1]=${note.songData[1]}, noteY=$noteY, finalY=$finalY, y=${note.y}');
 	}
 
 	var characterData:Dynamic = {};
