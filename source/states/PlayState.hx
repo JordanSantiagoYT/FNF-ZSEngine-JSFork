@@ -2283,7 +2283,7 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 			else if(!startedCountdown)
 			{
 				Conductor.songPosition = -Conductor.crochet * 5 + Conductor.offset;
-				trace('[SONG POS DEBUG] Initial songPosition set to: ${Conductor.songPosition}, musicTime: ${FlxG.sound.music != null ? FlxG.sound.music.time + Conductor.offset : "null"}');
+				trace('[SONG POS DEBUG] Initial songPosition set to: ${Conductor.songPosition}, musicTime: ${FlxG.sound.music != null ? FlxG.sound.music.time + Conductor.offset : -1}');
 			}
 		}
 		else if (!paused && updateTime)
