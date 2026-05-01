@@ -1,13 +1,19 @@
 package shaders;
 
 import openfl.Lib;
-import shaders.flixel.system.FlxShader;
+import flixel.system.FlxAssets.FlxShader;
 
 /**
  * VCR-style distortion / scanlines (Psych / JS Engine Lua API).
  * @see https://www.shadertoy.com/view/ldjGzV and related ports used in JS Engine
  */
-class VCRDistortionEffect
+class Effect {
+	public function setValue(shader:FlxShader, variable:String, value:Float) {
+		Reflect.setProperty(Reflect.getProperty(shader, variable), 'value', [value]);
+	}
+}
+
+class VCRDistortionEffect extends Effect
 {
 	public var shader:VCRDistortionShader = new VCRDistortionShader();
 
@@ -48,7 +54,7 @@ class VCRDistortionEffect
 		shader.vignetteMoving.value[0] = state;
 }
 
-class VCRDistortionShader extends shaders.flixel.system.FlxShader
+class VCRDistortionShader extends FlxShader
 {
 	@:glFragmentSource('
     #pragma header

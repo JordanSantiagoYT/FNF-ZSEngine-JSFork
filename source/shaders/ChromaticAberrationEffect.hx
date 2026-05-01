@@ -1,15 +1,17 @@
 package shaders;
 
-import shaders.flixel.system.FlxShader;
+import flixel.system.FlxAssets.FlxShader;
 
 /**
  * RGB split post-process for cameras or sprites (Psych / JS Engine compatible Lua API).
  */
-typedef CameraStackShader = {
-	var shader:FlxShader;
-};
+class Effect {
+	public function setValue(shader:FlxShader, variable:String, value:Float) {
+		Reflect.setProperty(Reflect.getProperty(shader, variable), 'value', [value]);
+	}
+}
 
-class ChromaticAberrationShader extends shaders.flixel.system.FlxShader
+class ChromaticAberrationShader extends FlxShader
 {
 	@:glFragmentSource('
 		#pragma header
@@ -36,12 +38,13 @@ class ChromaticAberrationShader extends shaders.flixel.system.FlxShader
 	}
 }
 
-class ChromaticAberrationEffect
+class ChromaticAberrationEffect extends Effect
 {
 	public var shader:ChromaticAberrationShader;
 
 	public function new(offset:Float = 0.0)
 	{
+		super();
 		shader = new ChromaticAberrationShader();
 		shader.rOffset.value = [offset];
 		shader.gOffset.value = [0.0];
