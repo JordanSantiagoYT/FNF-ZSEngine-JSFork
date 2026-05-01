@@ -510,22 +510,7 @@ class Note extends FlxSprite
 		var strumAlpha:Float = myStrum.alpha;
 		var strumDirection:Float = myStrum.direction;
 
-		// Use section-based positioning like ChartingState
-		var currentSection:Int = Math.floor(Conductor.getStep(Conductor.songPosition) / 16);
-		if (currentSection >= 0 && currentSection < PlayState.SONG.notes.length) {
-			var sectionStartTime:Float = 0;
-			for (i in 0...currentSection) {
-				if (PlayState.SONG.notes[i] != null) {
-					sectionStartTime += (PlayState.SONG.notes[i].sectionBeats * 4) * Conductor.stepCrochet;
-				}
-			}
-			// Calculate position relative to section start instead of song position
-			var sectionOffset:Float = strumTime - sectionStartTime;
-			distance = (0.45 * sectionOffset * songSpeed * multSpeed);
-		} else {
-			// Fallback to original calculation if section calculation fails
-			distance = (0.45 * (Conductor.songPosition - strumTime) * songSpeed * multSpeed);
-		}
+		distance = (0.45 * (Conductor.songPosition - strumTime) * songSpeed * multSpeed);
 		if (!myStrum.downScroll) distance *= -1;
 
 		var angleDir = strumDirection * Math.PI / 180;

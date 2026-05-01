@@ -1897,7 +1897,9 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 
 					strumGroup = dunceNote.mustPress ? playerStrums : opponentStrums;
 
-					dist[availNoteData] = 0.45 * (Conductor.songPosition - dunceNote.strumTime) * songSpeed;
+					var distanceCalc:Float = 0.45 * (Conductor.songPosition - dunceNote.strumTime) * songSpeed;
+					trace('[POSITION DEBUG] Note spawn: noteTime=${dunceNote.strumTime}, songPos=${Conductor.songPosition}, songSpeed=$songSpeed, distance=$distanceCalc, noteData=${dunceNote.noteData}');
+					dist[availNoteData] = distanceCalc;
 
 					if (hideOverlapped > 0) {
 						iDist[availNoteData] = dist[availNoteData] - lDist[availNoteData];
@@ -2000,7 +2002,9 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 						canBeHit = false;
 					} else if (hideOverlapped > 0) {
 						availNoteData = daNote.noteData + (daNote.mustPress ? 4 : 0);
-						dist[availNoteData] = 0.45 * (Conductor.songPosition - daNote.strumTime) * songSpeed;
+						var distanceCalc2:Float = 0.45 * (Conductor.songPosition - daNote.strumTime) * songSpeed;
+						trace('[POSITION DEBUG] Note update: noteTime=${daNote.strumTime}, songPos=${Conductor.songPosition}, songSpeed=$songSpeed, distance=$distanceCalc2, noteData=${daNote.noteData}');
+						dist[availNoteData] = distanceCalc2;
 
 						if (lastSongSpeed != songSpeed) {
 							currSus[availNoteData] = daNote.isSustainNote;
@@ -2028,7 +2032,9 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 						++shownCnt;
 					} else {
 						var strumGroup = daNote.mustPress ? playerStrums : opponentStrums;
-						daNote.followStrumNote(strumGroup.members[daNote.noteData], songSpeed, 0.45 * (Conductor.songPosition - daNote.strumTime) * songSpeed); ++shownCnt;
+						var distanceCalc3:Float = 0.45 * (Conductor.songPosition - daNote.strumTime) * songSpeed;
+						trace('[POSITION DEBUG] Note followStrumNote: noteTime=${daNote.strumTime}, songPos=${Conductor.songPosition}, songSpeed=$songSpeed, distance=$distanceCalc3, noteData=${daNote.noteData}');
+						daNote.followStrumNote(strumGroup.members[daNote.noteData], songSpeed, distanceCalc3); ++shownCnt;
 					}
 
 					if (canBeHit) {
