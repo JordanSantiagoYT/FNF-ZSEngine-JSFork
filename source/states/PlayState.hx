@@ -3574,7 +3574,7 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 
 		if (!note.isSustainNote) invalidateNote(note);
 		if (healthDrain)
-			if (health > 0.02)
+			if (health > 0.023)
 				health -= drain * drainMultiplier;
 	}
 
