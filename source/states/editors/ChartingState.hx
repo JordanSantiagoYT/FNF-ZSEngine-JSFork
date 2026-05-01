@@ -2463,12 +2463,22 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		sectionNoteCnt = 0;
 		syncTime = haxe.Timer.stamp() * 1000;
 
-		// JS-Engine: Clear existing notes (fast)
+		// JS-Engine: Clear existing notes (destructive while loop method)
 		selectedNotes = [];
-		for (note in notes) if(note != null) note.destroy();
-		for (event in events) if(event != null) event.destroy();
-		notes = [];
-		events = [];
+		while (notes.length > 0)
+		{
+			var note = notes.members[0];
+			if(note != null) note.destroy();
+			notes.remove(note, true);
+		}
+		while (events.length > 0)
+		{
+			var event = events.members[0];
+			if(event != null) event.destroy();
+			events.remove(event, true);
+		}
+		notes.clear();
+		events.clear();
 
 		// Pre-allocate arrays with exact sizing
 		var estimatedNotes:Int = 0;
@@ -3113,7 +3123,12 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			return timeCompare > 0 ? 1 : -1;
 		}
 
-		return a.noteData - b.noteData;
+		// Secondary sort for overlapping notes: properly handle Float noteData comparison
+		var noteDataCompare:Float = a.noteData - b.noteData;
+		if (noteDataCompare != 0) {
+			return noteDataCompare > 0 ? 1 : -1;
+		}
+		return 0;
 	}
 
 	function positionNoteYOnTime(note:MetaNote, section:Int)

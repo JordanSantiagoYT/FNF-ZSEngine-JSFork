@@ -1903,6 +1903,7 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 
 					var distanceCalc:Float = 0.45 * (Conductor.songPosition - dunceNote.strumTime) * songSpeed;
 					trace('[POSITION DEBUG] Note spawn: noteTime=${dunceNote.strumTime}, songPos=${Conductor.songPosition}, songSpeed=$songSpeed, distance=$distanceCalc, noteData=${dunceNote.noteData}');
+					trace('[POSITION DEBUG] Spawn details: timeDiff=${Conductor.songPosition - dunceNote.strumTime}, multSpeed=${dunceNote.multSpeed}, strumY=${strumGroup.members[dunceNote.noteData].y}');
 					dist[availNoteData] = distanceCalc;
 
 					if (hideOverlapped > 0) {
@@ -2008,6 +2009,7 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 						availNoteData = daNote.noteData + (daNote.mustPress ? 4 : 0);
 						var distanceCalc2:Float = 0.45 * (Conductor.songPosition - daNote.strumTime) * songSpeed;
 						trace('[POSITION DEBUG] Note update: noteTime=${daNote.strumTime}, songPos=${Conductor.songPosition}, songSpeed=$songSpeed, distance=$distanceCalc2, noteData=${daNote.noteData}');
+						trace('[POSITION DEBUG] Update details: timeDiff=${Conductor.songPosition - daNote.strumTime}, multSpeed=${daNote.multSpeed}, noteY=${daNote.y}, visible=${daNote.visible}');
 						dist[availNoteData] = distanceCalc2;
 
 						if (lastSongSpeed != songSpeed) {
@@ -2038,7 +2040,9 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 						var strumGroup = daNote.mustPress ? playerStrums : opponentStrums;
 						var distanceCalc3:Float = 0.45 * (Conductor.songPosition - daNote.strumTime) * songSpeed;
 						trace('[POSITION DEBUG] Note followStrumNote: noteTime=${daNote.strumTime}, songPos=${Conductor.songPosition}, songSpeed=$songSpeed, distance=$distanceCalc3, noteData=${daNote.noteData}');
-						daNote.followStrumNote(strumGroup.members[daNote.noteData], songSpeed, distanceCalc3); ++shownCnt;
+						trace('[POSITION DEBUG] Follow details: timeDiff=${Conductor.songPosition - daNote.strumTime}, multSpeed=${daNote.multSpeed}, strumY=${strumGroup.members[daNote.noteData].y}, noteY_before=${daNote.y}');
+						daNote.followStrumNote(strumGroup.members[daNote.noteData], songSpeed, distanceCalc3);
+						trace('[POSITION DEBUG] Follow result: noteY_after=${daNote.y}, noteX=${daNote.x}'); ++shownCnt;
 					}
 
 					if (canBeHit) {
@@ -2288,13 +2292,25 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 			Conductor.songPosition += elapsed * 1000 * playbackRate;
 			if (Conductor.songPosition >= Conductor.offset)
 			{
-				Conductor.songPosition = FlxMath.lerp(FlxG.sound.music.time + Conductor.offset, Conductor.songPosition, Math.exp(-elapsed * 5));
-				var timeDiff:Float = Math.abs((FlxG.sound.music.time + Conductor.offset) - Conductor.songPosition);
+				var musicTime:Float = FlxG.sound.music.time + Conductor.offset;
+				var timeDiff:Float = Math.abs(musicTime - Conductor.songPosition);
+				trace('[SYNC DEBUG] songPos=${Conductor.songPosition}, musicTime=$musicTime, timeDiff=$timeDiff, playbackRate=$playbackRate');
+
+				Conductor.songPosition = FlxMath.lerp(musicTime, Conductor.songPosition, Math.exp(-elapsed * 5));
+				timeDiff = Math.abs(musicTime - Conductor.songPosition);
+
 				// Fix: Force immediate synchronization for large time differences to prevent positioning issues
 				if (timeDiff > 5000 * playbackRate) // Very large gap - force sync
-					Conductor.songPosition = FlxG.sound.music.time + Conductor.offset;
+				{
+					trace('[SYNC DEBUG] Large gap detected, forcing sync: oldPos=${Conductor.songPosition}, newPos=$musicTime');
+					Conductor.songPosition = musicTime;
+				}
 				else if (timeDiff > 1000 * playbackRate) // Medium gap - reduce jump
-					Conductor.songPosition = (FlxG.sound.music.time + Conductor.offset) + (1000 * FlxMath.signOf(timeDiff));
+				{
+					var newPos:Float = musicTime + (1000 * FlxMath.signOf(timeDiff));
+					trace('[SYNC DEBUG] Medium gap detected, reducing jump: oldPos=${Conductor.songPosition}, newPos=$newPos');
+					Conductor.songPosition = newPos;
+				}
 			}
 		}
 
