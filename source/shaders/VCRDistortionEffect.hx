@@ -10,11 +10,12 @@ import shaders.Effect;
  */
 class VCRDistortionEffect extends Effect implements CameraStackShader
 {
-	public var shader:VCRDistortionShader = new VCRDistortionShader();
+	public var shader:FlxShader;
 
 	public function new(glitchFactor:Float, distortion:Bool = true, perspectiveOn:Bool = true, vignetteMoving:Bool = true)
 	{
 		super();
+		shader = new VCRDistortionShader();
 		shader.iTime.value = [0];
 		shader.vignetteOn.value = [true];
 		shader.perspectiveOn.value = [perspectiveOn];
