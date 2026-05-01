@@ -2578,7 +2578,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 					// OPTIMIZATION: Cache note data to avoid repeated array access
 					var noteInfo = note[1];
 					var strumTime = note[0];
-					var noteData = Std.int(noteInfo % GRID_COLUMNS_PER_PLAYER);
+					var noteData = noteInfo % GRID_COLUMNS_PER_PLAYER;
 					var gottaHitNote = (noteInfo < GRID_COLUMNS_PER_PLAYER);
 
 					// OPTIMIZATION: Inline MetaNote creation with cached values
@@ -3121,12 +3121,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			return timeCompare > 0 ? 1 : -1;
 		}
 
-		// Secondary sort for overlapping notes: properly handle Float noteData comparison
-		var noteDataCompare:Float = a.noteData - b.noteData;
-		if (noteDataCompare != 0) {
-			return noteDataCompare > 0 ? 1 : -1;
-		}
-		return 0;
+		return a.noteData - b.noteData;
 	}
 
 	function positionNoteYOnTime(note:MetaNote, section:Int)

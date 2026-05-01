@@ -2282,7 +2282,12 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 				startSong();
 			else if(!startedCountdown)
 			{
-				Conductor.songPosition = -Conductor.crochet * 5 + Conductor.offset;
+				// H-Slice approach: initialize songPosition from actual time instead of hardcoded negative
+				if (FlxG.sound.music != null) {
+					Conductor.songPosition = FlxG.sound.music.time + Conductor.offset;
+				} else {
+					Conductor.songPosition = 0; // Start at 0 instead of negative value
+				}
 				trace('[SONG POS DEBUG] Initial songPosition set to: ${Conductor.songPosition}, musicTime: ${FlxG.sound.music != null ? FlxG.sound.music.time + Conductor.offset : -1}');
 			}
 		}
