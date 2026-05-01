@@ -1,5 +1,7 @@
 package shaders;
 
+import shaders.flixel.system.FlxShader;
+
 /**
  * RGB split post-process for cameras or sprites (Psych / JS Engine compatible Lua API).
  */

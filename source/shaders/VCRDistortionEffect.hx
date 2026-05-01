@@ -1,6 +1,7 @@
 package shaders;
 
 import openfl.Lib;
+import shaders.flixel.system.FlxShader;
 
 /**
  * VCR-style distortion / scanlines (Psych / JS Engine Lua API).
