@@ -1521,10 +1521,8 @@ class PlayState extends MusicBeatState
 		{
 			case "multiplicative":
 				songSpeed = SONG.speed * ClientPrefs.getGameplaySetting('scrollspeed');
-				trace('[SPEED DEBUG] Multiplicative: SONG.speed=${SONG.speed}, scrollspeed=${ClientPrefs.getGameplaySetting('scrollspeed')}, final songSpeed=$songSpeed');
 			case "constant":
 				songSpeed = ClientPrefs.getGameplaySetting('scrollspeed');
-				trace('[SPEED DEBUG] Constant: scrollspeed=${ClientPrefs.getGameplaySetting('scrollspeed')}, final songSpeed=$songSpeed');
 		}
 
 		var songData = SONG;
@@ -1809,19 +1807,9 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 	}
 
 	public static function sortByTime(id:Int, note1:Note, note2:Note):Int {
-		// Fix: Add null checks to prevent null reference crashes
-		if (note1 == null && note2 == null) {
-			trace('[SORTBYTIME DEBUG] Both notes are null at index $id');
-			return 0;
-		}
-		if (note1 == null) {
-			trace('[SORTBYTIME DEBUG] note1 is null at index $id, note2 time=${note2.strumTime}');
-			return 1;
-		}
-		if (note2 == null) {
-			trace('[SORTBYTIME DEBUG] note2 is null at index $id, note1 time=${note1.strumTime}');
-			return -1;
-		}
+		if (note1 == null && note2 == null) return 0;
+		if (note1 == null) return 1;
+		if (note2 == null) return -1;
 
 		return FlxSort.byValues(FlxSort.ASCENDING, note1.strumTime, note2.strumTime);
 	}
@@ -1838,17 +1826,11 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 		var baseShownTime:Float = 2000; // Base time in milliseconds
 		var speedMultiplier:Float = Math.max(1, songSpeed / 2); // Scale with song speed, minimum 1x
 		var minimumShownTime:Float = baseShownTime * speedMultiplier;
-		trace('[SPEED DEBUG] Base shownTime=$baseShownTime, speedMultiplier=$speedMultiplier, minimumShownTime=$minimumShownTime, songSpeed=$songSpeed');
 
 		shownTime = showNotes ? castHold ? Math.max(spawnTime / songSpeed, Math.max(globalElapsed * 1000, minimumShownTime)) : Math.max(spawnTime / songSpeed, minimumShownTime) : 0;
 		shownRealTime = shownTime * 0.001;
 
 		isDisplay = castHold ? note.strumTime - fixedPosition < shownTime : fixedPosition > note.strumTime - shownTime;
-
-		// Debug: Show isDisplay calculation for first few notes
-		if (totalCnt < 3) {
-			trace('[INIT SPAWN #$totalCnt] noteTime=${note.strumTime}, fixedPosition=$fixedPosition, shownTime=$shownTime, castHold=$castHold, showNotes=$showNotes, globalElapsed=$globalElapsed, songSpeed=$songSpeed, isDisplay=$isDisplay');
-		}
 	}
 
 	public function noteSpawn() {
@@ -1856,11 +1838,6 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 
 		lDist = []; dist = [];
 		lDist.resize(8); dist.resize(8);
-
-		// Debug: Show key optimization settings
-		if (totalCnt == 0) {
-			trace('[NOTE SPAWN DEBUG] Optimization settings: hideOverlapped=$hideOverlapped, limitNotes=$limitNotes, keepNotes=$keepNotes, skipSpawnNote=$skipSpawnNote, optimizeSpawnNote=$optimizeSpawnNote, showNotes=$showNotes');
-		}
 
 		if (unspawnNotes.length > totalCnt) {
 			limitCount = notes.countLiving();
@@ -1879,11 +1856,6 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 				// H-Slice approach: Use the same isCanPass logic that works in H-Slice
 				isCanPass = !skipSpawnNote || (keepNotes ? !tooLate : timeLimit);
 
-				// Debug: Show detailed spawning logic for first few notes
-				if (totalCnt < 5) {
-					trace('[SPAWN DEBUG #$totalCnt] isDisplay=$isDisplay, limitCount=$limitCount, limitNotes=$limitNotes, canBeHit=$canBeHit, tooLate=$tooLate, noteJudge=$noteJudge, timeLimit=$timeLimit, isCanPass=$isCanPass, optimizeSpawnNote=$optimizeSpawnNote');
-				}
-
 				if (showAfter) {
 					if (!showAgain && !canBeHit) {
 						showAgain = true;
@@ -1897,13 +1869,10 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 				if (isCanPass && (!optimizeSpawnNote || !noteJudge || canBeHit)) {
 					dunceNote = targetNote;
 					notes.add(dunceNote);
-					trace('[NOTE SPAWN] Spawned note: time=${dunceNote.strumTime}, column=${dunceNote.noteData}, mustHit=${dunceNote.mustPress}, visible=${dunceNote.visible}, totalVisible=${notes.countLiving()}');
-
 					strumGroup = dunceNote.mustPress ? playerStrums : opponentStrums;
 
 					var distanceCalc:Float = 0.45 * (Conductor.songPosition - dunceNote.strumTime) * songSpeed;
-					trace('[POSITION DEBUG] Note spawn: noteTime=${dunceNote.strumTime}, songPos=${Conductor.songPosition}, songSpeed=$songSpeed, distance=$distanceCalc, noteData=${dunceNote.noteData}');
-					trace('[POSITION DEBUG] Spawn details: timeDiff=${Conductor.songPosition - dunceNote.strumTime}, multSpeed=${dunceNote.multSpeed}, strumY=${strumGroup.members[dunceNote.noteData].y}');
+					trace('[POSITION DEBUG] Note spawn: noteTime=${dunceNote.strumTime}, songPos=${Conductor.songPosition}, distance=$distanceCalc, noteData=${dunceNote.noteData}');
 					dist[availNoteData] = distanceCalc;
 
 					if (hideOverlapped > 0) {
@@ -2007,10 +1976,7 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 						canBeHit = false;
 					} else if (hideOverlapped > 0) {
 						availNoteData = daNote.noteData + (daNote.mustPress ? 4 : 0);
-						var distanceCalc2:Float = 0.45 * (Conductor.songPosition - daNote.strumTime) * songSpeed;
-						trace('[POSITION DEBUG] Note update: noteTime=${daNote.strumTime}, songPos=${Conductor.songPosition}, songSpeed=$songSpeed, distance=$distanceCalc2, noteData=${daNote.noteData}');
-						trace('[POSITION DEBUG] Update details: timeDiff=${Conductor.songPosition - daNote.strumTime}, multSpeed=${daNote.multSpeed}, noteY=${daNote.y}, visible=${daNote.visible}');
-						dist[availNoteData] = distanceCalc2;
+						dist[availNoteData] = 0.45 * (Conductor.songPosition - daNote.strumTime) * songSpeed;
 
 						if (lastSongSpeed != songSpeed) {
 							currSus[availNoteData] = daNote.isSustainNote;
@@ -2038,11 +2004,7 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 						++shownCnt;
 					} else {
 						var strumGroup = daNote.mustPress ? playerStrums : opponentStrums;
-						var distanceCalc3:Float = 0.45 * (Conductor.songPosition - daNote.strumTime) * songSpeed;
-						trace('[POSITION DEBUG] Note followStrumNote: noteTime=${daNote.strumTime}, songPos=${Conductor.songPosition}, songSpeed=$songSpeed, distance=$distanceCalc3, noteData=${daNote.noteData}');
-						trace('[POSITION DEBUG] Follow details: timeDiff=${Conductor.songPosition - daNote.strumTime}, multSpeed=${daNote.multSpeed}, strumY=${strumGroup.members[daNote.noteData].y}, noteY_before=${daNote.y}');
-						daNote.followStrumNote(strumGroup.members[daNote.noteData], songSpeed, distanceCalc3);
-						trace('[POSITION DEBUG] Follow result: noteY_after=${daNote.y}, noteX=${daNote.x}'); ++shownCnt;
+						daNote.followStrumNote(strumGroup.members[daNote.noteData], songSpeed, 0.45 * (Conductor.songPosition - daNote.strumTime) * songSpeed); ++shownCnt;
 					}
 
 					if (canBeHit) {
@@ -2319,7 +2281,10 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 			if (startedCountdown && Conductor.songPosition >= Conductor.offset)
 				startSong();
 			else if(!startedCountdown)
+			{
 				Conductor.songPosition = -Conductor.crochet * 5 + Conductor.offset;
+				trace('[SONG POS DEBUG] Initial songPosition set to: ${Conductor.songPosition}, musicTime: ${FlxG.sound.music != null ? FlxG.sound.music.time + Conductor.offset : "null"}');
+			}
 		}
 		else if (!paused && updateTime)
 		{
