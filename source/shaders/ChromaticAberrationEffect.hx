@@ -42,15 +42,15 @@ class ChromaticAberrationEffect extends Effect implements CameraStackShader
 	{
 		super();
 		shader = new ChromaticAberrationShader();
-		shader.rOffset.value = [offset];
-		shader.gOffset.value = [0.0];
-		shader.bOffset.value = [-offset];
+		cast(shader, ChromaticAberrationShader).rOffset.value = [offset];
+		cast(shader, ChromaticAberrationShader).gOffset.value = [0.0];
+		cast(shader, ChromaticAberrationShader).bOffset.value = [-offset];
 	}
 
 	public function setChrome(chromeOffset:Float):Void
 	{
-		shader.rOffset.value = [chromeOffset];
-		shader.gOffset.value = [0.0];
-		shader.bOffset.value = [chromeOffset * -1];
+		cast(shader, ChromaticAberrationShader).rOffset.value = [chromeOffset];
+		cast(shader, ChromaticAberrationShader).gOffset.value = [0.0];
+		cast(shader, ChromaticAberrationShader).bOffset.value = [chromeOffset * -1];
 	}
 }

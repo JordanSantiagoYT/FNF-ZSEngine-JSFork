@@ -16,39 +16,39 @@ class VCRDistortionEffect extends Effect implements CameraStackShader
 	{
 		super();
 		shader = new VCRDistortionShader();
-		shader.iTime.value = [0];
-		shader.vignetteOn.value = [true];
-		shader.perspectiveOn.value = [perspectiveOn];
-		shader.distortionOn.value = [distortion];
-		shader.scanlinesOn.value = [true];
-		shader.vignetteMoving.value = [vignetteMoving];
-		shader.glitchModifier.value = [glitchFactor];
-		shader.iResolution.value = [Lib.current.stage.stageWidth, Lib.current.stage.stageHeight, 0.0];
+		cast(shader, VCRDistortionShader).iTime.value = [0];
+		cast(shader, VCRDistortionShader).vignetteOn.value = [true];
+		cast(shader, VCRDistortionShader).perspectiveOn.value = [perspectiveOn];
+		cast(shader, VCRDistortionShader).distortionOn.value = [distortion];
+		cast(shader, VCRDistortionShader).scanlinesOn.value = [true];
+		cast(shader, VCRDistortionShader).vignetteMoving.value = [vignetteMoving];
+		cast(shader, VCRDistortionShader).glitchModifier.value = [glitchFactor];
+		cast(shader, VCRDistortionShader).iResolution.value = [Lib.current.stage.stageWidth, Lib.current.stage.stageHeight, 0.0];
 	}
 
 	public function update(elapsed:Float):Void
 	{
-		shader.iTime.value[0] += elapsed;
-		shader.iResolution.value = [Lib.current.stage.stageWidth, Lib.current.stage.stageHeight, 0.0];
+		cast(shader, VCRDistortionShader).iTime.value[0] += elapsed;
+		cast(shader, VCRDistortionShader).iResolution.value = [Lib.current.stage.stageWidth, Lib.current.stage.stageHeight, 0.0];
 	}
 
 	public function setVignette(state:Bool):Void
-		shader.vignetteOn.value[0] = state;
+		cast(shader, VCRDistortionShader).vignetteOn.value[0] = state;
 
 	public function setPerspective(state:Bool):Void
-		shader.perspectiveOn.value[0] = state;
+		cast(shader, VCRDistortionShader).perspectiveOn.value[0] = state;
 
 	public function setGlitchModifier(modifier:Float):Void
-		shader.glitchModifier.value[0] = modifier;
+		cast(shader, VCRDistortionShader).glitchModifier.value[0] = modifier;
 
 	public function setDistortion(state:Bool):Void
-		shader.distortionOn.value[0] = state;
+		cast(shader, VCRDistortionShader).distortionOn.value[0] = state;
 
 	public function setScanlines(state:Bool):Void
-		shader.scanlinesOn.value[0] = state;
+		cast(shader, VCRDistortionShader).scanlinesOn.value[0] = state;
 
 	public function setVignetteMoving(state:Bool):Void
-		shader.vignetteMoving.value[0] = state;
+		cast(shader, VCRDistortionShader).vignetteMoving.value[0] = state;
 }
 
 class VCRDistortionShader extends FlxShader
