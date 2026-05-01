@@ -33,12 +33,14 @@ import options.OptimizeSettingsSubState;
 
 #if !flash
 import flixel.addons.display.FlxRuntimeShader;
+import openfl.filters.BitmapFilter;
 import openfl.filters.ShaderFilter;
 #end
 
 import shaders.ErrorHandledShader;
 import shaders.WiggleEffect;
 import shaders.PulseEffect;
+import shaders.ChromaticAberrationEffect;
 
 import objects.VideoSprite;
 import objects.Note.EventNote;
@@ -328,6 +330,13 @@ class PlayState extends MusicBeatState
 	public static var masterPulse:PulseEffect;
 	var allowDisable:Bool = false;
 	var allowDisableAt:Int = 0;
+	public var shaderUpdates:Array<Float->Void> = [];
+
+	#if !flash
+	public var camGameShaders:Array<CameraStackShader> = [];
+	public var camHUDShaders:Array<CameraStackShader> = [];
+	public var camOtherShaders:Array<CameraStackShader> = [];
+	#end
 
 	#if (LUA_ALLOWED || HSCRIPT_ALLOWED)
 	private var luaDebugGroup:FlxTypedGroup<psychlua.DebugLuaText>;
@@ -947,6 +956,55 @@ class PlayState extends MusicBeatState
 
 	public function getLuaObject(tag:String):Dynamic
 		return variables.get(tag);
+
+	#if !flash
+	function rebuildCameraShaderStack(cam:FlxCamera, stack:Array<CameraStackShader>):Void
+	{
+		var newCamEffects:Array<BitmapFilter> = [];
+		for (e in stack)
+			newCamEffects.push(new ShaderFilter(e.shader));
+		cam.filters = newCamEffects;
+	}
+
+	/**
+	 * Stack post-process shaders on a camera (camGame, camHUD, camOther) or set `.shader` on a sprite / Lua object tag.
+	 */
+	public function addShaderToCamera(cam:String, effect:CameraStackShader):Void
+	{
+		if (!ClientPrefs.data.shaders)
+			return;
+
+		switch (cam.toLowerCase())
+		{
+			case 'camhud' | 'hud':
+				camHUDShaders.push(effect);
+				rebuildCameraShaderStack(camHUD, camHUDShaders);
+			case 'camother' | 'other':
+				camOtherShaders.push(effect);
+				rebuildCameraShaderStack(camOther, camOtherShaders);
+			case 'camgame' | 'game':
+				camGameShaders.push(effect);
+				rebuildCameraShaderStack(camGame, camGameShaders);
+			default:
+				if (variables.exists(cam))
+				{
+					var obj:Dynamic = variables.get(cam);
+					if (obj != null)
+						Reflect.setProperty(obj, 'shader', effect.shader);
+				}
+				else
+				{
+					try
+					{
+						var obj:Dynamic = Reflect.getProperty(this, cam);
+						if (obj != null)
+							Reflect.setProperty(obj, 'shader', effect.shader);
+					}
+					catch (_:Dynamic) {}
+				}
+		}
+	}
+	#end
 
 	function startCharacterPos(char:Character, ?gfCheck:Bool = false) {
 		if(gfCheck && char.curCharacter.startsWith('gf')) { //IF DAD IS GIRLFRIEND, HE GOES TO HER POSITION
@@ -2270,6 +2328,10 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 			for(wig in wiggleMap) {
 				wig.update(globalElapsed);
 			}
+
+			if (shaderUpdates.length > 0)
+				for (f in shaderUpdates)
+					f(elapsed);
 
 			if (allowDisableAt == curStep || isDead)
 				allowDisable = true;

@@ -2577,6 +2577,11 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 					else
 						swagNote.setGraphicSize(0, GRID_SIZE);
 
+					// Position the note during loading
+					positionNoteXByData(swagNote);
+					positionNoteYOnTime(swagNote, cnt);
+					trace('[LOAD DEBUG] Note created: time=${swagNote.strumTime}, section=$cnt, curZoom=$curZoom, final pos=(${swagNote.x}, ${swagNote.y})');
+
 					notes.push(swagNote);
 					++sectionNoteCnt;
 					++parsedNotes;

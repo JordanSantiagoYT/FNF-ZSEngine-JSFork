@@ -44,6 +44,8 @@ import flixel.input.gamepad.FlxGamepadInputID;
 import haxe.Json;
 
 import shaders.WiggleEffect;
+import shaders.ChromaticAberrationEffect;
+import shaders.VCRDistortionEffect;
 
 class FunkinLua {
 	public var lua:State = null;
@@ -634,6 +636,28 @@ class FunkinLua {
 				return true;
 			}
 			return false;
+		});
+
+		Lua_helper.add_callback(lua, "addChromaticAbberationEffect", function(camera:String, ?chromeOffset:Float = 0.005) {
+			if (!ClientPrefs.data.shaders)
+				return;
+			#if !flash
+			if (PlayState.instance != null)
+				PlayState.instance.addShaderToCamera(camera, new ChromaticAberrationEffect(chromeOffset));
+			#end
+		});
+
+		Lua_helper.add_callback(lua, "addVCREffect", function(camera:String, ?glitchFactor:Float = 0.0, ?distortion:Bool = true, ?perspectiveOn:Bool = true, ?vignetteMoving:Bool = true) {
+			if (!ClientPrefs.data.shaders)
+				return;
+			#if !flash
+			if (PlayState.instance != null)
+			{
+				var vcr:VCRDistortionEffect = new VCRDistortionEffect(glitchFactor, distortion, perspectiveOn, vignetteMoving);
+				PlayState.instance.addShaderToCamera(camera, vcr);
+				PlayState.instance.shaderUpdates.push(vcr.update);
+			}
+			#end
 		});
 
 		//Tween shit, but for strums
