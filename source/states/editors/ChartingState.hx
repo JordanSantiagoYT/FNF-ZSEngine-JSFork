@@ -2470,25 +2470,23 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		notes = [];
 		events = [];
 
-		// JS-Engine OPTIMIZATION 1: Pre-allocate arrays with exact sizing
+		// Pre-allocate arrays with exact sizing
 		var estimatedNotes:Int = 0;
 		for (section in PlayState.SONG.notes)
 			estimatedNotes += section.sectionNotes.length;
 		var estimatedEvents:Int = PlayState.SONG.events.length;
 
-		// JS Engine approach: Aggressive GC cleanup with HXCPP_GC_BIG_BLOCKS optimization
+		// GC cleanup before loading
 		#if sys
-		// Force major garbage collection before loading (HXCPP_GC_BIG_BLOCKS optimized)
 		if (ClientPrefs.data.disableGC) {
 			MemoryUtil.enable();
 			MemoryUtil.collect(true);
 			MemoryUtil.disable();
 		} else cpp.vm.Gc.run(true);
 
-		// Set GC parameters for large block allocation (utilizing HXCPP_GC_BIG_BLOCKS)
+		// GC optimization for large charts
 		if (estimatedNotes > 500000) {
 			if (ClientPrefs.data.disableGC) {
-				// More aggressive GC disabling for medium-large charts
 				MemoryUtil.enable();
 				MemoryUtil.collect(true);
 				MemoryUtil.disable();
@@ -2498,11 +2496,10 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			}
 		} else if (estimatedNotes > 1000000) {
 			if (ClientPrefs.data.disableGC) {
-				// Maximum optimization for very large charts
 				MemoryUtil.enable();
 				MemoryUtil.collect(true);
 				MemoryUtil.disable();
-				MemoryUtil.collect(true); // Double cleanup for massive charts
+				MemoryUtil.collect(true);
 			} else {
 				cpp.vm.Gc.enable(false);
 				cpp.vm.Gc.run(true);
@@ -2514,7 +2511,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		if (estimatedNotes > 0) notes = [];
 		if (estimatedEvents > 0) events = [];
 
-		// JS-Engine approach: Load all notes with aggressive memory management
+		// Load all notes with memory management
 		var cnt:Int = 0;
 		var sectionNoteCnt:Int = 0;
 
@@ -2526,18 +2523,18 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			// Show progress at start of each section
 			showProgress(false);
 
-			// More aggressive GC with HXCPP_GC_BIG_BLOCKS optimization using MemoryUtil
-			if (cnt % 25 == 0) { // More frequent GC for large block allocation
+			// Periodic GC cleanup
+			if (cnt % 25 == 0) {
 				#if sys
 				if (ClientPrefs.data.disableGC) {
 					MemoryUtil.collect(true);
 					if (estimatedNotes > 1000000) {
-						MemoryUtil.collect(true); // Double cleanup for massive charts
+						MemoryUtil.collect(true);
 					}
 				} else {
 					cpp.vm.Gc.run(true);
 					if (estimatedNotes > 1000000) {
-						cpp.vm.Gc.run(true); // Double cleanup for massive charts
+						cpp.vm.Gc.run(true);
 					}
 				}
 				#end
@@ -2545,7 +2542,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 			var sectionNotes = section.sectionNotes;
 			var len:Int = sectionNotes.length;
-			// OPTIMIZATION: Pre-calculate section values to reduce per-note calculations
+			// Pre-calculate section values to reduce per-note calculations
 			var sectionCrochet:Float = cachedSectionCrochets[secNum] / 4;
 			var gfSectionVal:Bool = section.gfSection;
 			var mustHitSectionVal:Bool = section.mustHitSection;
@@ -2637,23 +2634,21 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			}
 		}
 
-		// JS-Engine OPTIMIZATION 4: Use native sort with cached function
-		// Debug: Check array state before sorting during loading
-		
+		// Use native sort with cached function
 		notes.sort(cast PlayState.sortByTime);
 		events.sort(cast PlayState.sortByTime);
 
-		// JS-Engine OPTIMIZATION 5: Only load section if needed
+		// Only load section if needed
 		if (curSec >= 0 && curSec < PlayState.SONG.notes.length)
 			loadSection(curSec);
 
 		forceDataUpdate = true;
 
-		// JS-Engine: Debug timing with higher threshold
+		// Debug timing for large charts
 		if (estimatedNotes > 50000)
 			trace('reloadNotes() processed ' + estimatedNotes + ' notes in ' + (haxe.Timer.stamp() - startTime) + 's');
 
-		// H-Slice approach: Re-enable GC and trigger manual collection using MemoryUtil
+		// Re-enable GC after loading
 		#if sys
 		if (ClientPrefs.data.disableGC) {
 			MemoryUtil.enable();
@@ -3085,6 +3080,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 	{
 		var time:Float = note.strumTime - cachedSectionTimes[section];
 		var noteY:Float = (time / cachedSectionCrochets[section]) * GRID_SIZE * 4 * curZoom;
+		noteY += cachedSectionRow[section] * GRID_SIZE * curZoom;
 		noteY = Math.max(noteY, -150);
 		note.y = noteY + (GRID_SIZE/2 - note.height/2);
 		note.chartY = noteY;
