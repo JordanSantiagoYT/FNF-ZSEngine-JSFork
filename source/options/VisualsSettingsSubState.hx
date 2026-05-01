@@ -153,6 +153,17 @@ class VisualsSettingsSubState extends BaseOptionsMenu
 		option.changeValue = 0.1;
 		addOption(option);
 
+		var option:Option = new Option('Health Drain Amount',
+			'How much health will drain per note when health drain is enabled.',
+			'drain',
+			FLOAT);
+		option.scrollSpeed = 0.5;
+		option.minValue = 0.0001;
+		option.maxValue = 1;
+		option.changeValue = 0.0001;
+		option.decimals = 4;
+		addOption(option);
+
 		#if !mobile
 		var option:Option = new Option('FPS Counter',
 			'If unchecked, hides FPS Counter.',

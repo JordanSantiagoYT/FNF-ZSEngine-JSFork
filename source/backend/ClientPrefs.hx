@@ -41,6 +41,8 @@ import states.TitleState;
 	public var hitHealth:Float = 0.02;
 	public var missHealth:Float = 0.1;
 	public var maxHealth:Float = 2;
+	public var healthDrain:Bool = true;
+	public var drain:Float = 0.02;
 	public var scoreZoom:Bool = true;
 	public var noReset:Bool = false;
 	public var healthBarAlpha:Float = 1;
@@ -65,6 +67,7 @@ import states.TitleState;
 		'songspeed' => 1.0,
 		'healthgain' => 1.0,
 		'healthloss' => 1.0,
+		'drainMultiplier' => 1.0,
 		'instakill' => false,
 		'practice' => false,
 		'botplay' => false,

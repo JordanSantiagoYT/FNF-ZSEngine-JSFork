@@ -39,17 +39,25 @@ class GameplaySettingsSubState extends BaseOptionsMenu
 		addOption(option);
 		option.onChange = onChangeAutoPause;
 
+		var option:Option = new Option('Health Drain',
+			"If checked, opponent notes will drain your health.\nIt'll conflict with the Lua/Haxe/ZS health drain scripts",
+			'healthDrain',
+			BOOL);
+		addOption(option);
+
 		var option:Option = new Option('Disable Reset Button',
 			"If checked, pressing Reset won't do anything.",
 			'noReset',
 			BOOL);
 		addOption(option);
 
+		/* Uncomment this if you want to add the "Sustains as One Note" option
 		var option:Option = new Option('Sustains as One Note',
 			"If checked, Hold Notes can't be pressed if you miss,\nand count as a single Hit/Miss.\nUncheck this if you prefer the old Input System.",
 			'guitarHeroSustains',
 			BOOL);
 		addOption(option);
+		*/
 
 		var option:Option = new Option('Botplay Text Location: ',
 			'Change the Botplay Text Location.',

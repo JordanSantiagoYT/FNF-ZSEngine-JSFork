@@ -66,6 +66,14 @@ class GameplayChangersSubstate extends MusicBeatSubstate
 		option.displayFormat = '%vX';
 		optionsArray.push(option);
 
+		var option:GameplayOption = new GameplayOption('Health Drain Multiplier', 'drainMultiplier', FLOAT, 1);
+		option.scrollSpeed = 2.5;
+		option.minValue = 0;
+		option.maxValue = 5;
+		option.changeValue = 0.1;
+		option.displayFormat = '%vX';
+		optionsArray.push(option);
+
 		optionsArray.push(new GameplayOption('Instakill on Miss', 'instakill', BOOL, false));
 		optionsArray.push(new GameplayOption('Practice Mode', 'practice', BOOL, false));
 		optionsArray.push(new GameplayOption('Botplay', 'botplay', BOOL, false));

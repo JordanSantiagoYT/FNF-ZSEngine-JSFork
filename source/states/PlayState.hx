@@ -191,6 +191,9 @@ class PlayState extends MusicBeatState
 	public var hitHealth:Float = ClientPrefs.data.hitHealth;
 	public var missHealth:Float = ClientPrefs.data.missHealth;
 	public var maxHealth:Float = ClientPrefs.data.maxHealth;
+	public var healthDrain:Bool = ClientPrefs.data.healthDrain;
+	public var drain:Float = ClientPrefs.data.drain;
+	public var drainMultiplier:Float = 1;
 	public var combo:Int = 0;
 
 	public var healthBar:Bar;
@@ -399,6 +402,7 @@ class PlayState extends MusicBeatState
 		practiceMode = ClientPrefs.getGameplaySetting('practice');
 		cpuControlled = ClientPrefs.getGameplaySetting('botplay') || !showNotes;
 		guitarHeroSustains = ClientPrefs.data.guitarHeroSustains;
+		drainMultiplier = ClientPrefs.getGameplaySetting('drainMultiplier');
 
 		// Initialize H-Slice arrays
 		currSus = []; currSus.resize(8);
@@ -2286,8 +2290,11 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 			{
 				Conductor.songPosition = FlxMath.lerp(FlxG.sound.music.time + Conductor.offset, Conductor.songPosition, Math.exp(-elapsed * 5));
 				var timeDiff:Float = Math.abs((FlxG.sound.music.time + Conductor.offset) - Conductor.songPosition);
-				if (timeDiff > 1000 * playbackRate)
-					Conductor.songPosition = Conductor.songPosition + 1000 * FlxMath.signOf(timeDiff);
+				// Fix: Force immediate synchronization for large time differences to prevent positioning issues
+				if (timeDiff > 5000 * playbackRate) // Very large gap - force sync
+					Conductor.songPosition = FlxG.sound.music.time + Conductor.offset;
+				else if (timeDiff > 1000 * playbackRate) // Medium gap - reduce jump
+					Conductor.songPosition = (FlxG.sound.music.time + Conductor.offset) + (1000 * FlxMath.signOf(timeDiff));
 			}
 		}
 
@@ -3558,7 +3565,7 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 		if(opponentVocals.length <= 0) vocals.volume = 1;
 		strumPlayAnim(true, Std.int(Math.abs(note.noteData)), note.isSustainNote && note.animation.curAnim.name != null && !note.animation.curAnim.name.endsWith('end'));
 		note.hitByOpponent = true;
-		
+
 		if (noteHitStage) {
 			stagesFunc(function(stage:BaseStage) stage.opponentNoteHit(note));
 		}
@@ -3566,6 +3573,9 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 		if(result != LuaUtils.Function_Stop && result != LuaUtils.Function_StopHScript && result != LuaUtils.Function_StopAll) callOnHScript('opponentNoteHit', [note]);
 
 		if (!note.isSustainNote) invalidateNote(note);
+		if (healthDrain)
+			if (health > 0.02)
+				health -= drain * drainMultiplier;
 	}
 
 	public function goodNoteHit(note:Note):Void
@@ -3642,7 +3652,6 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 			var gainHealth:Bool = true; // prevent health gain, *if* sustains are treated as a singular note
 			if (guitarHeroSustains && note.isSustainNote) gainHealth = false;
 			if (gainHealth) health += hitHealth * healthGain;
-
 		}
 		else //Notes that count as a miss if you hit them (Hurt notes for example)
 		{
