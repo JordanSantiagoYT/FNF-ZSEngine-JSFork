@@ -41,6 +41,7 @@ import shaders.ErrorHandledShader;
 import shaders.WiggleEffect;
 import shaders.PulseEffect;
 import shaders.ChromaticAberrationEffect;
+import shaders.Effect;
 
 import objects.VideoSprite;
 import objects.Note.EventNote;
