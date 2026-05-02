@@ -1872,6 +1872,7 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 
 				// Fix: Only spawn notes when they're within reasonable time window
 				if (isCanPass && (!optimizeSpawnNote || (!noteJudge && canBeHit))) {
+					trace("Spawning note: " + targetNote.strumTime);
 					dunceNote = targetNote;
 					notes.add(dunceNote);
 					strumGroup = dunceNote.mustPress ? playerStrums : opponentStrums;
@@ -1919,6 +1920,7 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 					} else ++shownCnt;
 					++limitCount;
 				} else {
+					trace("Spawn blocked: isCanPass=" + isCanPass + ", optimizeSpawnNote=" + optimizeSpawnNote + ", noteJudge=" + noteJudge + ", canBeHit=" + canBeHit);
 					// Skip notes without spawning
 					skipHit |= 1 << availNoteData;
 					if (!timeLimit) ++skipTimeOut;

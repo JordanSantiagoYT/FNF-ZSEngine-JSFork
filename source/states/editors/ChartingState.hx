@@ -2490,6 +2490,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			MemoryUtil.collect(true);
 			MemoryUtil.disable();
 		} else cpp.vm.Gc.run(true);
+		#end
 
 		// GC optimization for large charts
 		if (estimatedNotes > 500000) {
@@ -3126,11 +3127,11 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 	function positionNoteYOnTime(note:MetaNote, section:Int)
 	{
 		var time:Float = note.strumTime - cachedSectionTimes[section];
-		var noteY:Float = (time / cachedSectionCrochets[section]) * GRID_SIZE * 4 * curZoom;
-		noteY += cachedSectionRow[section] * GRID_SIZE * curZoom;
+		var noteY:Float = (time / cachedSectionCrochets[section]) * (GRID_SIZE:Float) * 4 * curZoom;
+		noteY += cachedSectionRow[section] * (GRID_SIZE:Float) * curZoom;
 		noteY = Math.max(noteY, -150);
 
-		var finalY:Float = noteY + (GRID_SIZE / 2 - note.height / 2);
+		var finalY:Float = noteY + ((GRID_SIZE:Float) / 2 - note.height / 2);
 
 		note.y = finalY;
 		note.chartY = noteY;
