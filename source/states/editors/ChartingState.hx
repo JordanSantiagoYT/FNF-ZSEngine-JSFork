@@ -2137,7 +2137,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		}
 	}
 
-	var cachedSectionRow:Array<Int>;
+	var cachedSectionRow:Array<Float>;
 	var cachedSectionTimes:Array<Float>;
 	var cachedSectionCrochets:Array<Float>;
 	var cachedSectionBPMs:Array<Float>;
@@ -2484,7 +2484,10 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			estimatedNotes += section.sectionNotes.length;
 		var estimatedEvents:Int = PlayState.SONG.events.length;
 
-		// GC cleanup before loading
+		// JS-Engine: Clear all memory before loading
+		Paths.clearStoredMemory();
+		Paths.clearUnusedMemory();
+
 		#if sys
 		if (ClientPrefs.data.disableGC) {
 			MemoryUtil.enable();
@@ -2765,7 +2768,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 	function _cacheSections()
 	{
 		var time:Float = 0;
-		var row:Int = 0;
+		var row:Float = 0;
 		cachedSectionRow = [];
 		cachedSectionTimes = [];
 		cachedSectionCrochets = [];
@@ -2796,7 +2799,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			cachedSectionBPMs.push(bpm);
 
 			var lastTime:Float = time;
-			var rowRound:Int = Math.round(4 * section.sectionBeats);
+			var rowRound:Float = 4 * section.sectionBeats;
 			row += rowRound;
 			time += beat * (rowRound / 4);
 
