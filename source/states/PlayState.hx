@@ -1870,8 +1870,8 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 					}
 				}
 
-				// Fix: Less restrictive spawning condition to prevent notes from being hidden by optimizations
-				if (isCanPass && (!optimizeSpawnNote || !noteJudge || canBeHit)) {
+				// Fix: Only spawn notes when they're within reasonable time window
+				if (isCanPass && (!optimizeSpawnNote || (!noteJudge && canBeHit))) {
 					dunceNote = targetNote;
 					notes.add(dunceNote);
 					strumGroup = dunceNote.mustPress ? playerStrums : opponentStrums;

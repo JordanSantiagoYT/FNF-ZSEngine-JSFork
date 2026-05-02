@@ -1153,9 +1153,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 					// Debug: Check array state before sorting
 
-					trace('[SORT CALL] Sorting notes array with ${notes.length} items');
 					notes.sort(chartEditorSortByTime);
-					trace('[SORT CALL] Finished sorting notes array');
 					var noteSec:Int = 0;
 					var nextSectionTime:Float = cachedSectionTimes[noteSec + 1];
 					var curSectionTime:Float = cachedSectionTimes[noteSec];
@@ -1950,9 +1948,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 				pushedEvents.push(cast (note, EventMetaNote));
 			}
 		});
-		trace('[SORT CALL] Sorting notes array with ${notes.length} items');
 		notes.sort(chartEditorSortByTime);
-		trace('[SORT CALL] Finished sorting notes array');
 		events.sort(cast PlayState.sortByTime);
 		movingNotes.clear();
 		isMovingNotes = false;
@@ -2359,9 +2355,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			}
 		}
 
-		trace('[SORT CALL] Sorting notes array with ${notes.length} items');
 		notes.sort(chartEditorSortByTime);
-		trace('[SORT CALL] Finished sorting notes array');
 		softReloadNotes();
 		forceDataUpdate = true;
 	}
@@ -2679,9 +2673,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		}
 
 		// Use chart editor-specific sorting for proper note stacking
-		trace('[SORT CALL] Sorting notes array with ${notes.length} items');
 		notes.sort(chartEditorSortByTime);
-		trace('[SORT CALL] Finished sorting notes array');
 		events.sort(cast PlayState.sortByTime);
 
 		// Only load section if needed
@@ -3129,12 +3121,6 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			return timeCompare > 0 ? 1 : -1;
 		}
 
-		// Comprehensive debug trace for overlapping notes
-		trace('[SORT DEBUG] Overlapping notes:');
-		trace('  Note A: time=${a.strumTime}, noteData=${a.noteData}, songData[1]=${a.songData[1]}, y=${a.y}, chartY=${a.chartY}');
-		trace('  Note B: time=${b.strumTime}, noteData=${b.noteData}, songData[1]=${b.songData[1]}, y=${b.y}, chartY=${b.chartY}');
-		trace('  Comparison: a.noteData - b.noteData = ${a.noteData - b.noteData}');
-		
 		return a.noteData - b.noteData;
 	}
 
@@ -3146,15 +3132,10 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		noteY = Math.max(noteY, -150);
 
 		var finalY:Float = noteY + (GRID_SIZE / 2 - note.height / 2);
-		if (curZoom % 1 != 0) {
-			finalY = Math.round(finalY);
-		}
 
 		note.y = finalY;
 		note.chartY = noteY;
 		//trace(gridBg.y, noteY);
-		// Debug trace for positioning
-		trace('[POSITION DEBUG] Note positioned: time=${note.strumTime}, noteData=${note.noteData}, songData[1]=${note.songData[1]}, noteY=$noteY, finalY=$finalY, y=${note.y}');
 	}
 
 	var characterData:Dynamic = {};
@@ -6044,9 +6025,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		for (secNum => section in PlayState.SONG.notes)
 			PlayState.SONG.notes[secNum].sectionNotes = [];
 
-		trace('[SORT CALL] Sorting notes array with ${notes.length} items');
 		notes.sort(chartEditorSortByTime);
-		trace('[SORT CALL] Finished sorting notes array');
 		var noteSec:Int = 0;
 		var nextSectionTime:Float = cachedSectionTimes[noteSec + 1];
 		var curSectionTime:Float = cachedSectionTimes[noteSec];
@@ -6270,9 +6249,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		undoActions = [];
 		setSongPlaying(false);
 		var gridLerp:Float = FlxMath.bound((scrollY + FlxG.height/2 - gridBg.y) / gridBg.height, 0.000001, 0.999999);
-		trace('[SORT CALL] Sorting notes array with ${notes.length} items');
 		notes.sort(chartEditorSortByTime);
-		trace('[SORT CALL] Finished sorting notes array');
 		_cacheSections();
 
 		var noteSec:Int = 0;
