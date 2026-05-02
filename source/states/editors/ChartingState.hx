@@ -1153,7 +1153,9 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 					// Debug: Check array state before sorting
 
+					trace('[SORT CALL] Sorting notes array with ${notes.length} items');
 					notes.sort(chartEditorSortByTime);
+					trace('[SORT CALL] Finished sorting notes array');
 					var noteSec:Int = 0;
 					var nextSectionTime:Float = cachedSectionTimes[noteSec + 1];
 					var curSectionTime:Float = cachedSectionTimes[noteSec];
@@ -1948,7 +1950,9 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 				pushedEvents.push(cast (note, EventMetaNote));
 			}
 		});
+		trace('[SORT CALL] Sorting notes array with ${notes.length} items');
 		notes.sort(chartEditorSortByTime);
+		trace('[SORT CALL] Finished sorting notes array');
 		events.sort(cast PlayState.sortByTime);
 		movingNotes.clear();
 		isMovingNotes = false;
@@ -2355,7 +2359,9 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			}
 		}
 
+		trace('[SORT CALL] Sorting notes array with ${notes.length} items');
 		notes.sort(chartEditorSortByTime);
+		trace('[SORT CALL] Finished sorting notes array');
 		softReloadNotes();
 		forceDataUpdate = true;
 	}
@@ -2673,7 +2679,9 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		}
 
 		// Use chart editor-specific sorting for proper note stacking
+		trace('[SORT CALL] Sorting notes array with ${notes.length} items');
 		notes.sort(chartEditorSortByTime);
+		trace('[SORT CALL] Finished sorting notes array');
 		events.sort(cast PlayState.sortByTime);
 
 		// Only load section if needed
@@ -3127,7 +3135,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		trace('  Note B: time=${b.strumTime}, noteData=${b.noteData}, songData[1]=${b.songData[1]}, y=${b.y}, chartY=${b.chartY}');
 		trace('  Comparison: a.noteData - b.noteData = ${a.noteData - b.noteData}');
 		
-		return a.songData[1] - b.songData[1];
+		return a.noteData - b.noteData;
 	}
 
 	function positionNoteYOnTime(note:MetaNote, section:Int)
@@ -4043,7 +4051,9 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 					pushedNotes.push(newNote);
 				}
 			}
+			trace('[SORT CALL] Sorting notes array with ${notes.length} items');
 			notes.sort(chartEditorSortByTime);
+			trace('[SORT CALL] Finished sorting notes array');
 			softReloadNotes(true);
 			
 			addUndoAction(ADD_NOTE, {notes: pushedNotes});
@@ -4316,7 +4326,9 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 				pushedNotes.push(createdNote);
 				nts.push(createdNote);
 			}
+			trace('[SORT CALL] Sorting notes array with ${notes.length} items');
 			notes.sort(chartEditorSortByTime);
+			trace('[SORT CALL] Finished sorting notes array');
 		}
 
 		if(canCopyEvents && copiedEvents.length > 0)
@@ -6032,7 +6044,9 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		for (secNum => section in PlayState.SONG.notes)
 			PlayState.SONG.notes[secNum].sectionNotes = [];
 
+		trace('[SORT CALL] Sorting notes array with ${notes.length} items');
 		notes.sort(chartEditorSortByTime);
+		trace('[SORT CALL] Finished sorting notes array');
 		var noteSec:Int = 0;
 		var nextSectionTime:Float = cachedSectionTimes[noteSec + 1];
 		var curSectionTime:Float = cachedSectionTimes[noteSec];
@@ -6256,7 +6270,9 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		undoActions = [];
 		setSongPlaying(false);
 		var gridLerp:Float = FlxMath.bound((scrollY + FlxG.height/2 - gridBg.y) / gridBg.height, 0.000001, 0.999999);
+		trace('[SORT CALL] Sorting notes array with ${notes.length} items');
 		notes.sort(chartEditorSortByTime);
+		trace('[SORT CALL] Finished sorting notes array');
 		_cacheSections();
 
 		var noteSec:Int = 0;
@@ -6631,7 +6647,9 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 					note.songData[1] = note.chartNoteData;
 				}
 			}
+			trace('[SORT CALL] Sorting notes array with ${notes.length} items');
 			notes.sort(chartEditorSortByTime);
+			trace('[SORT CALL] Finished sorting notes array');
 		}
 		if(dataEvents != null && dataEvents.length > 0)
 		{
