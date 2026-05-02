@@ -2484,10 +2484,6 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			estimatedNotes += section.sectionNotes.length;
 		var estimatedEvents:Int = PlayState.SONG.events.length;
 
-		// JS-Engine: Clear all memory before loading
-		Paths.clearStoredMemory();
-		Paths.clearUnusedMemory();
-
 		#if sys
 		if (ClientPrefs.data.disableGC) {
 			MemoryUtil.enable();
