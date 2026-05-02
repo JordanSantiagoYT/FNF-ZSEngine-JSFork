@@ -591,7 +591,7 @@ class PlayState extends MusicBeatState
 		add(uiGroup);
 		add(noteGroup);
 
-		Conductor.songPosition = 0;
+		Conductor.songPosition = -Conductor.crochet * 5 + Conductor.offset;
 		var showTime:Bool = (ClientPrefs.data.timeBarType != 'Disabled');
 		timeTxt = new FlxText(STRUM_X + (FlxG.width / 2) - 248, 19, 400, "", 32);
 		timeTxt.setFormat(Paths.font("vcr.ttf"), 32, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
@@ -1175,7 +1175,7 @@ class PlayState extends MusicBeatState
 			}
 
 			startedCountdown = true;
-			Conductor.songPosition = 0;
+			Conductor.songPosition = -Conductor.crochet * 5 + Conductor.offset;
 			setOnScripts('startedCountdown', true);
 			callOnScripts('onCountdownStarted');
 
@@ -1853,6 +1853,11 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 				noteJudge = castHold ? tooLate : canBeHit;
 				timeLimit = breakTimeLimit ? true : (nanoPosition ? haxe.Timer.stamp() : haxe.Timer.stamp()) - timeout < shownRealTime;
 
+				// Debug traces for spawning logic
+				trace('[SPAWN DEBUG] Note: time=${targetNote.strumTime}, fixedPos=$fixedPosition, canBeHit=$canBeHit, tooLate=$tooLate, noteJudge=$noteJudge');
+				trace('[SPAWN DEBUG] isDisplay=$isDisplay, limitCount=$limitCount, limitNotes=$limitNotes, totalCnt=$totalCnt');
+				trace('[SPAWN DEBUG] songPos=${Conductor.songPosition}, noteOffset=${ClientPrefs.data.noteOffset}');
+
 				// H-Slice approach: Use the same isCanPass logic that works in H-Slice
 				isCanPass = !skipSpawnNote || (keepNotes ? !tooLate : timeLimit);
 
@@ -2257,10 +2262,10 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 				var musicTime:Float = FlxG.sound.music.time + Conductor.offset;
 				var timeDiff:Float = Math.abs(musicTime - Conductor.songPosition);
 				trace('[SYNC DEBUG] songPos=${Conductor.songPosition}, musicTime=$musicTime, timeDiff=$timeDiff, playbackRate=$playbackRate');
-				
+
 				Conductor.songPosition = FlxMath.lerp(musicTime, Conductor.songPosition, Math.exp(-elapsed * 5));
 				timeDiff = Math.abs(musicTime - Conductor.songPosition);
-				
+
 				// Fix: Force immediate synchronization for large time differences to prevent positioning issues
 				if (timeDiff > 5000 * playbackRate) // Very large gap - force sync
 				{
@@ -2282,12 +2287,7 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 				startSong();
 			else if(!startedCountdown)
 			{
-				// H-Slice approach: initialize songPosition from actual time instead of hardcoded negative
-				if (FlxG.sound.music != null) {
-					Conductor.songPosition = FlxG.sound.music.time + Conductor.offset;
-				} else {
-					Conductor.songPosition = 0; // Start at 0 instead of negative value
-				}
+				Conductor.songPosition = -Conductor.crochet * 5 + Conductor.offset;
 				trace('[SONG POS DEBUG] Initial songPosition set to: ${Conductor.songPosition}, musicTime: ${FlxG.sound.music != null ? FlxG.sound.music.time + Conductor.offset : -1}');
 			}
 		}

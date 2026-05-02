@@ -3127,7 +3127,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		trace('  Note B: time=${b.strumTime}, noteData=${b.noteData}, songData[1]=${b.songData[1]}, y=${b.y}, chartY=${b.chartY}');
 		trace('  Comparison: a.noteData - b.noteData = ${a.noteData - b.noteData}');
 		
-		return a.noteData - b.noteData;
+		return a.songData[1] - b.songData[1];
 	}
 
 	function positionNoteYOnTime(note:MetaNote, section:Int)
