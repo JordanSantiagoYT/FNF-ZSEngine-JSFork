@@ -192,6 +192,11 @@
 	<!-- pretty (haxeflixel default), indent, classic (haxe compiler default) -->
 	<haxedef name="message.reporting" value="pretty" />
 
+	<!-- Haxe optimization flags for reloadNotes() performance -->
+	<haxedef name="analyzer-optimize" />
+	<haxedef name="dce" value="full" if="release" />
+	<haxeflag name="-final" if="release" />
+
 	<!--Macro fixes-->
 	<haxeflag name="--macro" value="allowPackage('flash')" />
 	<haxeflag name="--macro" value="include('my.pack')" />

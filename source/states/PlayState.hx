@@ -1850,9 +1850,12 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 			initSpawnInfo(targetNote);
 
 			while (isDisplay && limitCount < limitNotes) {
+				var diff = targetNote.strumTime - fixedPosition;
 				canBeHit = fixedPosition > targetNote.strumTime; // false is before, true is after
+				trace("CANBEHIT: strum=" + targetNote.strumTime + ", fixedPos=" + fixedPosition + ", diff=" + diff + ", canBeHit=" + canBeHit);
 				tooLate = fixedPosition > targetNote.strumTime + noteKillOffset;
 				noteJudge = castHold ? tooLate : canBeHit;
+				trace("noteJudge = " + noteJudge + " (castHold=" + castHold + ", tooLate=" + tooLate + ", canBeHit=" + canBeHit + ")");
 				timeLimit = breakTimeLimit ? true : (nanoPosition ? haxe.Timer.stamp() : haxe.Timer.stamp()) - timeout < shownRealTime;
 
 				// Debug traces for spawning logic
@@ -1875,7 +1878,9 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 
 				// Fix: Only spawn notes when they're within reasonable time window
 				trace("SPAWN LOOP: unspawnNotes.length=" + unspawnNotes.length + ", totalCnt=" + totalCnt + ", isDisplay=" + isDisplay + ", isCanPass=" + isCanPass);
-				trace("SPAWN CHECK: isCanPass=" + isCanPass + ", optimizeSpawnNote=" + optimizeSpawnNote + ", noteJudge=" + noteJudge + ", canBeHit=" + canBeHit);
+				trace("SPAWN EVAL: isCanPass=" + isCanPass + ", optimizeSpawnNote=" + optimizeSpawnNote + ", noteJudge=" + noteJudge + ", canBeHit=" + canBeHit);
+				trace("SPAWN CONDITION: (!optimizeSpawnNote) = " + (!optimizeSpawnNote) + ", (!noteJudge && canBeHit) = " + (!noteJudge && canBeHit));
+				trace("SPAWN RESULT: " + (isCanPass && (!optimizeSpawnNote || (!noteJudge && canBeHit))));
 				trace("targetNote.strumTime=" + targetNote.strumTime + ", Conductor.songPosition=" + Conductor.songPosition);
 				if (isCanPass && (!optimizeSpawnNote || (!noteJudge && canBeHit))) {
 					trace("Conductor.songPosition = " + Conductor.songPosition);

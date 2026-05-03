@@ -2890,21 +2890,17 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			var currentTime = haxe.Timer.stamp() * 1000;
 			if ((currentTime - syncTime > progressUpdateTime * 1000) || force)
 			{
-				var totalSections = (PlayState.SONG != null && PlayState.SONG.notes != null) ? PlayState.SONG.notes.length : 0;
-				var sectionText = (totalSections > 0) ? '$cnt/$totalSections' : '$cnt/?';
 				var totalNotes = parsedNotes + sectionNoteCnt;
 
-				Sys.stdout().writeString('\x1b[0GLoading section $sectionText ($totalNotes notes)');
+				Sys.stdout().writeString('\x1b[0GLoading $totalNotes notes');
 				Sys.stdout().flush();
 				syncTime = currentTime;
 			}
 		}
 		else if (isDesktop && force) 
 		{
-			var totalSections = (PlayState.SONG != null && PlayState.SONG.notes != null) ? PlayState.SONG.notes.length : 0;
-			var sectionText = (totalSections > 0) ? '$cnt/$totalSections' : '$cnt/?';
 			var totalNotes = parsedNotes + sectionNoteCnt;
-			Sys.println('Loading section $sectionText ($totalNotes notes)');
+			Sys.println('Loading $totalNotes notes');
 		}
 	}
 
