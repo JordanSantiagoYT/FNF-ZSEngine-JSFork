@@ -3133,8 +3133,11 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		noteY = Math.max(noteY, -150);
 
 		var finalY:Float = noteY + ((GRID_SIZE:Float) / 2 - note.height / 2);
-
+		trace("DEBUG: noteY=" + noteY + ", note.height=" + note.height + ", finalY=" + finalY);
 		note.y = finalY;
+		trace("DEBUG: note.y after assignment = " + note.y);
+		if (Math.abs(finalY - note.y) > 0.001)
+			trace("ERROR: note.y truncated to integer!");
 		note.chartY = noteY;
 		//trace(gridBg.y, noteY);
 	}

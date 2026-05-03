@@ -1872,6 +1872,12 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 
 				// Fix: Only spawn notes when they're within reasonable time window
 				if (isCanPass && (!optimizeSpawnNote || (!noteJudge && canBeHit))) {
+					trace("Conductor.songPosition = " + Conductor.songPosition);
+					if (FlxG.sound.music != null)
+						trace('FlxG.sound.music.time = ' + FlxG.sound.music.time);
+					else
+						trace('FlxG.sound.music = null');
+					trace("note.strumTime = " + targetNote.strumTime);
 					trace("Spawning note: " + targetNote.strumTime);
 					dunceNote = targetNote;
 					notes.add(dunceNote);
