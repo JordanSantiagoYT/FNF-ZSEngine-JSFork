@@ -2579,6 +2579,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 					// OPTIMIZATION: Cache note data to avoid repeated array access
 					var noteInfo = note[1];
 					var strumTime = note[0];
+					trace("LOAD: strumTime = " + strumTime + " (type: " + Type.typeof(strumTime) + ")");
 					var noteData = Std.int(noteInfo % GRID_COLUMNS_PER_PLAYER);
 					var gottaHitNote = (noteInfo < GRID_COLUMNS_PER_PLAYER);
 

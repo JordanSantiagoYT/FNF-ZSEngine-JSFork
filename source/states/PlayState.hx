@@ -1839,6 +1839,7 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 		lDist = []; dist = [];
 		lDist.resize(8); dist.resize(8);
 
+		trace("NOTE LOOP: unspawnNotes.length=" + unspawnNotes.length + ", totalCnt=" + totalCnt + ", isDisplay=" + isDisplay);
 		if (unspawnNotes.length > totalCnt) {
 			limitCount = notes.countLiving();
 			targetNote = unspawnNotes[totalCnt];
@@ -1860,6 +1861,7 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 
 				// H-Slice approach: Use the same isCanPass logic that works in H-Slice
 				isCanPass = !skipSpawnNote || (keepNotes ? !tooLate : timeLimit);
+				trace("IS_CAN_PASS: skipSpawnNote=" + skipSpawnNote + ", keepNotes=" + keepNotes + ", tooLate=" + tooLate + ", timeLimit=" + timeLimit + ", isCanPass=" + isCanPass);
 
 				if (showAfter) {
 					if (!showAgain && !canBeHit) {
