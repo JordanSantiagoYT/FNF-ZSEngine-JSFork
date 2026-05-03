@@ -1151,8 +1151,6 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 					else
 						curZoom = zoomList[Std.int(Math.min(zoomList.indexOf(curZoom) + 1, zoomList.length - 1))];
 
-					// Debug: Check array state before sorting
-
 					notes.sort(chartEditorSortByTime);
 					var noteSec:Int = 0;
 					var nextSectionTime:Float = cachedSectionTimes[noteSec + 1];
@@ -2490,9 +2488,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			MemoryUtil.collect(true);
 			MemoryUtil.disable();
 		} else cpp.vm.Gc.run(true);
-		#end
 
-		#if sys
 		// GC optimization for large charts
 		if (estimatedNotes > 500000) {
 			if (ClientPrefs.data.disableGC) {
@@ -2579,7 +2575,6 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 					// OPTIMIZATION: Cache note data to avoid repeated array access
 					var noteInfo:Int = Std.int(note[1]);
 					var strumTime:Float = note[0];
-					trace("LOAD: strumTime = " + strumTime + " (type: " + Type.typeof(strumTime) + ")");
 					var noteData = Std.int(noteInfo % GRID_COLUMNS_PER_PLAYER);
 					var gottaHitNote = (noteInfo < GRID_COLUMNS_PER_PLAYER);
 
@@ -2979,20 +2974,6 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		var minTime:Float = getMinNoteTime(curSec);
 		var maxTime:Float = getMaxNoteTime(curSec);
 
-		// Debug: Find what section contains the first note
-		if (notes.length > 0) {
-			var firstNote = notes[0];
-			if (firstNote != null) {
-				var targetSection = 0;
-				for (i in 0...cachedSectionTimes.length) {
-					if (firstNote.strumTime >= cachedSectionTimes[i] && firstNote.strumTime < cachedSectionTimes[i + 1]) {
-						targetSection = i;
-						break;
-					}
-				}
-			}
-		}
-
 		function curSecFilter(note:MetaNote)
 		{
 			return (note.strumTime >= minTime && note.strumTime < maxTime);
@@ -3021,7 +3002,6 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 				filteredNotes++;
 				if(!firstNote) sectionFirstNoteID = num;
 				curRenderedNotes.add(note);
-				trace("Re-positioning note " + note.strumTime + " from " + note.y + " to new Y");
 				note.alpha = (note.strumTime >= Conductor.songPosition) ? 1 : 0.6;
 				if(note.hasSustain) note.updateSustainToZoom(cachedSectionCrochets[curSec] / 4, curZoom);
 			}
@@ -3135,11 +3115,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		noteY = Math.max(noteY, -150);
 
 		var finalY:Float = noteY + ((GRID_SIZE:Float) / 2 - note.height / 2);
-		trace("DEBUG: noteY=" + noteY + ", note.height=" + note.height + ", finalY=" + finalY);
 		note.y = finalY;
-		trace("DEBUG: note.y after assignment = " + note.y);
-		if (Math.abs(finalY - note.y) > 0.001)
-			trace("ERROR: note.y truncated to integer!");
 		note.chartY = noteY;
 		//trace(gridBg.y, noteY);
 	}
@@ -4038,9 +4014,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 					pushedNotes.push(newNote);
 				}
 			}
-			trace('[SORT CALL] Sorting notes array with ${notes.length} items');
 			notes.sort(chartEditorSortByTime);
-			trace('[SORT CALL] Finished sorting notes array');
 			softReloadNotes(true);
 			
 			addUndoAction(ADD_NOTE, {notes: pushedNotes});
@@ -4313,9 +4287,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 				pushedNotes.push(createdNote);
 				nts.push(createdNote);
 			}
-			trace('[SORT CALL] Sorting notes array with ${notes.length} items');
 			notes.sort(chartEditorSortByTime);
-			trace('[SORT CALL] Finished sorting notes array');
 		}
 
 		if(canCopyEvents && copiedEvents.length > 0)
@@ -6313,7 +6285,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			positionNoteYOnTime(note, noteSec);
 			note.updateSustainToStepCrochet(cachedSectionCrochets[noteSec] / 4);
 		}
-		
+
 		for (event in events)
 		{
 			var secNum:Int = 0;
@@ -6324,14 +6296,14 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			}
 			positionNoteYOnTime(event, secNum);
 		}
-		
+
 		var time:Float = FlxMath.remapToRange(gridLerp, 0, 1, cachedSectionTimes[curSec], cachedSectionTimes[curSec + 1]);
 		if(Math.isNaN(time))
 		{
 			time = 0;
 			curSec = 0;
 		}
-		
+
 		if(FlxG.sound.music != null && time >= FlxG.sound.music.length)
 		{
 			time = FlxG.sound.music.length - 1;
@@ -6630,9 +6602,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 					note.songData[1] = note.chartNoteData;
 				}
 			}
-			trace('[SORT CALL] Sorting notes array with ${notes.length} items');
 			notes.sort(chartEditorSortByTime);
-			trace('[SORT CALL] Finished sorting notes array');
 		}
 		if(dataEvents != null && dataEvents.length > 0)
 		{

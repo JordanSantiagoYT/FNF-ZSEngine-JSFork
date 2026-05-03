@@ -1830,7 +1830,7 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 		shownTime = showNotes ? castHold ? Math.max(spawnTime / songSpeed, Math.max(globalElapsed * 1000, minimumShownTime)) : Math.max(spawnTime / songSpeed, minimumShownTime) : 0;
 		shownRealTime = shownTime * 0.001;
 
-		isDisplay = castHold ? note.strumTime - fixedPosition < shownTime : fixedPosition > note.strumTime - shownTime;
+		isDisplay = (castHold ? note.strumTime - fixedPosition < shownTime : fixedPosition > note.strumTime - shownTime) || (Conductor.songPosition < 0);
 	}
 
 	public function noteSpawn() {
