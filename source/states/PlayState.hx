@@ -1831,6 +1831,7 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 		shownRealTime = shownTime * 0.001;
 
 		isDisplay = (castHold ? note.strumTime - fixedPosition < shownTime : fixedPosition > note.strumTime - shownTime) || (Conductor.songPosition < 0);
+		trace("initSpawnInfo: note.strumTime=" + note.strumTime + ", isDisplay=" + isDisplay + ", fixedPosition=" + fixedPosition);
 	}
 
 	public function noteSpawn() {
@@ -1873,6 +1874,7 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 				}
 
 				// Fix: Only spawn notes when they're within reasonable time window
+				trace("SPAWN LOOP: unspawnNotes.length=" + unspawnNotes.length + ", totalCnt=" + totalCnt + ", isDisplay=" + isDisplay + ", isCanPass=" + isCanPass);
 				trace("SPAWN CHECK: isCanPass=" + isCanPass + ", optimizeSpawnNote=" + optimizeSpawnNote + ", noteJudge=" + noteJudge + ", canBeHit=" + canBeHit);
 				trace("targetNote.strumTime=" + targetNote.strumTime + ", Conductor.songPosition=" + Conductor.songPosition);
 				if (isCanPass && (!optimizeSpawnNote || (!noteJudge && canBeHit))) {
@@ -1885,6 +1887,8 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 					trace("Spawning note: " + targetNote.strumTime);
 					dunceNote = targetNote;
 					notes.add(dunceNote);
+					trace("SPAWNED: note.strumTime=" + dunceNote.strumTime + ", dunceNote.visible=" + dunceNote.visible);
+					trace("SPAWNED note Y: " + dunceNote.y);
 					strumGroup = dunceNote.mustPress ? playerStrums : opponentStrums;
 
 					var distanceCalc:Float = 0.45 * (Conductor.songPosition - dunceNote.strumTime) * songSpeed;
