@@ -2577,8 +2577,8 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 				if(note != null)
 				{
 					// OPTIMIZATION: Cache note data to avoid repeated array access
-					var noteInfo = note[1];
-					var strumTime = note[0];
+					var noteInfo:Int = Std.int(note[1]);
+					var strumTime:Float = note[0];
 					trace("LOAD: strumTime = " + strumTime + " (type: " + Type.typeof(strumTime) + ")");
 					var noteData = Std.int(noteInfo % GRID_COLUMNS_PER_PLAYER);
 					var gottaHitNote = (noteInfo < GRID_COLUMNS_PER_PLAYER);
@@ -2592,7 +2592,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 					// OPTIMIZATION: Simplified note type handling
 					var noteTypeValue:String = Std.isOfType(note[3], String) ? 
 						Std.string(note[3]) : 
-						((note[3] >= 0 && note[3] < defaultTypes.length) ? defaultTypes[Std.int(note[3])] : '');
+						((Std.int(note[3]) >= 0 && Std.int(note[3]) < defaultTypes.length) ? defaultTypes[Std.int(note[3])] : '');
 
 					swagNote.noteType = noteTypeValue;
 					swagNote.scrollFactor.x = 0;
