@@ -195,7 +195,7 @@
 	<!-- Haxe optimization flags for reloadNotes() performance -->
 	<haxedef name="analyzer-optimize" />
 	<haxedef name="dce" value="full" if="release" />
-	<haxeflag name="-final" if="release" />
+	<haxeflag name="--final" if="release" />
 
 	<!--Macro fixes-->
 	<haxeflag name="--macro" value="allowPackage('flash')" />
