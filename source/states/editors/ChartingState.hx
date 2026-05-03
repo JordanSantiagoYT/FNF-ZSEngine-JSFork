@@ -3020,6 +3020,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 				filteredNotes++;
 				if(!firstNote) sectionFirstNoteID = num;
 				curRenderedNotes.add(note);
+				trace("Re-positioning note " + note.strumTime + " from " + note.y + " to new Y");
 				note.alpha = (note.strumTime >= Conductor.songPosition) ? 1 : 0.6;
 				if(note.hasSustain) note.updateSustainToZoom(cachedSectionCrochets[curSec] / 4, curZoom);
 			}

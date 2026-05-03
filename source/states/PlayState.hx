@@ -1871,6 +1871,8 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 				}
 
 				// Fix: Only spawn notes when they're within reasonable time window
+				trace("SPAWN CHECK: isCanPass=" + isCanPass + ", optimizeSpawnNote=" + optimizeSpawnNote + ", noteJudge=" + noteJudge + ", canBeHit=" + canBeHit);
+				trace("targetNote.strumTime=" + targetNote.strumTime + ", Conductor.songPosition=" + Conductor.songPosition);
 				if (isCanPass && (!optimizeSpawnNote || (!noteJudge && canBeHit))) {
 					trace("Conductor.songPosition = " + Conductor.songPosition);
 					if (FlxG.sound.music != null)
@@ -1926,6 +1928,7 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 					} else ++shownCnt;
 					++limitCount;
 				} else {
+					trace("SPAWN BLOCKED");
 					trace("Spawn blocked: isCanPass=" + isCanPass + ", optimizeSpawnNote=" + optimizeSpawnNote + ", noteJudge=" + noteJudge + ", canBeHit=" + canBeHit);
 					// Skip notes without spawning
 					skipHit |= 1 << availNoteData;
