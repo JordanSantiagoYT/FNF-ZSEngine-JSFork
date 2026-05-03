@@ -2492,6 +2492,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		} else cpp.vm.Gc.run(true);
 		#end
 
+		#if sys
 		// GC optimization for large charts
 		if (estimatedNotes > 500000) {
 			if (ClientPrefs.data.disableGC) {
