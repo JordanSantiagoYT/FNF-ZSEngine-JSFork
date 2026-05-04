@@ -1882,7 +1882,7 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 				trace("SPAWN CONDITION: (!optimizeSpawnNote) = " + (!optimizeSpawnNote) + ", (!noteJudge && canBeHit) = " + (!noteJudge && canBeHit));
 				trace("SPAWN RESULT: " + (isCanPass && (!optimizeSpawnNote || (!noteJudge && canBeHit))));
 				trace("targetNote.strumTime=" + targetNote.strumTime + ", Conductor.songPosition=" + Conductor.songPosition);
-				if (isCanPass && (!optimizeSpawnNote || (!noteJudge && canBeHit))) {
+				if (isCanPass && (!optimizeSpawnNote || (!noteJudge && canBeHit) || Conductor.songPosition < 0)) {
 					trace("Conductor.songPosition = " + Conductor.songPosition);
 					if (FlxG.sound.music != null)
 						trace('FlxG.sound.music.time = ' + FlxG.sound.music.time);
