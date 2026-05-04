@@ -511,7 +511,6 @@ class Note extends FlxSprite
 		var strumDirection:Float = myStrum.direction;
 
 		distance = (0.45 * (Conductor.songPosition - strumTime) * songSpeed * multSpeed);
-		trace("Note " + strumTime + " songPos = " + Conductor.songPosition + " distance = " + distance);
 		if (!myStrum.downScroll) distance *= -1;
 
 		var angleDir = strumDirection * Math.PI / 180;
@@ -527,6 +526,8 @@ class Note extends FlxSprite
 		if(copyY)
 		{
 			y = strumY + offsetY + correctionOffset + Math.sin(angleDir) * distance;
+			trace("FINAL POS: strumY=" + strumY + ", distance=" + distance + ", downScroll=" + myStrum.downScroll + ", final y=" + y);
+			trace("CAMERA: scrollY=" + (camera != null ? camera.scroll.y : "null") + ", screen height=" + FlxG.height);
 			if(myStrum.downScroll && isSustainNote)
 			{
 				if(PlayState.isPixelStage)
