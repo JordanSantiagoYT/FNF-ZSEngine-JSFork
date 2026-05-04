@@ -511,6 +511,16 @@ class Note extends FlxSprite
 		var strumDirection:Float = myStrum.direction;
 
 		distance = (0.45 * (Conductor.songPosition - strumTime) * songSpeed * multSpeed);
+		// Fix: During countdown, position notes based on their time relative to song start
+		if (Conductor.songPosition < 0) {
+			// Calculate distance as if song just started (position 0)
+			distance = (0.45 * (0 - strumTime) * songSpeed * multSpeed);
+			// Limit distance to keep notes within reasonable visible range
+			var maxDistance:Float = 500;
+			if (Math.abs(distance) > maxDistance) {
+				distance = maxDistance * Math.sign(distance);
+			}
+		}
 		if (!myStrum.downScroll) distance *= -1;
 
 		var angleDir = strumDirection * Math.PI / 180;
