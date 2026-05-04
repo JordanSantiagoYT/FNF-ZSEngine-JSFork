@@ -155,6 +155,9 @@ class Paths
 			for (member in FlxG.state.subState.members)
 				checkForGraphics(member);
 
+		var deletedCount:Int = 0;
+		var protectedCount:Int = 0;
+
 		for (key in currentTrackedAssets.keys())
 		{
 			// if it is not currently contained within the used local assets
@@ -163,8 +166,36 @@ class Paths
 				var graphic:FlxGraphic = currentTrackedAssets.get(key);
 				if(!protectedGfx.contains(graphic))
 				{
+					// Additional protection for commonly used UI graphics
+					var shouldProtect:Bool = false;
+
+					// Protect text graphics (fonts, alphabet characters)
+					if (key.contains('alphabet') || key.contains('font') || key.contains('text') || 
+						key.contains('vcr') || key.contains('ui') || key.contains('menu') ||
+						key.contains('freeplay') || key.contains('story') || key.contains('title'))
+					{
+						shouldProtect = true;
+					}
+
+					// Protect small graphics (likely UI elements)
+					if (graphic != null && graphic.bitmap != null)
+					{
+						var size:Int = graphic.bitmap.width * graphic.bitmap.height;
+						if (size < 100000) // Less than 100KB pixels
+						{
+							shouldProtect = true;
+						}
+					}
+
+					if (shouldProtect)
+					{
+						protectedCount++;
+						continue;
+					}
+
 					destroyGraphic(graphic); // get rid of the graphic
 					currentTrackedAssets.remove(key); // and remove the key from local cache map
+					deletedCount++;
 					//trace('deleted $key');
 				}
 			}

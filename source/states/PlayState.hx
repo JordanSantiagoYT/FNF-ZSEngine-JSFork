@@ -213,7 +213,7 @@ class PlayState extends MusicBeatState
 	public var healthGain:Float = 1;
 	public var healthLoss:Float = 1;
 
-	public var guitarHeroSustains:Bool = false;
+	public var guitarHeroSustains:Bool = ClientPrefs.data.guitarHeroSustains;
 	public var instakillOnMiss:Bool = false;
 	public var cpuControlled:Bool = false;
 	public var practiceMode:Bool = false;
@@ -401,20 +401,7 @@ class PlayState extends MusicBeatState
 		instakillOnMiss = ClientPrefs.getGameplaySetting('instakill');
 		practiceMode = ClientPrefs.getGameplaySetting('practice');
 		cpuControlled = ClientPrefs.getGameplaySetting('botplay') || !showNotes;
-		guitarHeroSustains = ClientPrefs.data.guitarHeroSustains;
 		drainMultiplier = ClientPrefs.getGameplaySetting('drainMultiplier');
-
-		// Initialize H-Slice arrays
-		currSus = []; currSus.resize(8);
-		prevSus = []; prevSus.resize(8);
-		lDist = []; lDist.resize(8);
-		dist = []; dist.resize(8);
-		iDist = []; iDist.resize(8);
-		splashMoment = []; splashMoment.resize(8);
-		splashUsing = []; for (i in 0...8) splashUsing.push([]);
-
-		// Initialize H-Slice sorting system
-		sortingWay = OptimizeSettingsSubState.SORT_PATTERN.indexOf(sortNotes);
 
 		// var gameCam:FlxCamera = FlxG.camera;
 		camGame = initPsychCamera();
@@ -751,7 +738,7 @@ class PlayState extends MusicBeatState
 		if(eventNotes.length > 0)
 		{
 			for (event in eventNotes) event.strumTime -= eventEarlyTrigger(event);
-			eventNotes.sort(cast sortByTime);
+			eventNotes.sort(sortByTime);
 		}
 
 		startCallback();
@@ -1608,10 +1595,7 @@ class PlayState extends MusicBeatState
 
 				// JS Engine approach - no ghost note detection for simplicity
 
-				trace('[NOTE GEN DEBUG] Creating regular note: time=$spawnTime, column=$noteColumn, oldNote=${oldNote != null ? "valid" : "NULL"}');
 				var swagNote:Note = new Note(spawnTime, noteColumn, oldNote);
-				trace('[NOTE GEN DEBUG] Created swagNote: ${swagNote != null ? "valid" : "NULL"}');
-				trace('[NOTE GEN DEBUG] Section $cnt, note index $i in section, unspawnNotes.length before=${unspawnNotes.length}');
 				var isAlt: Bool = section.altAnim && !gottaHitNote;
 				swagNote.gfNote = (section.gfSection && gottaHitNote == section.mustHitSection);
 				swagNote.animSuffix = isAlt ? "-alt" : "";
@@ -1620,16 +1604,9 @@ class PlayState extends MusicBeatState
 				swagNote.noteType = noteType;
 
 				swagNote.scrollFactor.set();
-
-				// H-Slice optimization: Apply note limit
-				if (limitNotes == 0) limitNotes = 2147483647;
-				// Fix: Don't push null regular notes to array
-				if (swagNote != null && unspawnNotes.length < limitNotes) {
-					unspawnNotes.push(swagNote);
-					++sectionNoteCnt;
-					++parsedNotes;
-					trace('[NOTE GEN] Generated note: time=$spawnTime, column=$noteColumn, mustHit=$gottaHitNote, totalNotes=${unspawnNotes.length}');
-				}
+				unspawnNotes.push(swagNote);
+				++sectionNoteCnt;
+				++parsedNotes;
 
 				var curStepCrochet:Float = 60 / daBpm * 1000 / 4.0;
 				final roundSus:Int = Math.round(swagNote.sustainLength / curStepCrochet);
@@ -1639,21 +1616,15 @@ class PlayState extends MusicBeatState
 					{
 						oldNote = unspawnNotes[Std.int(unspawnNotes.length - 1)];
 
-						trace('[SUSTAIN DEBUG] Creating sustain #$susNote: oldNote=${oldNote != null ? "valid" : "NULL"}, unspawnNotes.length=${unspawnNotes.length}');
-						trace('[SUSTAIN DEBUG] Section $cnt, regular note index $i, sustain #$susNote');
 						var sustainNote:Note = new Note(spawnTime + (curStepCrochet * susNote), noteColumn, oldNote, true);
-						trace('[SUSTAIN DEBUG] Created sustainNote: ${sustainNote != null ? "valid" : "NULL"}');
-						trace('[SUSTAIN DEBUG] Sustain time=${spawnTime + (curStepCrochet * susNote)}, column=$noteColumn');
 						sustainNote.animSuffix = swagNote.animSuffix;
 						sustainNote.mustPress = swagNote.mustPress;
 						sustainNote.gfNote = swagNote.gfNote;
 						sustainNote.noteType = swagNote.noteType;
 						sustainNote.scrollFactor.set();
 						sustainNote.parent = swagNote;
-						if (unspawnNotes.length < limitNotes) {
-							unspawnNotes.push(sustainNote);
-							swagNote.tail.push(sustainNote);
-						}
+						unspawnNotes.push(sustainNote);
+						swagNote.tail.push(sustainNote);
 
 						sustainNote.correctionOffset = swagNote.height / 2;
 						if(!PlayState.isPixelStage)
@@ -1720,29 +1691,7 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 			for (i in 0...event[1].length)
 				makeEvent(event, i);
 
-		// Debug: Check array state before sorting
-		trace('[PRE-SORT DEBUG] Array length: ${unspawnNotes.length}');
-		for (i in 0...unspawnNotes.length) {
-			var note = unspawnNotes[i];
-			if (note == null) {
-				trace('[PRE-SORT DEBUG] Found null note at index $i BEFORE sorting');
-			}
-		}
-
-		unspawnNotes.sort(cast sortByTime);
-
-		// Debug: Check array state after sorting
-		trace('[POST-SORT DEBUG] Array length after sorting: ${unspawnNotes.length}');
-		var nullCountAfter = 0;
-		for (i in 0...unspawnNotes.length) {
-			var note = unspawnNotes[i];
-			if (note == null) {
-				nullCountAfter++;
-				trace('[POST-SORT DEBUG] Found null note at index $i AFTER sorting');
-			}
-		}
-		trace('[POST-SORT DEBUG] Total null notes after sorting: $nullCountAfter');
-
+		unspawnNotes.sort(sortByTime);
 		trace('[FAST NOTE PARSING] Generated ${unspawnNotes.length} Notes for song "${SONG.song}"');
 		trace('Loading ${SONG.song} (${unspawnNotes.length} notes)');
 
@@ -1806,257 +1755,8 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 		return 0;
 	}
 
-	public static function sortByTime(id:Int, note1:Note, note2:Note):Int {
-		if (note1 == null && note2 == null) return 0;
-		if (note1 == null) return 1;
-		if (note2 == null) return -1;
-
-		return FlxSort.byValues(FlxSort.ASCENDING, note1.strumTime, note2.strumTime);
-	}
-
-	// H-Slice functions
-	inline function initSpawnInfo(note:Note) {
-		castHold = note.isSustainNote;
-		castMust = note.mustPress;
-		availNoteData = note.noteData + (castMust ? 4 : 0);
-		prevSus[availNoteData] = currSus[availNoteData];
-		currSus[availNoteData] = castHold;
-
-		// Fix: Ensure minimum shownTime with songSpeed multiplier for dynamic scaling
-		var baseShownTime:Float = 2000; // Base time in milliseconds
-		var speedMultiplier:Float = Math.max(1, songSpeed / 2); // Scale with song speed, minimum 1x
-		var minimumShownTime:Float = baseShownTime * speedMultiplier;
-
-		shownTime = showNotes ? castHold ? Math.max(spawnTime / songSpeed, Math.max(globalElapsed * 1000, minimumShownTime)) : Math.max(spawnTime / songSpeed, minimumShownTime) : 0;
-		shownRealTime = shownTime * 0.001;
-
-		isDisplay = (castHold ? note.strumTime - fixedPosition < shownTime : fixedPosition > note.strumTime - shownTime) || (Conductor.songPosition < 0);
-		trace("initSpawnInfo: note.strumTime=" + note.strumTime + ", isDisplay=" + isDisplay + ", fixedPosition=" + fixedPosition);
-	}
-
-	public function noteSpawn() {
-		timeout = nanoPosition ? haxe.Timer.stamp() : haxe.Timer.stamp();
-
-		lDist = []; dist = [];
-		lDist.resize(8); dist.resize(8);
-
-		trace("NOTE LOOP: unspawnNotes.length=" + unspawnNotes.length + ", totalCnt=" + totalCnt + ", isDisplay=" + isDisplay);
-		if (unspawnNotes.length > totalCnt) {
-			limitCount = notes.countLiving();
-			targetNote = unspawnNotes[totalCnt];
-			fixedPosition = Conductor.songPosition - ClientPrefs.data.noteOffset;
-
-			// for initialize
-			initSpawnInfo(targetNote);
-
-			while (isDisplay && limitCount < limitNotes) {
-				var diff = targetNote.strumTime - fixedPosition;
-				canBeHit = fixedPosition > targetNote.strumTime; // false is before, true is after
-				trace("CANBEHIT: strum=" + targetNote.strumTime + ", fixedPos=" + fixedPosition + ", diff=" + diff + ", canBeHit=" + canBeHit);
-				tooLate = fixedPosition > targetNote.strumTime + noteKillOffset;
-				noteJudge = castHold ? tooLate : canBeHit;
-				trace("noteJudge = " + noteJudge + " (castHold=" + castHold + ", tooLate=" + tooLate + ", canBeHit=" + canBeHit + ")");
-				timeLimit = breakTimeLimit ? true : (nanoPosition ? haxe.Timer.stamp() : haxe.Timer.stamp()) - timeout < shownRealTime;
-
-				// Debug traces for spawning logic
-				trace('[SPAWN DEBUG] Note: time=${targetNote.strumTime}, fixedPos=$fixedPosition, canBeHit=$canBeHit, tooLate=$tooLate, noteJudge=$noteJudge');
-				trace('[SPAWN DEBUG] isDisplay=$isDisplay, limitCount=$limitCount, limitNotes=$limitNotes, totalCnt=$totalCnt');
-				trace('[SPAWN DEBUG] songPos=${Conductor.songPosition}, noteOffset=${ClientPrefs.data.noteOffset}');
-
-				// H-Slice approach: Use the same isCanPass logic that works in H-Slice
-				isCanPass = !skipSpawnNote || (keepNotes ? !tooLate : timeLimit);
-				trace("IS_CAN_PASS: skipSpawnNote=" + skipSpawnNote + ", keepNotes=" + keepNotes + ", tooLate=" + tooLate + ", timeLimit=" + timeLimit + ", isCanPass=" + isCanPass);
-
-				if (showAfter) {
-					if (!showAgain && !canBeHit) {
-						showAgain = true;
-						lDist = []; dist = [];
-						lDist.resize(8); dist.resize(8);
-						timeout = nanoPosition ? haxe.Timer.stamp() : haxe.Timer.stamp();
-					}
-				}
-
-				// Fix: Only spawn notes when they're within reasonable time window
-				trace("SPAWN LOOP: unspawnNotes.length=" + unspawnNotes.length + ", totalCnt=" + totalCnt + ", isDisplay=" + isDisplay + ", isCanPass=" + isCanPass);
-				trace("SPAWN EVAL: isCanPass=" + isCanPass + ", optimizeSpawnNote=" + optimizeSpawnNote + ", noteJudge=" + noteJudge + ", canBeHit=" + canBeHit);
-				trace("SPAWN CONDITION: (!optimizeSpawnNote) = " + (!optimizeSpawnNote) + ", (!noteJudge && canBeHit) = " + (!noteJudge && canBeHit));
-				trace("SPAWN RESULT: " + (isCanPass && (!optimizeSpawnNote || (!noteJudge && canBeHit))));
-				trace("targetNote.strumTime=" + targetNote.strumTime + ", Conductor.songPosition=" + Conductor.songPosition);
-				if (isCanPass && (!optimizeSpawnNote || (!noteJudge && canBeHit) || Conductor.songPosition < 0)) {
-					trace("Conductor.songPosition = " + Conductor.songPosition);
-					if (FlxG.sound.music != null)
-						trace('FlxG.sound.music.time = ' + FlxG.sound.music.time);
-					else
-						trace('FlxG.sound.music = null');
-					trace("note.strumTime = " + targetNote.strumTime);
-					trace("Spawning note: " + targetNote.strumTime);
-					dunceNote = targetNote;
-					notes.add(dunceNote);
-					trace("SPAWNED: note.strumTime=" + dunceNote.strumTime + ", dunceNote.visible=" + dunceNote.visible);
-					trace("SPAWNED note Y: " + dunceNote.y);
-					strumGroup = dunceNote.mustPress ? playerStrums : opponentStrums;
-
-					var distanceCalc:Float = 0.45 * (Conductor.songPosition - dunceNote.strumTime) * songSpeed;
-					trace('[POSITION DEBUG] Note spawn: noteTime=${dunceNote.strumTime}, songPos=${Conductor.songPosition}, distance=$distanceCalc, noteData=${dunceNote.noteData}');
-					dist[availNoteData] = distanceCalc;
-
-					if (hideOverlapped > 0) {
-						iDist[availNoteData] = dist[availNoteData] - lDist[availNoteData];
-						dunceNote.visible = prevSus[availNoteData] != currSus[availNoteData] || Math.abs(iDist[availNoteData]) >= hideOverlapped;
-						if (dunceNote.visible) {
-							lDist[availNoteData] = dist[availNoteData];
-							if (ClientPrefs.data.noteShaders) {
-								dunceNote.rgbShader.enabled = true;
-								dunceNote.defaultRGB();
-								if (dunceNote.hitCausesMiss) {
-									dunceNote.rgbShader.r = 0xFF101010;
-									dunceNote.rgbShader.g = 0xFFFF0000;
-									dunceNote.rgbShader.b = 0xFF990022;
-								}
-							}
-						}
-					} else dunceNote.visible = true;
-
-					if (spawnNoteEvent) {
-						callOnLuas('onSpawnNote', [
-							totalCnt,
-							dunceNote.noteData,
-							dunceNote.noteType,
-							dunceNote.isSustainNote,
-							dunceNote.strumTime
-						]);
-						callOnHScript('onSpawnNote', [dunceNote]);
-					}
-
-					if (processFirst) {
-						if (dunceNote.visible) {
-							dunceNote.followStrumNote(strumGroup.members[dunceNote.noteData], songSpeed, dist[availNoteData]);
-							if (canBeHit && dunceNote.isSustainNote) {
-								dunceNote.clipToStrumNote(strumGroup.members[dunceNote.noteData]);
-							}
-							++shownCnt;
-						}
-					} else ++shownCnt;
-					++limitCount;
-				} else {
-					trace("SPAWN BLOCKED");
-					trace("Spawn blocked: isCanPass=" + isCanPass + ", optimizeSpawnNote=" + optimizeSpawnNote + ", noteJudge=" + noteJudge + ", canBeHit=" + canBeHit);
-					// Skip notes without spawning
-					skipHit |= 1 << availNoteData;
-					if (!timeLimit) ++skipTimeOut;
-
-					if (cpuControlled) {
-						if (!castHold) castMust ? ++skipBf : ++skipOp;
-					} else castMust ? noteMissCommon(availNoteData) : ++skipOp;
-
-					// enableHoldSplash functionality removed - variable not defined
-
-					if (enableSplash) {
-						if (!castHold && (cpuControlled || !castMust) &&
-							splashMoment[availNoteData] < splashCount && splashUsing[availNoteData].length < splashCount)
-						{
-							splashMoment[availNoteData] = splashCount;
-							var splash:NoteSplash = grpNoteSplashes.recycle(NoteSplash);
-							splash.babyArrow = strumGroup.members[availNoteData];
-							splash.spawnSplashNote(splash.x, splash.y, targetNote.noteData, targetNote, false);
-							splashUsing[availNoteData].push(splash);
-						}
-					}
-				}
-
-				++totalCnt;
-				if (unspawnNotes.length > totalCnt) {
-					targetNote = unspawnNotes[totalCnt];
-					initSpawnInfo(targetNote);
-				} else break;
-			}
-		}
-	}
-
-	public function noteUpdate() {
-		if (generatedMusic) {
-			if (notes.length > 0) {
-				if (lastSongSpeed != songSpeed) {
-					lDist = []; dist = [];
-					lDist.resize(8); dist.resize(8);
-				}
-
-				notes.forEachAlive(daNote -> {
-					canBeHit = Conductor.songPosition - daNote.strumTime > 0;
-					tooLate = Conductor.songPosition - daNote.strumTime > noteKillOffset;
-
-					if (tooLate) {
-						// Kill extremely late notes and cause misses
-						if (daNote.mustPress) {
-							if (cpuControlled)
-								goodNoteHit(daNote);
-							else if (!daNote.ignoreNote && !endingSong && daNote.tooLate || !daNote.wasGoodHit) {
-								noteMiss(daNote);
-							}
-						} else if (!daNote.hitByOpponent)
-							opponentNoteHit(daNote);
-
-						invalidateNote(daNote);
-						canBeHit = false;
-					} else if (hideOverlapped > 0) {
-						availNoteData = daNote.noteData + (daNote.mustPress ? 4 : 0);
-						dist[availNoteData] = 0.45 * (Conductor.songPosition - daNote.strumTime) * songSpeed;
-
-						if (lastSongSpeed != songSpeed) {
-							currSus[availNoteData] = daNote.isSustainNote;
-							iDist[availNoteData] = dist[availNoteData] - lDist[availNoteData];
-
-							daNote.visible = prevSus[availNoteData] != currSus[availNoteData] || Math.abs(iDist[availNoteData]) >= hideOverlapped;
-							if (daNote.visible) {
-								lDist[availNoteData] = dist[availNoteData];
-								if (ClientPrefs.data.noteShaders) {
-									daNote.rgbShader.enabled = true;
-									daNote.defaultRGB();
-								}
-							} else daNote.rgbShader.enabled = false;
-
-							prevSus[availNoteData] = currSus[availNoteData];
-						}
-
-						if (daNote.visible) {
-							var strumGroup = daNote.mustPress ? playerStrums : opponentStrums;
-							daNote.followStrumNote(strumGroup.members[daNote.noteData], songSpeed, dist[availNoteData]);
-						}
-						++shownCnt;
-					} else {
-						var strumGroup = daNote.mustPress ? playerStrums : opponentStrums;
-						daNote.followStrumNote(strumGroup.members[daNote.noteData], songSpeed, 0.45 * (Conductor.songPosition - daNote.strumTime) * songSpeed); ++shownCnt;
-					}
-
-					if (canBeHit) {
-						if (daNote.mustPress) {
-							if (!daNote.blockHit || daNote.isSustainNote) {
-								if (cpuControlled) goodNoteHit(daNote);
-							}
-						} else if (!daNote.hitByOpponent && !daNote.ignoreNote || daNote.isSustainNote)
-							opponentNoteHit(daNote);
-
-						if (daNote.isSustainNote) {
-							var strumGroup = daNote.mustPress ? playerStrums : opponentStrums;
-							daNote.clipToStrumNote(strumGroup.members[daNote.noteData]);
-						}
-					}
-				});
-			}
-		}
-	}
-
-	public function noteFinalize() {
-		lastSongSpeed = songSpeed;
-	}
-
-	function noteSort(?reverse:Bool = false) {
-		if (reverse) {
-			notes.sort(sortByTime, FlxSort.DESCENDING);
-		} else {
-			notes.sort(sortByTime, FlxSort.ASCENDING);
-		}
-	}
+	public static function sortByTime(Obj1:Dynamic, Obj2:Dynamic):Int
+		return FlxSort.byValues(FlxSort.ASCENDING, Obj1.strumTime, Obj2.strumTime);
 
 	function makeEvent(event:Array<Dynamic>, i:Int)
 	{
@@ -2275,25 +1975,10 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 			Conductor.songPosition += elapsed * 1000 * playbackRate;
 			if (Conductor.songPosition >= Conductor.offset)
 			{
-				var musicTime:Float = FlxG.sound.music.time + Conductor.offset;
-				var timeDiff:Float = Math.abs(musicTime - Conductor.songPosition);
-				trace('[SYNC DEBUG] songPos=${Conductor.songPosition}, musicTime=$musicTime, timeDiff=$timeDiff, playbackRate=$playbackRate');
-
-				Conductor.songPosition = FlxMath.lerp(musicTime, Conductor.songPosition, Math.exp(-elapsed * 5));
-				timeDiff = Math.abs(musicTime - Conductor.songPosition);
-
-				// Fix: Force immediate synchronization for large time differences to prevent positioning issues
-				if (timeDiff > 5000 * playbackRate) // Very large gap - force sync
-				{
-					trace('[SYNC DEBUG] Large gap detected, forcing sync: oldPos=${Conductor.songPosition}, newPos=$musicTime');
-					Conductor.songPosition = musicTime;
-				}
-				else if (timeDiff > 1000 * playbackRate) // Medium gap - reduce jump
-				{
-					var newPos:Float = musicTime + (1000 * FlxMath.signOf(timeDiff));
-					trace('[SYNC DEBUG] Medium gap detected, reducing jump: oldPos=${Conductor.songPosition}, newPos=$newPos');
-					Conductor.songPosition = newPos;
-				}
+				Conductor.songPosition = FlxMath.lerp(FlxG.sound.music.time + Conductor.offset, Conductor.songPosition, Math.exp(-elapsed * 5));
+				var timeDiff:Float = Math.abs((FlxG.sound.music.time + Conductor.offset) - Conductor.songPosition);
+				if (timeDiff > 1000 * playbackRate)
+					Conductor.songPosition = Conductor.songPosition + 1000 * FlxMath.signOf(timeDiff);
 			}
 		}
 
@@ -2302,10 +1987,7 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 			if (startedCountdown && Conductor.songPosition >= Conductor.offset)
 				startSong();
 			else if(!startedCountdown)
-			{
 				Conductor.songPosition = -Conductor.crochet * 5 + Conductor.offset;
-				trace('[SONG POS DEBUG] Initial songPosition set to: ${Conductor.songPosition}, musicTime: ${FlxG.sound.music != null ? FlxG.sound.music.time + Conductor.offset : -1}');
-			}
 		}
 		else if (!paused && updateTime)
 		{
@@ -2361,28 +2043,85 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 			}
 		}
 
-		// H-Slice main processing loop
-		if (generatedMusic && startedCountdown && !inCutscene) {
-			/* --- main process --- */
-			if (!processFirst) {
-				noteSpawn();
-				noteUpdate();
-			} else {
-				noteUpdate();
-				noteSpawn();
+		if (unspawnNotes[0] != null)
+		{
+			var time:Float = spawnTime * playbackRate;
+			// Apply H-Slice bounds checking for songSpeed
+			if(songSpeed < 1) time = Math.max(spawnTime / songSpeed, Conductor.stepCrochet);
+			else time /= songSpeed;
+			if(unspawnNotes[0].multSpeed < 1) time /= unspawnNotes[0].multSpeed;
+
+			while (unspawnNotes.length > 0 && unspawnNotes[0].strumTime - Conductor.songPosition < time)
+			{
+				var note:Note = unspawnNotes[0];
+
+				notes.insert(0, note);
+				note.spawned = true;
+				callOnLuas('onSpawnNote', [notes.members.indexOf(note), note.noteData, note.noteType, note.isSustainNote, note.strumTime]);
+				callOnHScript('onSpawnNote', [note]);
+
+				unspawnNotes.splice(0, 1);
 			}
-			noteFinalize();
-			/* --- main process --- */
+		}
 
-			if (sortingWay >= 3) {
-				noteSort(sortingWay == 4);
+		if (generatedMusic)
+		{
+			if(!inCutscene)
+			{
+				if(!cpuControlled)
+					keysCheck();
+				else
+					playerDance();
+
+				if(notes.length > 0)
+				{
+					if(startedCountdown)
+					{
+						var fakeCrochet:Float = (60 / SONG.bpm) * 1000;
+						var i:Int = 0;
+						while(i < notes.length)
+						{
+							var daNote:Note = notes.members[i];
+							if(daNote == null) continue;
+
+							var strumGroup:FlxTypedGroup<StrumNote> = playerStrums;
+							if(!daNote.mustPress) strumGroup = opponentStrums;
+
+							var strum:StrumNote = strumGroup.members[daNote.noteData];
+							daNote.followStrumNote(strum, fakeCrochet, songSpeed / playbackRate);
+
+							if(daNote.mustPress)
+							{
+								if(cpuControlled && !daNote.blockHit && daNote.canBeHit && (daNote.isSustainNote || daNote.strumTime <= Conductor.songPosition))
+									goodNoteHit(daNote);
+							}
+							else if (daNote.wasGoodHit && !daNote.hitByOpponent && !daNote.ignoreNote)
+								opponentNoteHit(daNote);
+
+							if(daNote.isSustainNote && strum.sustainReduce) daNote.clipToStrumNote(strum);
+
+							// Kill extremely late notes and cause misses
+							if (Conductor.songPosition - daNote.strumTime > noteKillOffset)
+							{
+								if (daNote.mustPress && !cpuControlled && !daNote.ignoreNote && !endingSong && (daNote.tooLate || !daNote.wasGoodHit))
+									noteMiss(daNote);
+
+								daNote.active = daNote.visible = false;
+								invalidateNote(daNote);
+							}
+							if(daNote.exists) i++;
+						}
+					}
+					else
+					{
+						notes.forEachAlive(function(daNote:Note)
+						{
+							daNote.canBeHit = false;
+							daNote.wasGoodHit = false;
+						});
+					}
+				}
 			}
-
-			if(!cpuControlled)
-				keysCheck();
-			else
-				playerDance();
-
 			checkEventNote();
 		}
 
@@ -3568,16 +3307,20 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 		strumPlayAnim(true, Std.int(Math.abs(note.noteData)), note.isSustainNote && note.animation.curAnim.name != null && !note.animation.curAnim.name.endsWith('end'));
 		note.hitByOpponent = true;
 
-		if (noteHitStage) {
-			stagesFunc(function(stage:BaseStage) stage.opponentNoteHit(note));
-		}
+		stagesFunc(function(stage:BaseStage) stage.opponentNoteHit(note));
 		var result:Dynamic = callOnLuas('opponentNoteHit', [notes.members.indexOf(note), Math.abs(note.noteData), note.noteType, note.isSustainNote]);
 		if(result != LuaUtils.Function_Stop && result != LuaUtils.Function_StopHScript && result != LuaUtils.Function_StopAll) callOnHScript('opponentNoteHit', [note]);
 
 		if (!note.isSustainNote) invalidateNote(note);
 		if (healthDrain)
+		{
 			if (health > 0.023)
-				health -= drain * drainMultiplier;
+			{
+				var drainHealth:Bool = true; // prevent health drain, *if* sustains are treated as a singular note
+				if (guitarHeroSustains && note.isSustainNote) drainHealth = false;
+				if (drainHealth) health -= drain * drainMultiplier;
+			}
+		}
 	}
 
 	public function goodNoteHit(note:Note):Void
@@ -3674,9 +3417,7 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 			if(!note.noteSplashData.disabled && !note.isSustainNote) spawnNoteSplashOnNote(note);
 		}
 
-		if (noteHitStage) {
-			stagesFunc(function(stage:BaseStage) stage.goodNoteHit(note));
-		}
+		stagesFunc(function(stage:BaseStage) stage.goodNoteHit(note));
 		var result:Dynamic = callOnLuas('goodNoteHit', [notes.members.indexOf(note), leData, leType, isSus]);
 		if(result != LuaUtils.Function_Stop && result != LuaUtils.Function_StopHScript && result != LuaUtils.Function_StopAll) callOnHScript('goodNoteHit', [note]);
 		if(!note.isSustainNote) invalidateNote(note);
@@ -4054,8 +3795,7 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 		#end
 	}
 
-	function strumPlayAnim(isDad:Bool, id:Int, inSustain:Bool)
-	{
+	function strumPlayAnim(isDad:Bool, id:Int, time:Float) {
 		var spr:StrumNote = null;
 		if(isDad) {
 			spr = opponentStrums.members[id];
@@ -4065,8 +3805,7 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 
 		if(spr != null) {
 			spr.playAnim('confirm', true);
-			var strumCurAnim = spr.animation.curAnim;
-			spr.resetAnim = (1 / strumCurAnim.frameRate) * strumCurAnim.numFrames;
+			spr.resetAnim = time;
 		}
 	}
 
