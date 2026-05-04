@@ -526,8 +526,6 @@ class Note extends FlxSprite
 		if(copyY)
 		{
 			y = strumY + offsetY + correctionOffset + Math.sin(angleDir) * distance;
-			trace("FINAL POS: strumY=" + strumY + ", distance=" + distance + ", downScroll=" + myStrum.downScroll + ", final y=" + y);
-			trace("CAMERA: scrollY=" + (camera != null ? Std.string(camera.scroll.y) : "null") + ", screen height=" + Std.string(FlxG.height));
 			if(myStrum.downScroll && isSustainNote)
 			{
 				if(PlayState.isPixelStage)

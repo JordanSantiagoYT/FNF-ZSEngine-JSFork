@@ -2223,6 +2223,11 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 		// Fix: Update globalElapsed for proper shownTime calculation
 		globalElapsed += elapsed * 1000;
 
+		if (Conductor.songPosition < 0) {
+			var strumLineY:Float = ClientPrefs.data.downScroll ? (FlxG.height - 150) : 50;
+			FlxG.camera.scroll.y = strumLineY - FlxG.height / 2;
+		}
+
 		if(!inCutscene && !paused && !freezeCamera) {
 			FlxG.camera.followLerp = 0.04 * cameraSpeed * playbackRate;
 			var idleAnim:Bool = (boyfriend.getAnimationName().startsWith('idle') || boyfriend.getAnimationName().startsWith('danceLeft') || boyfriend.getAnimationName().startsWith('danceRight'));
