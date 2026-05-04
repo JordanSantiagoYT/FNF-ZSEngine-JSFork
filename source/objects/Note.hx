@@ -518,7 +518,7 @@ class Note extends FlxSprite
 			// Limit distance to keep notes within reasonable visible range
 			var maxDistance:Float = 500;
 			if (Math.abs(distance) > maxDistance) {
-				distance = maxDistance * Math.sign(distance);
+				distance = maxDistance * (distance >= 0 ? 1 : -1);
 			}
 		}
 		if (!myStrum.downScroll) distance *= -1;
