@@ -3332,7 +3332,10 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 			{
 				var drainHealth:Bool = true; // prevent health drain, *if* sustains are treated as a singular note
 				if (guitarHeroSustains && note.isSustainNote) drainHealth = false;
-				if (drainHealth) health -= drain * drainMultiplier;
+				if (drainHealth) {
+					health -= drain * drainMultiplier;
+					updateScoreText();
+				}
 			}
 		}
 	}
