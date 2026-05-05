@@ -3413,7 +3413,10 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 			}
 			var gainHealth:Bool = true; // prevent health gain, *if* sustains are treated as a singular note
 			if (guitarHeroSustains && note.isSustainNote) gainHealth = false;
-			if (gainHealth) health += hitHealth * healthGain;
+			if (gainHealth) {
+				health += hitHealth * healthGain;
+				updateScoreText();
+			}
 		}
 		else //Notes that count as a miss if you hit them (Hurt notes for example)
 		{
