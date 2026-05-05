@@ -183,6 +183,9 @@ class ZSTranspiler {
             trimmedLine = trimmedLine.split("−=").join("-=");
             trimmedLine = trimmedLine.split("×=").join("*=");
             trimmedLine = trimmedLine.split("÷=").join("/=");
+            trimmedLine = trimmedLine.split("×").join("*");
+            trimmedLine = trimmedLine.split("÷").join("/");
+            trimmedLine = trimmedLine.split("−").join("-");
 
             if (originalIndent < lastIndent) {
                 var levelsToClose = 0;
@@ -209,26 +212,20 @@ class ZSTranspiler {
                 var codePart = parts[0];
                 var commentPart = parts[1];
 
-                if (trimmedLine.indexOf(" -/") > -1) {
-                    var parts = trimmedLine.split(" -/");
-                    var codePart = parts[0];
-                    var commentPart = parts[1];
+                var luaLine = codePart;
 
-                    var luaLine = codePart;
-
-                    for (pattern in ZSPatterns.patterns) {
-                        var regex = new EReg(pattern.pattern, "g");
-                        luaLine = regex.replace(luaLine, pattern.replacement);
-                    }
-
-                    for (_ in 0...originalIndent) {
-                        luaCode.add(" ");
-                    }
-                    luaCode.add(luaLine + " --" + commentPart + "\n");
-
-                    lastIndent = originalIndent;
-                    continue;
+                for (pattern in ZSPatterns.patterns) {
+                    var regex = new EReg(pattern.pattern, "g");
+                    luaLine = regex.replace(luaLine, pattern.replacement);
                 }
+
+                for (_ in 0...originalIndent) {
+                    luaCode.add(" ");
+                }
+                luaCode.add(luaLine + " --" + commentPart + "\n");
+
+                lastIndent = originalIndent;
+                continue;
             }
 
             if (!inBlockComment && trimmedLine.indexOf("*/-") == 0) {
@@ -315,9 +312,10 @@ class ZSTranspiler {
                     return null;
                 }
                 expectingBlockContent = false;
+                currentIndent = originalIndent;
+                lastNonEmptyLine = currentLine;
             }
-
-            if (lastNonEmptyLine >= 0) {
+            else if (lastNonEmptyLine >= 0) {
                 if (originalIndent < currentIndent) {
                     var matched = false;
                     for (i in 0...blockStack.length) {
@@ -337,7 +335,7 @@ class ZSTranspiler {
                         return null;
                     }
                 } else if (originalIndent > currentIndent) {
-                    if (!isStarter && !expectingBlockContent) {
+                    if (!isStarter) {
                         errors.push('Error at line $currentLine: Unexpected indentation increase');
                         errors.push('  → "$trimmedLine"');
                         return null;

@@ -193,6 +193,7 @@ class PlayState extends MusicBeatState
 	public var maxHealth:Float = ClientPrefs.data.maxHealth;
 	public var healthDrain:Bool = ClientPrefs.data.healthDrain;
 	public var drain:Float = ClientPrefs.data.drain;
+	public var maxDrain:Float = ClientPrefs.data.maxDrain;
 	public var drainMultiplier:Float = 1;
 	public var combo:Int = 0;
 
@@ -1936,8 +1937,7 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 
 	override public function update(elapsed:Float)
 	{
-		// Fix: Update globalElapsed for proper shownTime calculation
-		globalElapsed = Conductor.songPosition;
+		globalElapsed = FlxG.elapsed * playbackRate;
 
 		if(!inCutscene && !paused && !freezeCamera) {
 			FlxG.camera.followLerp = 0.04 * cameraSpeed * playbackRate;
@@ -3328,7 +3328,7 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 		if (!note.isSustainNote) invalidateNote(note);
 		if (healthDrain)
 		{
-			if (health > 0.023)
+			if (health > maxDrain)
 			{
 				var drainHealth:Bool = true; // prevent health drain, *if* sustains are treated as a singular note
 				if (guitarHeroSustains && note.isSustainNote) drainHealth = false;

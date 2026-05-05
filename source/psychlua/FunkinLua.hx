@@ -163,6 +163,7 @@ class FunkinLua {
 
 			set('healthGainMult', game.healthGain);
 			set('healthLossMult', game.healthLoss);
+			set('drainMultiplier', game.drainMultiplier);
 
 			#if FLX_PITCH
 			set('playbackRate', game.playbackRate);
@@ -224,6 +225,9 @@ class FunkinLua {
 		set('hitHealth', ClientPrefs.data.hitHealth);
 		set('missHealth', ClientPrefs.data.missHealth);
 		set('maxHealth', ClientPrefs.data.maxHealth);
+		set('drain', ClientPrefs.data.drain);
+		set('maxDrain', ClientPrefs.data.maxDrain);
+		set('healthDrain', ClientPrefs.data.healthDrain);
 
 		// build target (windows, mac, linux, etc.)
 		set('buildTarget', LuaUtils.getBuildTarget());

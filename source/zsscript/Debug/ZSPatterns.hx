@@ -45,7 +45,7 @@ class ZSPatterns {
             category: "properties"
         },
         {
-            pattern: "setProperty: <([^>]+)> = ([^ ]+)",
+            pattern: "setProperty: <([^>]+)> = (.+)",
             replacement: 'setProperty("$1", $2)',
             description: "Set property",
             category: "properties"

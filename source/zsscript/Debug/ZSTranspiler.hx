@@ -184,6 +184,9 @@ class ZSTranspiler {
             trimmedLine = trimmedLine.split("−=").join("-=");
             trimmedLine = trimmedLine.split("×=").join("*=");
             trimmedLine = trimmedLine.split("÷=").join("/=");
+            trimmedLine = trimmedLine.split("×").join("*");
+            trimmedLine = trimmedLine.split("÷").join("/");
+            trimmedLine = trimmedLine.split("−").join("-");
 
             if (originalIndent < lastIndent) {
                 trace('DEDENT: from $lastIndent to $originalIndent');
@@ -213,27 +216,21 @@ class ZSTranspiler {
                 var codePart = parts[0];
                 var commentPart = parts[1];
 
-                if (trimmedLine.indexOf(" -/") > -1) {
-                    var parts = trimmedLine.split(" -/");
-                    var codePart = parts[0];
-                    var commentPart = parts[1];
+                var luaLine = codePart;
+                trace('Processing line: "$luaLine"');
 
-                    var luaLine = codePart;
-                    trace('Processing line: "$luaLine"');
-
-                    for (pattern in ZSPatterns.patterns) {
-                        var regex = new EReg(pattern.pattern, "g");
-                        luaLine = regex.replace(luaLine, pattern.replacement);
-                    }
-
-                    for (_ in 0...originalIndent) {
-                        luaCode.add(" ");
-                    }
-                    luaCode.add(luaLine + " --" + commentPart + "\n");
-
-                    lastIndent = originalIndent;
-                    continue;
+                for (pattern in ZSPatterns.patterns) {
+                    var regex = new EReg(pattern.pattern, "g");
+                    luaLine = regex.replace(luaLine, pattern.replacement);
                 }
+
+                for (_ in 0...originalIndent) {
+                    luaCode.add(" ");
+                }
+                luaCode.add(luaLine + " --" + commentPart + "\n");
+
+                lastIndent = originalIndent;
+                continue;
             }
 
             trace('Line $currentLine: raw="$rawLine", trimmed="$trimmedLine", indent=$originalIndent');
@@ -325,9 +322,10 @@ class ZSTranspiler {
                     return null;
                 }
                 expectingBlockContent = false;
+                currentIndent = originalIndent;
+                lastNonEmptyLine = currentLine;
             }
-
-            if (lastNonEmptyLine >= 0) {
+            else if (lastNonEmptyLine >= 0) {
                 if (originalIndent < currentIndent) {
                     var matched = false;
                     for (i in 0...blockStack.length) {
@@ -347,7 +345,7 @@ class ZSTranspiler {
                         return null;
                     }
                 } else if (originalIndent > currentIndent) {
-                    if (!isStarter && !expectingBlockContent) {
+                    if (!isStarter) {
                         errors.push('Error at line $currentLine: Unexpected indentation increase');
                         errors.push('  → "$trimmedLine"');
                         return null;
@@ -365,9 +363,28 @@ class ZSTranspiler {
             try {
                 var luaLine = trimmedLine;
 
-                for (pattern in ZSPatterns.patterns) {
+                for (idx in 0...ZSPatterns.patterns.length) {
+                    var pattern = ZSPatterns.patterns[idx];
                     var regex = new EReg(pattern.pattern, "g");
-                    luaLine = regex.replace(luaLine, pattern.replacement);
+
+                    if (regex.match(luaLine)) {
+                        trace('  Pattern $idx matches: ${pattern.pattern}');
+                        trace('  Replacement template: ${pattern.replacement}');
+
+                        try {
+                            var testResult = regex.replace(luaLine, pattern.replacement);
+                            trace('  Test replace result: "$testResult"');
+                        } catch(e:Dynamic) {
+                            trace('  ERROR on pattern $idx!');
+                            trace('  Pattern: ${pattern.pattern}');
+                            trace('  Replacement: ${pattern.replacement}');
+                            trace('  Error: $e');
+                            throw e;
+                        }
+
+                        luaLine = regex.replace(luaLine, pattern.replacement);
+                        trace('  After replace: "$luaLine"');
+                    }
                 }
 
                 if (luaLine.indexOf("else if ") == 0) {

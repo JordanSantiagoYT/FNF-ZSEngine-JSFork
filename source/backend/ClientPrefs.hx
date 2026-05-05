@@ -44,6 +44,7 @@ import states.TitleState;
 	public var maxHealth:Float = 2;
 	public var healthDrain:Bool = true;
 	public var drain:Float = 0.02;
+	public var maxDrain:Float = 0.023;
 	public var scoreZoom:Bool = true;
 	public var noReset:Bool = false;
 	public var healthBarAlpha:Float = 1;
