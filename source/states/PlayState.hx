@@ -3304,7 +3304,7 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 		}
 
 		if(opponentVocals.length <= 0) vocals.volume = 1;
-		strumPlayAnim(true, Std.int(Math.abs(note.noteData)), note.isSustainNote && note.animation.curAnim.name != null && !note.animation.curAnim.name.endsWith('end'));
+		strumPlayAnim(true, Std.int(Math.abs(note.noteData)), (note.isSustainNote && note.animation.curAnim.name != null && !note.animation.curAnim.name.endsWith('end')) ? 1.0 : 0.0);
 		note.hitByOpponent = true;
 
 		stagesFunc(function(stage:BaseStage) stage.opponentNoteHit(note));
@@ -3386,7 +3386,7 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 				var spr = playerStrums.members[note.noteData];
 				if(spr != null) spr.playAnim('confirm', true);
 			}
-			else strumPlayAnim(false, Std.int(Math.abs(note.noteData)), note.isSustainNote && note.animation.curAnim.name != null && !note.animation.curAnim.name.endsWith('end'));
+			else strumPlayAnim(false, Std.int(Math.abs(note.noteData)), (note.isSustainNote && note.animation.curAnim.name != null && !note.animation.curAnim.name.endsWith('end')) ? 1.0 : 0.0);
 			vocals.volume = 1;
 
 			if (!note.isSustainNote)
