@@ -110,12 +110,8 @@ class GameplayChangersSubstate extends MusicBeatSubstate
 		
 		getOptions();
 
-		if (optionsArray == null || optionsArray.length == 0) return;
-
 		for (i in 0...optionsArray.length)
 		{
-			if (optionsArray[i] == null) continue;
-
 			var optionText:Alphabet = new Alphabet(150, 360, optionsArray[i].name, true);
 			optionText.isMenuItem = true;
 			optionText.setScale(0.8);
@@ -142,9 +138,9 @@ class GameplayChangersSubstate extends MusicBeatSubstate
 				valueText.copyAlpha = true;
 				valueText.ID = i;
 				grpTexts.add(valueText);
-				if(optionsArray[i] != null && optionsArray[i].setChild != null) optionsArray[i].setChild(valueText);
+				optionsArray[i].setChild(valueText);
 			}
-			if(optionsArray[i] != null) updateTextFrom(optionsArray[i]);
+			updateTextFrom(optionsArray[i]);
 		}
 
 		changeSelection();
