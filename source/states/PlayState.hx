@@ -1937,7 +1937,7 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 	override public function update(elapsed:Float)
 	{
 		// Fix: Update globalElapsed for proper shownTime calculation
-		globalElapsed += elapsed * 1000;
+		globalElapsed = Conductor.songPosition;
 
 		if(!inCutscene && !paused && !freezeCamera) {
 			FlxG.camera.followLerp = 0.04 * cameraSpeed * playbackRate;
@@ -3318,7 +3318,7 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 		}
 
 		if(opponentVocals.length <= 0) vocals.volume = 1;
-		strumPlayAnim(true, Std.int(Math.abs(note.noteData)), (60 / Conductor.bpm * 1000) * 0.125 / playbackRate);
+		strumPlayAnim(true, Std.int(Math.abs(note.noteData)), Conductor.stepCrochet * 2.5 / 1000 / playbackRate);
 		note.hitByOpponent = true;
 
 		stagesFunc(function(stage:BaseStage) stage.opponentNoteHit(note));
@@ -3403,7 +3403,7 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 				var spr = playerStrums.members[note.noteData];
 				if(spr != null) spr.playAnim('confirm', true);
 			}
-			else strumPlayAnim(false, Std.int(Math.abs(note.noteData)), (60 / Conductor.bpm * 1000) * 0.125 / playbackRate);
+			else strumPlayAnim(false, Std.int(Math.abs(note.noteData)), Conductor.stepCrochet * 2.5 / 1000 / playbackRate);
 			vocals.volume = 1;
 
 			if (!note.isSustainNote)
