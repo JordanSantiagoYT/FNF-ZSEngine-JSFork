@@ -110,20 +110,24 @@ class GameplayChangersSubstate extends MusicBeatSubstate
 		
 		getOptions();
 
+		if (optionsArray == null || optionsArray.length == 0) return;
+
 		for (i in 0...optionsArray.length)
 		{
-			var optionText:Alphabet = new Alphabet(150, 360, optionsArray[i] != null ? optionsArray[i].name : "Unknown Option", true);
+			if (optionsArray[i] == null) continue;
+
+			var optionText:Alphabet = new Alphabet(150, 360, optionsArray[i].name, true);
 			optionText.isMenuItem = true;
 			optionText.setScale(0.8);
 			optionText.targetY = i;
 			grpOptions.add(optionText);
 
-			if(optionsArray[i] != null && optionsArray[i].type == BOOL)
+			if(optionsArray[i].type == BOOL)
 			{
 				optionText.x += 60;
 				optionText.startPosition.x += 60;
 				optionText.snapToPosition();
-				var checkbox:CheckboxThingie = new CheckboxThingie(optionText.x - 105, optionText.y, optionsArray[i] != null ? optionsArray[i].getValue() == true : false);
+				var checkbox:CheckboxThingie = new CheckboxThingie(optionText.x - 105, optionText.y, optionsArray[i].getValue() == true);
 				checkbox.sprTracker = optionText;
 				checkbox.offsetX -= 20;
 				checkbox.offsetY = -52;
@@ -133,14 +137,14 @@ class GameplayChangersSubstate extends MusicBeatSubstate
 			else
 			{
 				optionText.snapToPosition();
-				var valueText:AttachedText = new AttachedText(Std.string(optionsArray[i] != null ? optionsArray[i].getValue() : "null"), optionText.width + 40, 0, true, 0.8);
+				var valueText:AttachedText = new AttachedText(Std.string(optionsArray[i].getValue()), optionText.width + 40, 0, true, 0.8);
 				valueText.sprTracker = optionText;
 				valueText.copyAlpha = true;
 				valueText.ID = i;
 				grpTexts.add(valueText);
-				if(optionsArray[i] != null) optionsArray[i].setChild(valueText);
+				optionsArray[i].setChild(valueText);
 			}
-			if(optionsArray[i] != null) updateTextFrom(optionsArray[i]);
+			updateTextFrom(optionsArray[i]);
 		}
 
 		changeSelection();
