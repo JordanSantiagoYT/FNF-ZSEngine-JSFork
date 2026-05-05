@@ -138,9 +138,9 @@ class GameplayChangersSubstate extends MusicBeatSubstate
 				valueText.copyAlpha = true;
 				valueText.ID = i;
 				grpTexts.add(valueText);
-				optionsArray[i].setChild(valueText);
+				if(optionsArray[i] != null) optionsArray[i].setChild(valueText);
 			}
-			updateTextFrom(optionsArray[i]);
+			if(optionsArray[i] != null) updateTextFrom(optionsArray[i]);
 		}
 
 		changeSelection();
