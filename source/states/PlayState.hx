@@ -1334,9 +1334,25 @@ class PlayState extends MusicBeatState
 			str += ' (${percent}%) - ' + Language.getPhrase(ratingFC);
 		}
 
+		// CoolUtils Shortcut from H-Slice
+		var numFormat = CoolUtil.floatToStringPrecision;
+
+		// HP counter implementation from H-Slice
+		var targetHealth:Float = health * 50;
+		var hpShowStr:String;
+		if (practiceMode) hpShowStr = FlxStringUtil.formatMoney(targetHealth, false) + ' %';
+		else hpShowStr = numFormat(targetHealth, 4 - Std.string(Math.floor(targetHealth)).length, true) + (targetHealth >= 0.001 ? ' %' : '');
+
 		var tempScore:String;
-		if(!instakillOnMiss) tempScore = Language.getPhrase('score_text', 'Score: {1} | Misses: {2} | Rating: {3}', [songScore, songMisses, str]);
-		else tempScore = Language.getPhrase('score_text_instakill', 'Score: {1} | Rating: {2}', [songScore, str]);
+		if(!instakillOnMiss) {
+			if (!practiceMode) {
+				tempScore = Language.getPhrase('score_text', 'Score: {1} | Misses: {2} | Rating: {3} | HP: {4}', [songScore, songMisses, str, hpShowStr]);
+			} else {
+				tempScore = Language.getPhrase('score_text', 'Score: {1} | Misses: {2} | Practice Mode | HP: {3}', [songScore, songMisses, hpShowStr]);
+			}
+		} else {
+			tempScore = Language.getPhrase('score_text_instakill', 'Score: {1} | Rating: {2}', [songScore, str]);
+		}
 		scoreTxt.text = tempScore;
 	}
 
@@ -2861,14 +2877,12 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 		if(daRating.noteSplash && !note.noteSplashData.disabled)
 			spawnNoteSplashOnNote(note);
 
-		if(!cpuControlled) {
-			songScore += score;
-			if(!note.ratingDisabled)
-			{
-				songHits++;
-				totalPlayed++;
-				RecalculateRating(false);
-			}
+		songScore += score;
+		if(!note.ratingDisabled)
+		{
+			songHits++;
+			totalPlayed++;
+			RecalculateRating(false);
 		}
 
 		var uiFolder:String = "";

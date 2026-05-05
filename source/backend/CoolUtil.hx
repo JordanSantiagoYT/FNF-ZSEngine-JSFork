@@ -83,6 +83,16 @@ class CoolUtil
 		return Math.floor(value * Math.pow(10, decimals)) / Math.pow(10, decimals);
 	}
 
+	public static function floatToStringPrecision(value:Float, precision:Int):String
+	{
+		var mult:Float = 1;
+		for (i in 0...precision)
+		{
+			mult *= 10;
+		}
+		return Std.string(Math.floor(value * mult) / mult);
+	}
+
 	inline public static function dominantColor(sprite:flixel.FlxSprite):Int
 	{
 		var countByColor:Map<Int, Int> = [];
