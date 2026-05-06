@@ -27,15 +27,19 @@ class GameplayChangersSubstate extends MusicBeatSubstate
 		option.minValue = 0.35;
 		option.changeValue = 0.05;
 		option.decimals = 2;
-		if (goption.getValue() != "constant")
-		{
-			option.displayFormat = '%vX';
-			option.maxValue = 3;
-		}
-		else
-		{
-			option.displayFormat = "%v";
-			option.maxValue = 6;
+		try {
+			if (goption.getValue() != "constant")
+			{
+				option.displayFormat = '%vX';
+				option.maxValue = 3;
+			}
+			else
+			{
+				option.displayFormat = "%v";
+				option.maxValue = 6;
+			}
+		} catch(e:Dynamic) {
+			trace('Error getting scrolltype value: $e');
 		}
 		optionsArray.push(option);
 

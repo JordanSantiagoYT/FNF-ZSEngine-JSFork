@@ -62,8 +62,10 @@ class PauseSubState extends MusicBeatSubstate
 			if(pauseSong != null) pauseMusic.loadEmbedded(Paths.music(pauseSong), true, true);
 		}
 		catch(e:Dynamic) {}
-		pauseMusic.volume = 0;
-		pauseMusic.play(false, FlxG.random.int(0, Std.int(pauseMusic.length / 2)));
+		if(pauseMusic != null) pauseMusic.volume = 0;
+		else trace('PauseSubState: pauseMusic is null during volume set');
+		if(pauseMusic != null) pauseMusic.play(false, FlxG.random.int(0, Std.int(pauseMusic.length / 2)));
+		else trace('PauseSubState: pauseMusic is null during play');
 
 		FlxG.sound.list.add(pauseMusic);
 
@@ -158,8 +160,10 @@ class PauseSubState extends MusicBeatSubstate
 	override function update(elapsed:Float)
 	{
 		cantUnpause -= elapsed;
-		if (pauseMusic.volume < 0.5)
+		if (pauseMusic != null && pauseMusic.volume < 0.5)
 			pauseMusic.volume += 0.01 * elapsed;
+		else if (pauseMusic == null)
+			trace('PauseSubState: pauseMusic is null during volume update');
 
 		super.update(elapsed);
 
