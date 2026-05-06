@@ -315,8 +315,13 @@ class PauseSubState extends MusicBeatSubstate
 					if(ClientPrefs.data.pauseMusic != 'None')
 					{
 						FlxG.sound.playMusic(Paths.music(Paths.formatToSongPath(ClientPrefs.data.pauseMusic)), pauseMusic.volume);
-						FlxTween.tween(FlxG.sound.music, {volume: 1}, 0.8);
-						FlxG.sound.music.time = pauseMusic.time;
+						trace('PauseSubState: About to tween FlxG.sound.music volume');
+						if(FlxG.sound.music != null) {
+							FlxTween.tween(FlxG.sound.music, {volume: 1}, 0.8);
+							FlxG.sound.music.time = pauseMusic.time;
+						} else {
+							trace('PauseSubState: FlxG.sound.music is null');
+						}
 					}
 					OptionsState.onPlayState = true;
 				case "Exit to menu":

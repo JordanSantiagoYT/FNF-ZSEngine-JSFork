@@ -142,7 +142,12 @@ class GameplayChangersSubstate extends MusicBeatSubstate
 				valueText.copyAlpha = true;
 				valueText.ID = i;
 				grpTexts.add(valueText);
-				optionsArray[i].setChild(valueText);
+				try {
+					trace('Setting child for option: ${optionsArray[i].name}');
+					optionsArray[i].setChild(valueText);
+				} catch(e:Dynamic) {
+					trace('Error setting child for option ${optionsArray[i].name}: $e');
+				}
 			}
 			updateTextFrom(optionsArray[i]);
 		}
