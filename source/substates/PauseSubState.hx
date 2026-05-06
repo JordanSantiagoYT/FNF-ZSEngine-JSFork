@@ -314,11 +314,18 @@ class PauseSubState extends MusicBeatSubstate
 					MusicBeatState.switchState(new OptionsState());
 					if(ClientPrefs.data.pauseMusic != 'None')
 					{
+						trace('PauseSubState: pauseMusic.volume is: ${pauseMusic.volume}');
 						FlxG.sound.playMusic(Paths.music(Paths.formatToSongPath(ClientPrefs.data.pauseMusic)), pauseMusic.volume);
 						trace('PauseSubState: About to tween FlxG.sound.music volume');
 						if(FlxG.sound.music != null) {
-							FlxTween.tween(FlxG.sound.music, {volume: 1}, 0.8);
-							FlxG.sound.music.time = pauseMusic.time;
+							trace('PauseSubState: FlxG.sound.music exists, volume: ${FlxG.sound.music.volume}');
+							try {
+								FlxTween.tween(FlxG.sound.music, {volume: 1}, 0.8);
+								trace('PauseSubState: Tween created successfully');
+								FlxG.sound.music.time = pauseMusic.time;
+							} catch(e:Dynamic) {
+								trace('PauseSubState: Error creating tween: $e');
+							}
 						} else {
 							trace('PauseSubState: FlxG.sound.music is null');
 						}
