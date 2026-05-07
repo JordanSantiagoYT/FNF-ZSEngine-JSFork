@@ -809,7 +809,7 @@ class PlayState extends MusicBeatState
 			}
 		}
 		playbackRate = value;
-		FlxG.animationTimeScale = value;
+		FlxG.animationTimeScale = 1 / value;
 		Conductor.offset = Reflect.hasField(PlayState.SONG, 'offset') ? (PlayState.SONG.offset / value) : 0;
 		Conductor.safeZoneOffset = (ClientPrefs.data.safeFrames / 60) * 1000 * value;
 		#if VIDEOS_ALLOWED
