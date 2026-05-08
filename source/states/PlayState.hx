@@ -1610,25 +1610,6 @@ class PlayState extends MusicBeatState
 
 				var gottaHitNote:Bool = (songNotes[1] < totalColumns);
 
-				if (i != 0) {
-					// CLEAR ANY POSSIBLE GHOST NOTES
-					for (evilNote in unspawnNotes) {
-						var matches: Bool = (noteColumn == evilNote.noteData && gottaHitNote == evilNote.mustPress && evilNote.noteType == noteType);
-						if (matches && Math.abs(spawnTime - evilNote.strumTime) < flixel.math.FlxMath.EPSILON) {
-							if (evilNote.tail.length > 0)
-								for (tail in evilNote.tail)
-								{
-									tail.destroy();
-									unspawnNotes.remove(tail);
-								}
-							evilNote.destroy();
-							unspawnNotes.remove(evilNote);
-							ghostNotesCaught++;
-							//continue;
-						}
-					}
-				}
-
 				var swagNote:Note = new Note(spawnTime, noteColumn, oldNote);
 				var isAlt: Bool = section.altAnim && !gottaHitNote;
 				swagNote.gfNote = (section.gfSection && gottaHitNote == section.mustHitSection);
@@ -3088,7 +3069,7 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 		else if (!a.lowPriority && b.lowPriority)
 			return -1;
 
-		return FlxSort.byValues(FlxSort.ASCENDING, a.strumTime, b.strumTime);
+		return FlxSort.byValues(FlxSort.ASCENDING, a.y, b.y);
 	}
 
 	private function onKeyRelease(event:KeyboardEvent):Void
@@ -3564,7 +3545,7 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 		}
 
 		if (generatedMusic)
-			notes.sort(FlxSort.byY, ClientPrefs.data.downScroll ? FlxSort.DESCENDING : FlxSort.ASCENDING);
+			notes.sort(FlxSort.byY, ClientPrefs.data.downScroll ? FlxSort.ASCENDING : FlxSort.DESCENDING);
 
 		iconP1.scale.set(1.2, 1.2);
 		iconP2.scale.set(1.2, 1.2);
