@@ -2129,7 +2129,6 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 								daNote.active = daNote.visible = false;
 								invalidateNote(daNote);
 							}
-							if(daNote.exists) i++;
 						}
 					}
 					else
