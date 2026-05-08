@@ -809,7 +809,7 @@ class PlayState extends MusicBeatState
 			}
 		}
 		playbackRate = value;
-		FlxG.animationTimeScale = 1 / value;
+		FlxG.animationTimeScale = value;
 		Conductor.offset = Reflect.hasField(PlayState.SONG, 'offset') ? (PlayState.SONG.offset / value) : 0;
 		Conductor.safeZoneOffset = (ClientPrefs.data.safeFrames / 60) * 1000 * value;
 		#if VIDEOS_ALLOWED
@@ -1610,7 +1610,24 @@ class PlayState extends MusicBeatState
 
 				var gottaHitNote:Bool = (songNotes[1] < totalColumns);
 
-				// JS Engine approach - no ghost note detection for simplicity
+				if (i != 0) {
+					// CLEAR ANY POSSIBLE GHOST NOTES
+					for (evilNote in unspawnNotes) {
+						var matches: Bool = (noteColumn == evilNote.noteData && gottaHitNote == evilNote.mustPress && evilNote.noteType == noteType);
+						if (matches && Math.abs(spawnTime - evilNote.strumTime) < flixel.math.FlxMath.EPSILON) {
+							if (evilNote.tail.length > 0)
+								for (tail in evilNote.tail)
+								{
+									tail.destroy();
+									unspawnNotes.remove(tail);
+								}
+							evilNote.destroy();
+							unspawnNotes.remove(evilNote);
+							ghostNotesCaught++;
+							//continue;
+						}
+					}
+				}
 
 				var swagNote:Note = new Note(spawnTime, noteColumn, oldNote);
 				var isAlt: Bool = section.altAnim && !gottaHitNote;
@@ -1980,7 +1997,7 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 				openCharacterEditor();
 		}
 
-		if (healthBar.bounds.max != null && health > healthBar.bounds.max)
+		if (healthBar.bounds.max != null && health >= healthBar.bounds.max)
 			health = healthBar.bounds.max;
 
 		updateIconsScale(elapsed);
@@ -3318,7 +3335,7 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 		}
 
 		if(opponentVocals.length <= 0) vocals.volume = 1;
-		strumPlayAnim(true, Std.int(Math.abs(note.noteData)), Conductor.stepCrochet * 2.5 / 1000 / playbackRate);
+		strumPlayAnim(true, Std.int(Math.abs(note.noteData)));
 		note.hitByOpponent = true;
 
 		stagesFunc(function(stage:BaseStage) stage.opponentNoteHit(note));
@@ -3403,7 +3420,7 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 				var spr = playerStrums.members[note.noteData];
 				if(spr != null) spr.playAnim('confirm', true);
 			}
-			else strumPlayAnim(false, Std.int(Math.abs(note.noteData)), Conductor.stepCrochet * 2.5 / 1000 / playbackRate);
+			else strumPlayAnim(false, Std.int(Math.abs(note.noteData)));
 			vocals.volume = 1;
 
 			if (!note.isSustainNote)
@@ -3547,7 +3564,7 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 		}
 
 		if (generatedMusic)
-			notes.sort(FlxSort.byY, ClientPrefs.data.downScroll ? FlxSort.ASCENDING : FlxSort.DESCENDING);
+			notes.sort(FlxSort.byY, ClientPrefs.data.downScroll ? FlxSort.DESCENDING : FlxSort.ASCENDING);
 
 		iconP1.scale.set(1.2, 1.2);
 		iconP2.scale.set(1.2, 1.2);
@@ -3815,7 +3832,7 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 		#end
 	}
 
-	function strumPlayAnim(isDad:Bool, id:Int, time:Float) {
+	function strumPlayAnim(isDad:Bool, id:Int) {
 		var spr:StrumNote = null;
 		if(isDad) {
 			spr = opponentStrums.members[id];
@@ -3825,7 +3842,8 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 
 		if(spr != null) {
 			spr.playAnim('confirm', true);
-			spr.resetAnim = time;
+			var strumCurAnim = spr.animation.curAnim;
+			spr.resetAnim = (1 / strumCurAnim.frameRate) * strumCurAnim.numFrames;
 		}
 	}
 

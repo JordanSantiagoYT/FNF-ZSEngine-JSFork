@@ -437,7 +437,7 @@ class EditorPlayState extends MusicBeatSubstate
 			}
 			oldNote = swagNote;
 		}
-		unspawnNotes.sort((note1, note2) -> FlxSort.byValues(FlxSort.ASCENDING, note1.strumTime, note2.strumTime));
+		unspawnNotes.sort(PlayState.sortByTime);
 	}
 	
 	private function generateStaticArrows(player:Int):Void
