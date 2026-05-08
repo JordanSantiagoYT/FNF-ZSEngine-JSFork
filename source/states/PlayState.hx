@@ -2091,11 +2091,17 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 				{
 					if(startedCountdown)
 					{
+						// Sort notes by Y position for proper top-to-bottom hitting order
+						var sortedNotes:Array<Note> = notes.members.filter(n -> n != null).copy();
+						sortedNotes.sort(function(a:Note, b:Note):Int {
+							if (a.lowPriority && !b.lowPriority) return 1;
+							else if (!a.lowPriority && b.lowPriority) return -1;
+							return FlxSort.byValues(FlxSort.ASCENDING, a.y, b.y);
+						});
+
 						var fakeCrochet:Float = (60 / SONG.bpm) * 1000;
-						var i:Int = 0;
-						while(i < notes.length)
+						for (daNote in sortedNotes)
 						{
-							var daNote:Note = notes.members[i];
 							if(daNote == null) continue;
 
 							var strumGroup:FlxTypedGroup<StrumNote> = playerStrums;
@@ -3069,7 +3075,7 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 		else if (!a.lowPriority && b.lowPriority)
 			return -1;
 
-		return FlxSort.byValues(FlxSort.ASCENDING, a.y, b.y);
+		return FlxSort.byValues(FlxSort.ASCENDING, a.strumTime, b.strumTime);
 	}
 
 	private function onKeyRelease(event:KeyboardEvent):Void
