@@ -2091,45 +2091,44 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 				{
 					if(startedCountdown)
 					{
-						// Sort notes by Y position for proper top-to-bottom hitting order
-						var sortedNotes:Array<Note> = notes.members.filter(n -> n != null).copy();
-						sortedNotes.sort(function(a:Note, b:Note):Int {
-							if (a.lowPriority && !b.lowPriority) return 1;
-							else if (!a.lowPriority && b.lowPriority) return -1;
-							return FlxSort.byValues(FlxSort.ASCENDING, a.y, b.y);
-						});
-
 						var fakeCrochet:Float = (60 / SONG.bpm) * 1000;
-						for (daNote in sortedNotes)
+						notes.forEachAlive(function(daNote:Note)
 						{
-							if(daNote == null) continue;
+							if(daNote == null) return;
 
 							var strumGroup:FlxTypedGroup<StrumNote> = playerStrums;
 							if(!daNote.mustPress) strumGroup = opponentStrums;
 
 							var strum:StrumNote = strumGroup.members[daNote.noteData];
-							daNote.followStrumNote(strum, fakeCrochet, songSpeed / playbackRate);
 
-							if(daNote.mustPress)
-							{
-								if(cpuControlled && !daNote.blockHit && daNote.canBeHit && (daNote.isSustainNote || daNote.strumTime <= Conductor.songPosition))
-									goodNoteHit(daNote);
-							}
-							else if (daNote.wasGoodHit && !daNote.hitByOpponent && !daNote.ignoreNote)
-								opponentNoteHit(daNote);
+							// H-Slice approach: Check hit/miss first, then follow strum
+							var canBeHit:Bool = Conductor.songPosition - daNote.strumTime > 0;
+							var tooLate:Bool = Conductor.songPosition - daNote.strumTime > noteKillOffset;
 
-							if(daNote.isSustainNote && strum.sustainReduce) daNote.clipToStrumNote(strum);
-
-							// Kill extremely late notes and cause misses
-							if (Conductor.songPosition - daNote.strumTime > noteKillOffset)
-							{
+							if (tooLate) {
+								// Kill extremely late notes and cause misses
 								if (daNote.mustPress && !cpuControlled && !daNote.ignoreNote && !endingSong && (daNote.tooLate || !daNote.wasGoodHit))
 									noteMiss(daNote);
+								else if (!daNote.mustPress && !daNote.hitByOpponent)
+									opponentNoteHit(daNote);
 
 								daNote.active = daNote.visible = false;
 								invalidateNote(daNote);
+							} else if (canBeHit) {
+								if(daNote.mustPress)
+								{
+									if(cpuControlled && !daNote.blockHit && (daNote.isSustainNote || daNote.strumTime <= Conductor.songPosition))
+										goodNoteHit(daNote);
+								}
+								else if (daNote.wasGoodHit && !daNote.hitByOpponent && !daNote.ignoreNote)
+									opponentNoteHit(daNote);
+
+								if(daNote.isSustainNote && strum.sustainReduce) daNote.clipToStrumNote(strum);
 							}
-						}
+
+							// Follow strum after hit/miss check (H-Slice approach)
+							daNote.followStrumNote(strum, fakeCrochet, songSpeed / playbackRate);
+						});
 					}
 					else
 					{
@@ -2192,6 +2191,9 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 
 		// update health bar
 		health = value;
+		// Clamp health to bounds to prevent decimal display issues (H-Slice approach)
+		if (healthBar.bounds.max != null)
+			health = Math.max(healthBar.bounds.min, Math.min(health, healthBar.bounds.max));
 		var newPercent:Null<Float> = FlxMath.remapToRange(FlxMath.bound(healthBar.valueFunction(), healthBar.bounds.min, healthBar.bounds.max), healthBar.bounds.min, healthBar.bounds.max, 0, 100);
 		healthBar.percent = (newPercent != null ? newPercent : 0);
 
