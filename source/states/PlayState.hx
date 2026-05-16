@@ -277,6 +277,8 @@ class PlayState extends MusicBeatState
 	public var botplaySine:Float = 0;
 	public var botplayTxt:FlxText;
 
+	public var cpuHitNotes:Bool = ClientPrefs.data.cpuHitNotes;
+
 	public var iconP1:HealthIcon;
 	public var iconP2:HealthIcon;
 	public var camHUD:FlxCamera;
@@ -2117,11 +2119,21 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 							} else if (canBeHit) {
 								if(daNote.mustPress)
 								{
-									if(cpuControlled && !daNote.blockHit && (daNote.isSustainNote || daNote.strumTime <= Conductor.songPosition))
-										goodNoteHit(daNote);
+									if(cpuControlled && !daNote.blockHit)
+									{
+										if(cpuHitNotes)
+											goodNoteHit(daNote); // Fast hit notes
+										else if(daNote.isSustainNote || daNote.strumTime <= Conductor.songPosition)
+											goodNoteHit(daNote); // Normal hit notes
+									}
 								}
-								else if (daNote.wasGoodHit && !daNote.hitByOpponent && !daNote.ignoreNote)
-									opponentNoteHit(daNote);
+								else if (!daNote.hitByOpponent && !daNote.ignoreNote)
+								{
+									if(cpuHitNotes)
+										opponentNoteHit(daNote); // Fast hit notes
+									else if(daNote.wasGoodHit)
+										opponentNoteHit(daNote); // Normal hit notes
+								}
 
 								if(daNote.isSustainNote && strum.sustainReduce) daNote.clipToStrumNote(strum);
 							}
