@@ -2107,6 +2107,9 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 							var canBeHit:Bool = Conductor.songPosition - daNote.strumTime > 0;
 							var tooLate:Bool = Conductor.songPosition - daNote.strumTime > noteKillOffset;
 
+							// Follow strum BEFORE hit/miss check (H-Slice approach)
+							daNote.followStrumNote(strum, fakeCrochet, songSpeed / playbackRate);
+
 							if (tooLate) {
 								// Kill extremely late notes and cause misses
 								if (daNote.mustPress && !cpuControlled && !daNote.ignoreNote && !endingSong && (daNote.tooLate || !daNote.wasGoodHit))
@@ -2137,9 +2140,6 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 
 								if(daNote.isSustainNote && strum.sustainReduce) daNote.clipToStrumNote(strum);
 							}
-
-							// Follow strum after hit/miss check (H-Slice approach)
-							daNote.followStrumNote(strum, fakeCrochet, songSpeed / playbackRate);
 						});
 					}
 					else

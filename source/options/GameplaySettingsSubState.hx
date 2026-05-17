@@ -66,7 +66,7 @@ class GameplaySettingsSubState extends BaseOptionsMenu
 		addOption(option);
 
 		var option:Option = new Option('CPU Hit Notes',
-			'If checked, both opponent and botplay side will hit notes by coordinates.\n Otherwise they will hit notes normally.',
+			'If checked, both opponent and botplay sides will hit notes by coordinates.\nOtherwise they will hit notes normally.',
 			'cpuHitNotes',
 			BOOL);
 		addOption(option);
