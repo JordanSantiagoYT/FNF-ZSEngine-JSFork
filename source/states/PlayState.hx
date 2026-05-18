@@ -277,6 +277,9 @@ class PlayState extends MusicBeatState
 	public var botplaySine:Float = 0;
 	public var botplayTxt:FlxText;
 
+	//i added it back. happy now, mr superhero? - Jordan Santiago
+	public var cpuHitNotes:Bool = ClientPrefs.data.cpuHitNotes;
+
 	public var iconP1:HealthIcon;
 	public var iconP2:HealthIcon;
 	public var camHUD:FlxCamera;
@@ -2100,6 +2103,10 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 							daNote = notes.members[i];
 							if (daNote == null || !daNote.exists || !daNote.alive) continue;
 
+							if (cpuHitNotes) {
+								if (cpuControlled && !daNote.blockHit && daNote.mustPress) goodNoteHit(daNote);
+								else if (!daNote.hitByOpponent && !daNote.ignoreNote && !daNote.mustPress) opponentNoteHit(daNote);
+							}
 							if (daNote.strumTime <= Conductor.songPosition) {
 								if (daNote.mustPress)
 								{
