@@ -126,7 +126,6 @@ class VisualsSettingsSubState extends BaseOptionsMenu
 			"Change how the strum animation should look.\nFull Anim resembles H-Slice behavior.\nBPM Based mimicks the behavior in newer Psych Engine versions.",
 			'strumLitStyle',
 			STRING,
-			'Full Anim',
 			['Full Anim', 'BPM Based']);
 		addOption(option);
 
