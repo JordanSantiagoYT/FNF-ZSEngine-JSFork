@@ -511,35 +511,28 @@ class Note extends FlxSprite
 		var strumDirection:Float = myStrum.direction;
 
 		distance = (0.45 * (Conductor.songPosition - strumTime) * songSpeed * multSpeed);
-		distance = -distance; // H-Slice approach: negate distance unconditionally
+		if (!myStrum.downScroll) distance *= -1;
 
-		var angleDir = strumDirection + (myStrum.downScroll ? 180 : 0); // H-Slice approach: add 180 if downScroll
-		var angleRad = angleDir * Math.PI / 180;
+		var angleDir = strumDirection * Math.PI / 180;
 		if (copyAngle)
-			angle = isSustainNote ? strumDirection - 90 : strumAngle; // H-Slice approach: different angle logic for sustain notes
+			angle = strumDirection - 90 + strumAngle + offsetAngle;
 
 		if(copyAlpha)
 			alpha = strumAlpha * multAlpha;
 
 		if(copyX)
-		{
-			x = strumX + offsetX + Math.cos(angleRad) * distance;
-			if (isSustainNote)
-			{
-				x += height * Math.cos(angleRad) * 0.5; // H-Slice approach: additional x offset for sustain notes
-			}
-		}
+			x = strumX + offsetX + Math.cos(angleDir) * distance;
 
 		if(copyY)
 		{
-			y = strumY + offsetY + Math.sin(angleRad) * distance;
-			if (isSustainNote)
+			y = strumY + offsetY + correctionOffset + Math.sin(angleDir) * distance;
+			if(myStrum.downScroll && isSustainNote)
 			{
 				if(PlayState.isPixelStage)
 				{
 					y -= PlayState.daPixelZoom * 9.5;
 				}
-				y += correctionOffset * Math.sin(angleRad) + (originalHeight - height) * (-Math.sin(angleRad) + 1) * 0.5; // H-Slice approach: additional y offset for sustain notes
+				y -= (frameHeight * scale.y) - (Note.swagWidth / 2);
 			}
 		}
 	}

@@ -2089,58 +2089,51 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 				else
 					playerDance();
 
-				if(notes.length > 0)
+				if (notes.length > 0)
 				{
-					if(startedCountdown)
+					if (startedCountdown)
 					{
 						var fakeCrochet:Float = (60 / SONG.bpm) * 1000;
-						notes.forEachAlive(function(daNote:Note)
+						for (daNote in sortedNotes)
 						{
-							if(daNote == null) return;
+							if (daNote == null) continue;
 
 							var strumGroup:FlxTypedGroup<StrumNote> = playerStrums;
 							if(!daNote.mustPress) strumGroup = opponentStrums;
 
 							var strum:StrumNote = strumGroup.members[daNote.noteData];
-
-							// H-Slice approach: Check hit/miss first, then follow strum
-							var canBeHit:Bool = Conductor.songPosition - daNote.strumTime > 0;
-							var tooLate:Bool = Conductor.songPosition - daNote.strumTime > noteKillOffset;
-
-							// Follow strum BEFORE hit/miss check (H-Slice approach)
 							daNote.followStrumNote(strum, fakeCrochet, songSpeed / playbackRate);
 
-							if (tooLate) {
-								// Kill extremely late notes and cause misses
+							if (daNote.mustPress)
+							{
+								if(cpuControlled && !daNote.blockHit)
+								{
+									if (cpuHitNotes)
+										goodNoteHit(daNote); // Fast hit notes
+									else if (daNote.isSustainNote || daNote.strumTime <= Conductor.songPosition)
+										goodNoteHit(daNote); // Normal hit notes
+								}
+							}
+							else if (!daNote.hitByOpponent && !daNote.ignoreNote)
+							{
+								if (cpuHitNotes)
+									opponentNoteHit(daNote); // Fast hit notes
+								else if (daNote.wasGoodHit)
+									opponentNoteHit(daNote); // Normal hit notes
+							}
+
+							if(daNote.isSustainNote && strum.sustainReduce) daNote.clipToStrumNote(strum);
+
+							// Kill extremely late notes and cause misses
+							if (Conductor.songPosition - daNote.strumTime > noteKillOffset)
+							{
 								if (daNote.mustPress && !cpuControlled && !daNote.ignoreNote && !endingSong && (daNote.tooLate || !daNote.wasGoodHit))
 									noteMiss(daNote);
-								else if (!daNote.mustPress && !daNote.hitByOpponent)
-									opponentNoteHit(daNote);
 
 								daNote.active = daNote.visible = false;
 								invalidateNote(daNote);
-							} else if (canBeHit) {
-								if(daNote.mustPress)
-								{
-									if(cpuControlled && !daNote.blockHit)
-									{
-										if(cpuHitNotes)
-											goodNoteHit(daNote); // Fast hit notes
-										else if(daNote.isSustainNote || daNote.strumTime <= Conductor.songPosition)
-											goodNoteHit(daNote); // Normal hit notes
-									}
-								}
-								else if (!daNote.hitByOpponent && !daNote.ignoreNote)
-								{
-									if(cpuHitNotes)
-										opponentNoteHit(daNote); // Fast hit notes
-									else if(daNote.wasGoodHit)
-										opponentNoteHit(daNote); // Normal hit notes
-								}
-
-								if(daNote.isSustainNote && strum.sustainReduce) daNote.clipToStrumNote(strum);
 							}
-						});
+						}
 					}
 					else
 					{
