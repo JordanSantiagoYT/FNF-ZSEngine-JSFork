@@ -2094,8 +2094,10 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 					if (startedCountdown)
 					{
 						var fakeCrochet:Float = (60 / SONG.bpm) * 1000;
-						for (daNote in sortedNotes)
+						var i:Int = 0;
+						while (i < notes.length)
 						{
+							var daNote:Note = notes.members[i];
 							if (daNote == null) continue;
 
 							var strumGroup:FlxTypedGroup<StrumNote> = playerStrums;
@@ -2133,6 +2135,7 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 								daNote.active = daNote.visible = false;
 								invalidateNote(daNote);
 							}
+							if(daNote.exists) i++;
 						}
 					}
 					else
