@@ -2101,44 +2101,50 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 						while (i >= 0)
 						{
 							daNote = notes.members[i];
-							if (daNote == null || !daNote.exists || !daNote.alive) continue;
+							if (daNote == null || !daNote.exists) continue;
 
-							if (cpuHitNotes) {
-								if (cpuControlled && !daNote.blockHit && daNote.mustPress) goodNoteHit(daNote);
-								else if (!daNote.hitByOpponent && !daNote.ignoreNote && !daNote.mustPress) opponentNoteHit(daNote);
-							}
-							if (daNote.strumTime <= Conductor.songPosition) {
-								if (daNote.mustPress)
+							// H-Slice approach: Check hit/miss first, then follow strum
+							//NOTE to SuperHero: canBeHit and tooLate are already defined, use them.
+							canBeHit = Conductor.songPosition - daNote.strumTime > 0;
+							tooLate = Conductor.songPosition - daNote.strumTime > noteKillOffset;
+							if (tooLate) {
+								// Kill extremely late notes and cause misses
+								if (daNote.mustPress && !cpuControlled && !daNote.ignoreNote && !endingSong && (daNote.tooLate || !daNote.wasGoodHit))
+									noteMiss(daNote);
+								else if (!daNote.mustPress && !daNote.hitByOpponent)
+									opponentNoteHit(daNote);
+
+								daNote.active = daNote.visible = false;
+								invalidateNote(daNote);
+							} else if (canBeHit) {
+								if(daNote.mustPress)
 								{
 									if(cpuControlled && !daNote.blockHit)
 									{
-										goodNoteHit(daNote);
+										if(cpuHitNotes)
+											goodNoteHit(daNote); // Fast hit notes
+										else if(daNote.isSustainNote || daNote.strumTime <= Conductor.songPosition)
+											goodNoteHit(daNote); // Normal hit notes
 									}
 								}
 								else if (!daNote.hitByOpponent && !daNote.ignoreNote)
 								{
-									opponentNoteHit(daNote);
+									if(cpuHitNotes)
+										opponentNoteHit(daNote); // Fast hit notes
+									else if(daNote.wasGoodHit)
+										opponentNoteHit(daNote); // Normal hit notes
 								}
 							}
-
-							// Kill extremely late notes and cause misses
-							if (Conductor.songPosition - daNote.strumTime > noteKillOffset)
-							{
-								if (daNote.mustPress && !cpuControlled && !daNote.ignoreNote && !endingSong && (daNote.tooLate || !daNote.wasGoodHit))
-									noteMiss(daNote);
-
-								daNote.active = daNote.visible = false;
-								invalidateNote(daNote);
-							}
-
-							if(daNote.exists) {
+							//IF the note is still alive, THEN we can make it follow the strum
+							if (daNote.alive) {
 								var strumGroup:FlxTypedGroup<StrumNote> = playerStrums;
 								if(!daNote.mustPress) strumGroup = opponentStrums;
 
 								var strum:StrumNote = strumGroup.members[daNote.noteData];
 								daNote.followStrumNote(strum, fakeCrochet, songSpeed / playbackRate);
-								if(daNote.isSustainNote && strum.sustainReduce) daNote.clipToStrumNote(strum);
+								if(canBeHit && daNote.isSustainNote && strum.sustainReduce) daNote.clipToStrumNote(strum);
 							}
+
 							i--;
 						}
 					}
