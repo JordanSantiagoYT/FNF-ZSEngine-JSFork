@@ -65,12 +65,6 @@ class GameplaySettingsSubState extends BaseOptionsMenu
 			STRING, ["Time Bar", "Health Bar",]);
 		addOption(option);
 
-		var option:Option = new Option('CPU Hit Notes',
-			'If checked, both opponent and botplay sides will hit notes by coordinates.\nOtherwise they will hit notes normally.',
-			'cpuHitNotes',
-			BOOL);
-		addOption(option);
-
 		var option:Option = new Option('Use ZS Scripts',
 			'If checked, use ZS scripts. Otherwise they won\'t work',
 			'zsScript',
