@@ -277,6 +277,7 @@ class PlayState extends MusicBeatState
 	public var botplaySine:Float = 0;
 	public var botplayTxt:FlxText;
 
+	//i added it back. happy now, mr superhero? - Jordan Santiago
 	public var cpuHitNotes:Bool = ClientPrefs.data.cpuHitNotes;
 
 	public var iconP1:HealthIcon;
@@ -2094,37 +2095,31 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 					if (startedCountdown)
 					{
 						var fakeCrochet:Float = (60 / SONG.bpm) * 1000;
-						var i:Int = 0;
-						while (i < notes.length)
+						var i:Int = notes.length - 1;
+						var daNote:Note;
+
+						while (i >= 0)
 						{
-							var daNote:Note = notes.members[i];
-							if (daNote == null) continue;
+							daNote = notes.members[i];
+							if (daNote == null || !daNote.exists || !daNote.alive) continue;
 
-							var strumGroup:FlxTypedGroup<StrumNote> = playerStrums;
-							if(!daNote.mustPress) strumGroup = opponentStrums;
-
-							var strum:StrumNote = strumGroup.members[daNote.noteData];
-							daNote.followStrumNote(strum, fakeCrochet, songSpeed / playbackRate);
-
-							if (daNote.mustPress)
-							{
-								if(cpuControlled && !daNote.blockHit)
+							if (cpuHitNotes) {
+								if (cpuControlled && !daNote.blockHit && daNote.mustPress) goodNoteHit(daNote);
+								else if (!daNote.hitByOpponent && !daNote.ignoreNote && !daNote.mustPress) opponentNoteHit(daNote);
+							}
+							if (daNote.strumTime <= Conductor.songPosition) {
+								if (daNote.mustPress)
 								{
-									if (cpuHitNotes)
-										goodNoteHit(daNote); // Fast hit notes
-									else if (daNote.isSustainNote || daNote.strumTime <= Conductor.songPosition)
-										goodNoteHit(daNote); // Normal hit notes
+									if(cpuControlled && !daNote.blockHit)
+									{
+										goodNoteHit(daNote);
+									}
+								}
+								else if (!daNote.hitByOpponent && !daNote.ignoreNote)
+								{
+									opponentNoteHit(daNote);
 								}
 							}
-							else if (!daNote.hitByOpponent && !daNote.ignoreNote)
-							{
-								if (cpuHitNotes)
-									opponentNoteHit(daNote); // Fast hit notes
-								else if (daNote.wasGoodHit)
-									opponentNoteHit(daNote); // Normal hit notes
-							}
-
-							if(daNote.isSustainNote && strum.sustainReduce) daNote.clipToStrumNote(strum);
 
 							// Kill extremely late notes and cause misses
 							if (Conductor.songPosition - daNote.strumTime > noteKillOffset)
@@ -2135,7 +2130,16 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 								daNote.active = daNote.visible = false;
 								invalidateNote(daNote);
 							}
-							if(daNote.exists) i++;
+
+							if(daNote.exists) {
+								var strumGroup:FlxTypedGroup<StrumNote> = playerStrums;
+								if(!daNote.mustPress) strumGroup = opponentStrums;
+
+								var strum:StrumNote = strumGroup.members[daNote.noteData];
+								daNote.followStrumNote(strum, fakeCrochet, songSpeed / playbackRate);
+								if(daNote.isSustainNote && strum.sustainReduce) daNote.clipToStrumNote(strum);
+							}
+							i--;
 						}
 					}
 					else
@@ -3839,7 +3843,7 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 		if(spr != null) {
 			spr.playAnim('confirm', true);
 			var strumCurAnim = spr.animation.curAnim;
-			spr.resetAnim = (1 / strumCurAnim.frameRate) * strumCurAnim.numFrames;
+			spr.resetAnim = (ClientPrefs.data.strumLitStyle == 'BPM Based') ? (Conductor.stepCrochet * 1.5 / 1000) / playbackRate : (1 / strumCurAnim.frameRate) * strumCurAnim.numFrames;
 		}
 	}
 

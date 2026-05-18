@@ -39,6 +39,7 @@ import states.TitleState;
 
 	public var ghostTapping:Bool = true;
 	public var cpuHitNotes:Bool = true;
+	public var strumLitStyle:String = 'Full Anim';
 	public var timeBarType:String = 'Time Left';
 	public var hitHealth:Float = 0.02;
 	public var missHealth:Float = 0.1;
