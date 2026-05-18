@@ -125,7 +125,7 @@ class VisualsSettingsSubState extends BaseOptionsMenu
 		var option:Option = new Option('Strum Light Up Style:',
 			"Change how the strum animation should look.\nFull Anim resembles H-Slice behavior.\nBPM Based mimicks the behavior in newer Psych Engine versions.",
 			'strumLitStyle',
-			'string',
+			STRING,
 			'Full Anim',
 			['Full Anim', 'BPM Based']);
 		addOption(option);
