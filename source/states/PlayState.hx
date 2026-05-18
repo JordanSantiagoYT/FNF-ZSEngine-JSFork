@@ -3843,7 +3843,7 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 		if(spr != null) {
 			spr.playAnim('confirm', true);
 			var strumCurAnim = spr.animation.curAnim;
-			spr.resetAnim = (1 / strumCurAnim.frameRate) * strumCurAnim.numFrames;
+			spr.resetAnim = (ClientPrefs.data.strumLitStyle == 'BPM Based') ? (Conductor.stepCrochet * 1.5 / 1000) / playbackRate : (1 / strumCurAnim.frameRate) * strumCurAnim.numFrames;
 		}
 	}
 

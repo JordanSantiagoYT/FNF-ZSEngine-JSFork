@@ -122,6 +122,14 @@ class VisualsSettingsSubState extends BaseOptionsMenu
 		option.decimals = 1;
 		addOption(option);
 
+		var option:Option = new Option('Strum Light Up Style:',
+			"Change how the strum animation should look.\nFull Anim resembles H-Slice behavior.\nBPM Based mimicks the behavior in newer Psych Engine versions.",
+			'strumLitStyle',
+			'string',
+			'Full Anim',
+			['Full Anim', 'BPM Based']);
+		addOption(option);
+
 		var option:Option = new Option('Hit Health',
 			'Change default of the note hit amount (0.02 is default)',
 			'hitHealth',
