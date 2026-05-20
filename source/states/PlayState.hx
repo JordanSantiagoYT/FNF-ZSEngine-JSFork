@@ -694,6 +694,12 @@ class PlayState extends MusicBeatState
 		if (maxHealth < 2) maxHealth = 2;
 		if (health > maxHealth) health = maxHealth;
 
+		if (hitHealth < 0.0001) hitHealth = 0.0001;
+		else if (hitHealth > 1) hitHealth = 1;
+
+		if (missHealth < 0.0001) missHealth = 0.0001;
+		else if (missHealth > 1) missHealth = 1;
+
 		#if LUA_ALLOWED
 		for (notetype in noteTypes)
 			startLuasNamed('custom_notetypes/' + notetype + '.lua');
@@ -3360,6 +3366,12 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 					updateScoreText();
 				}
 			}
+
+			if (maxDrain < 0.023) maxDrain = 0.023;
+			else if (maxDrain > 0.5) maxDrain = 0.5;
+
+			if (drain < 0.0001) drain = 0.0001;
+			else if (drain > 1) drain = 1;
 		}
 	}
 

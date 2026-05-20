@@ -133,7 +133,7 @@ class VisualsSettingsSubState extends BaseOptionsMenu
 			'Change default of the note hit amount (0.02 is default)',
 			'hitHealth',
 			FLOAT);
-		option.scrollSpeed = 0.2;
+		option.scrollSpeed = 0.1;
 		option.minValue = 0.0001;
 		option.maxValue = 1;
 		option.changeValue = 0.0001;
@@ -144,7 +144,7 @@ class VisualsSettingsSubState extends BaseOptionsMenu
 			'Change default of the note miss amount (0.1 is default)',
 			'missHealth',
 			FLOAT);
-		option.scrollSpeed = 0.2;
+		option.scrollSpeed = 0.1;
 		option.minValue = 0.0001;
 		option.maxValue = 1;
 		option.changeValue = 0.0001;
@@ -165,7 +165,7 @@ class VisualsSettingsSubState extends BaseOptionsMenu
 			'How much health will drain per note when health drain is enabled.',
 			'drain',
 			FLOAT);
-		option.scrollSpeed = 0.2;
+		option.scrollSpeed = 0.1;
 		option.minValue = 0.0001;
 		option.maxValue = 1;
 		option.changeValue = 0.0001;
@@ -176,7 +176,7 @@ class VisualsSettingsSubState extends BaseOptionsMenu
 			'Set the limit to prevent death (0.023 is default)',
 			'maxDrain',
 			FLOAT);
-		option.scrollSpeed = 0.2;
+		option.scrollSpeed = 0.1;
 		option.minValue = 0.023;
 		option.maxValue = 0.5;
 		option.changeValue = 0.0001;
