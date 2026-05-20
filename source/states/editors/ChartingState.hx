@@ -4158,7 +4158,51 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		deleteRadius = new PsychUINumericStepper(objX + 200, objY + 20, 1, 0, 0, 16, 4);
 		deleteRadius.name = 'delete_radius';
 		tab_group.add(deleteRadius);
-		tab_group.add(new FlxText(objX + 200, objY + 5, 0, 'Delete Radius'));
+		tab_group.add(new FlxText(objX + 200, objY + 5, 0, 'Delete Radius:'));
+
+		var mirrorPlayerNotes:PsychUIButton = new PsychUIButton(objX + 200, objY + 50, 'Mirror Player Notes', function() {
+			for (note in curRenderedNotes) {
+				if(note == null || note.isEvent) continue;
+
+				var originalData:Int = Std.int(note.songData[1]);
+
+				// Only affect player side (left)
+				if (originalData < GRID_COLUMNS_PER_PLAYER) {
+					var newData:Int = originalData;
+
+					// Swap 0 and 3
+					if (originalData == 0) newData = 3;
+					else if (originalData == 3) newData = 0;
+
+					note.changeNoteData(newData);
+					positionNoteXByData(note);
+				}
+			}
+			softReloadNotes(true);
+		});
+
+		var mirrorOpponentNotes:PsychUIButton = new PsychUIButton(objX + 200, objY + 70, 'Mirror Opponent Notes', function() {
+			for (note in curRenderedNotes) {
+				if(note == null || note.isEvent) continue;
+
+				var originalData:Int = Std.int(note.songData[1]);
+
+				// Only affect opponent side (right)
+				if (originalData >= GRID_COLUMNS_PER_PLAYER) {
+					var newData:Int = originalData;
+
+					// Swap 4 and 7
+					if (originalData == 4) newData = 7;
+					else if (originalData == 7) newData = 4;
+
+					note.changeNoteData(newData);
+					positionNoteXByData(note);
+				}
+			}
+			softReloadNotes(true);
+		});
+		tab_group.add(mirrorPlayerNotes);
+		tab_group.add(mirrorOpponentNotes);
 	}
 
 	function reloadNotesDropdowns()
