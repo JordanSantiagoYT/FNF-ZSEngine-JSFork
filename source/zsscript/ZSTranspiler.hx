@@ -1,5 +1,7 @@
 package zsscript;
 
+import backend.ZSDebugger;
+
 class ZSTranspiler {
     public static var errors:Array<String> = [];
     public static var currentLine:Int = 0;
@@ -14,6 +16,8 @@ class ZSTranspiler {
         var currentIndent:Int = 0;
         var expectingBlockContent:Bool = false;
         var lastNonEmptyLine:Int = -1;
+
+        var zsDebugger:Bool = ClientPrefs.data.zsDebugger;
 
         for (i in 0...lines.length) {
             var line = StringTools.trim(lines[i]);
@@ -46,6 +50,10 @@ class ZSTranspiler {
             var rawLine = lines[i];
             var originalIndent = getIndentLevel(rawLine);
             var trimmedLine = StringTools.trim(rawLine);
+
+            #if DEBUG
+            if (zsDebugger) ZSDebugger.logTranspiler('Line $currentLine: $trimmedLine');
+            #end
 
             if (!inBlockComment) {
                 var codeToCheck = trimmedLine;

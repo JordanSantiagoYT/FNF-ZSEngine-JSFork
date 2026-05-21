@@ -78,6 +78,11 @@ import states.TitleState;
 		'opponentplay' => false
 	];
 
+	// Debuggers
+	public var luaDebugger:Bool = false;
+	public var haxeDebugger:Bool = false;
+	public var zsDebugger:Bool = false;
+
 	public var comboOffset:Array<Int> = [0, 0, 0, 0];
 	public var ratingOffset:Int = 0;
 	public var sickWindow:Float = 45.0;

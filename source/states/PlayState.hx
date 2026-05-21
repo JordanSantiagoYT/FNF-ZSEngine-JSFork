@@ -51,9 +51,11 @@ import states.stages.objects.*;
 
 #if LUA_ALLOWED
 import psychlua.*;
+import backend.LuaDebugger;
 #else
 import psychlua.LuaUtils;
 import psychlua.HScript;
+import backend.LuaDebugger;
 #end
 
 #if HSCRIPT_ALLOWED
@@ -61,10 +63,12 @@ import psychlua.HScript.HScriptInfos;
 import crowplexus.iris.Iris;
 import crowplexus.hscript.Expr.Error as IrisError;
 import crowplexus.hscript.Printer;
+import backend.HaxeDebugger;
 #end
 
 #if ZS_ALLOWED
 import zsscript.ZSTranspiler;
+import backend.ZSDebugger;
 #end
 
 /**
@@ -200,6 +204,10 @@ class PlayState extends MusicBeatState
 	public var healthBar:Bar;
 	public var timeBar:Bar;
 	var songPercent:Float = 0;
+
+	public var luaDebugger:Bool = ClientPrefs.data.luaDebugger;
+	public var haxeDebugger:Bool = ClientPrefs.data.haxeDebugger;
+	public var zsDebugger:Bool = ClientPrefs.data.zsDebugger;
 
 	public var ratingsData:Array<Rating> = Rating.loadDefault();
 
@@ -533,19 +541,37 @@ class PlayState extends MusicBeatState
 
 		// "SCRIPTS FOLDER" SCRIPTS
 		#if (LUA_ALLOWED || HSCRIPT_ALLOWED || ZS_ALLOWED)
+		if (luaDebugger) {
+			LuaDebugger.enabled = true;
+			LuaDebugger.logToFile = true;
+			LuaDebugger.log('=== STARTING SCRIPT LOADING ===', "INFO");
+		}
+
+		if (haxeDebugger) {
+			HaxeDebugger.enabled = true;
+			HaxeDebugger.logToFile = true;
+			HaxeDebugger.log('=== STARTING SCRIPT LOADING ===', "INFO");
+		}
+
 		for (folder in Mods.directoriesWithFile(Paths.getSharedPath(), 'scripts/'))
 			for (file in FileSystem.readDirectory(folder))
 			{
 				#if LUA_ALLOWED
-				if (file.toLowerCase().endsWith('.lua'))
+				if (file.toLowerCase().endsWith('.lua')) {
+					LuaDebugger.logLua(folder + file, 'Loading script', "INFO");
+					LuaDebugger.testLuaScript(folder + file);
 					new FunkinLua(folder + file);
+				}
 				#end
 				#if HSCRIPT_ALLOWED
-				if (file.toLowerCase().endsWith('.hx'))
+				if (file.toLowerCase().endsWith('.hx')) {
+					HaxeDebugger.logScript(folder + file, 'Loading script', "INFO");
+					HaxeDebugger.testHxScript(folder + file);
 					initHScript(folder + file);
+				}
 				#end
 				#if ZS_ALLOWED
-				if (file.toLowerCase().endsWith('.zs') && zsScript) 
+				if (file.toLowerCase().endsWith('.zs') && zsScript)
 					loadZSScript(folder + file);
 				#end
 			}
@@ -891,6 +917,11 @@ class PlayState extends MusicBeatState
 
 	function startCharacterScripts(name:String)
 	{
+		if (haxeDebugger)
+			HaxeDebugger.log('Loading character scripts for: $name', "INFO");
+		if (luaDebugger)
+			LuaDebugger.log('Loading character scripts for: $name', "INFO");
+
 		// Lua
 		#if LUA_ALLOWED
 		var doPush:Bool = false;
@@ -923,7 +954,13 @@ class PlayState extends MusicBeatState
 					break;
 				}
 			}
-			if(doPush) new FunkinLua(luaFile);
+			if(doPush) {
+				if (luaDebugger) {
+					LuaDebugger.logLua(luaFile, 'Loading character script', "INFO");
+				}
+
+				new FunkinLua(luaFile);
+			}
 		}
 		#end
 
@@ -951,7 +988,13 @@ class PlayState extends MusicBeatState
 			if(Iris.instances.exists(scriptFile))
 				doPush = false;
 
-			if(doPush) initHScript(scriptFile);
+			if(doPush) {
+				if (haxeDebugger) {
+					HaxeDebugger.logScript(scriptFile, 'Loading character script', "INFO");
+				}
+
+				initHScript(scriptFile);
+			}
 		}
 		#end
 	}
@@ -3660,6 +3703,7 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 		if(OpenFlAssets.exists(luaToLoad))
 		#end
 		{
+			if (luaDebugger) LuaDebugger.logLua(luaToLoad, 'Loading script', "INFO");
 			for (script in luaArray)
 				if(script.scriptName == luaToLoad) return false;
 
@@ -3683,6 +3727,7 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 
 		if(FileSystem.exists(scriptToLoad))
 		{
+			if (haxeDebugger) HaxeDebugger.logScript(scriptToLoad, 'Loading script', "INFO");
 			if (Iris.instances.exists(scriptToLoad)) return false;
 
 			initHScript(scriptToLoad);
@@ -3690,6 +3735,33 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 		}
 		return false;
 	}
+
+	public function initHScript(file:String)
+	{
+		if (haxeDebugger) HaxeDebugger.logScript(file, 'Initializing HScript', "INFO");
+		var newScript:HScript = null;
+		try
+		{
+			newScript = new HScript(null, file);
+			if (newScript.exists('onCreate')) {
+				HaxeDebugger.logScript(file, 'Calling onCreate', "INFO");
+				newScript.call('onCreate');
+			}
+			if (haxeDebugger) HaxeDebugger.logScript(file, 'Initialized successfully', "SUCCESS");
+			trace('initialized hscript interp successfully: $file');
+			hscriptArray.push(newScript);
+		}
+		catch(e:IrisError)
+		{
+			if (haxeDebugger) HaxeDebugger.logScript(file, 'Error: ' + e, "ERROR");
+			var pos:HScriptInfos = cast {fileName: file, showLine: false};
+			Iris.error(Printer.errorToString(e, false), pos);
+			var newScript:HScript = cast (Iris.instances.get(file), HScript);
+			if(newScript != null)
+				newScript.destroy();
+		}
+	}
+	#end
 
     #if ZS_ALLOWED
     public function startZSScriptsNamed(zsFile:String) {
@@ -3710,27 +3782,6 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
         return false;
     }
     #end
-
-	public function initHScript(file:String)
-	{
-		var newScript:HScript = null;
-		try
-		{
-			newScript = new HScript(null, file);
-			if (newScript.exists('onCreate')) newScript.call('onCreate');
-			trace('initialized hscript interp successfully: $file');
-			hscriptArray.push(newScript);
-		}
-		catch(e:IrisError)
-		{
-			var pos:HScriptInfos = cast {fileName: file, showLine: false};
-			Iris.error(Printer.errorToString(e, false), pos);
-			var newScript:HScript = cast (Iris.instances.get(file), HScript);
-			if(newScript != null)
-				newScript.destroy();
-		}
-	}
-	#end
 
 	public function callOnScripts(funcToCall:String, args:Array<Dynamic> = null, ignoreStops = false, exclusions:Array<String> = null, excludeValues:Array<Dynamic> = null):Dynamic {
 		var returnVal:Dynamic = LuaUtils.Function_Continue;
@@ -3872,6 +3923,7 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 
 			#if DEBUG
 			trace('Loading ZS script: $path');
+    		if (zsDebugger) ZSDebugger.log('Loading ZS script: $path');
 			#end
 
 			var luaContent = ZSTranspiler.transpile(zsContent);
@@ -3896,13 +3948,22 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 				PlayState.instance.luaArray.push(luaScript);
 
 				FileSystem.deleteFile(tempFile);
+				#if DEBUG
+				if (zsDebugger) ZSDebugger.log('ZS script loaded: $path');
+				#end
 			} else {
 				for (err in ZSTranspiler.errors) {
 					trace('ZS Error in $path: $err');
+					#if DEBUG
+					if (zsDebugger) ZSDebugger.logError('ZS Error in $path: $err');
+					#end
 				}
 			}
 		} catch(e:Dynamic) {
 			trace('Failed to load ZS script $path: $e');
+			#if DEBUG
+			if (zsDebugger) ZSDebugger.logError('Failed to load ZS script $path: $e');
+			#end
 		}
 	}
 	#end
