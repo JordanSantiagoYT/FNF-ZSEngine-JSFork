@@ -25,7 +25,7 @@ class HaxeDebugger
         {
             var date = Date.now();
             var dateStr = date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate() + "_" + date.getHours() + "-" + date.getMinutes() + "-" + date.getSeconds();
-            logPath = "./Haxe-debug-" + dateStr + ".log";
+            logPath = "./debug/Haxe/Haxe-debug-" + dateStr + ".log";
         }
         return logPath;
     }

@@ -3580,7 +3580,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			}
 			softReloadNotes();
 		};
-		
+
 		objY += 40;
 		noteTypeDropDown = new PsychUIDropDownMenu(objX, objY, [], function(id:Int, changeToType:String)
 		{
@@ -3607,13 +3607,33 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			selectedNotes = newSelected;
 			softReloadNotes();
 		}, 150);
-		
+
+		var selectAllSustainsButton:PsychUIButton = new PsychUIButton(objX, objY + 40, 'Select All Sustains', function() { 
+			selectedNotes = []; 
+			var foundCount:Int = 0; 
+			var minSustainLength:Float = susLengthStepper.value; 
+
+			if (minSustainLength > 0) {
+				for (note in notes) { 
+					if (note == null || note.isEvent) continue; 
+					selectedNotes.push(note); 
+					foundCount++; 
+				}
+			}
+
+			if (foundCount > 0) 
+				showOutput('Selected $foundCount sustain notes ($minSustainLength > 0)'); 
+			else 
+				showOutput('No sustain notes found with $minSustainLength > 0'); 
+		}, 120);
+
 		tab_group.add(new FlxText(susLengthStepper.x, susLengthStepper.y - 15, 80, 'Sustain length:'));
 		tab_group.add(new FlxText(strumTimeStepper.x, strumTimeStepper.y - 15, 100, 'Note Hit time (ms):'));
 		tab_group.add(new FlxText(noteTypeDropDown.x, noteTypeDropDown.y - 15, 80, 'Note Type:'));
 		tab_group.add(susLengthStepper);
 		tab_group.add(strumTimeStepper);
 		tab_group.add(noteTypeDropDown);
+		tab_group.add(selectAllSustainsButton);
 	}
 
 	function syncNotesWithSection()
@@ -4160,7 +4180,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		tab_group.add(deleteRadius);
 		tab_group.add(new FlxText(objX + 200, objY + 5, 0, 'Delete Radius:'));
 
-		var mirrorPlayerNotes:PsychUIButton = new PsychUIButton(objX + 200, objY + 50, 'Mirror Player Notes', function() {
+		var mirrorPlayerNotes:PsychUIButton = new PsychUIButton(objX + 180, objY + 50, 'Mirror Player Notes', function() {
 			for (note in curRenderedNotes) {
 				if(note == null || note.isEvent) continue;
 
@@ -4179,9 +4199,9 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 				}
 			}
 			softReloadNotes(true);
-		});
+		}, 100);
 
-		var mirrorOpponentNotes:PsychUIButton = new PsychUIButton(objX + 200, objY + 70, 'Mirror Opponent Notes', function() {
+		var mirrorOpponentNotes:PsychUIButton = new PsychUIButton(objX + 160, objY + 80, 'Mirror Opponent Notes', function() {
 			for (note in curRenderedNotes) {
 				if(note == null || note.isEvent) continue;
 
@@ -4200,7 +4220,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 				}
 			}
 			softReloadNotes(true);
-		});
+		}, 120);
 		tab_group.add(mirrorPlayerNotes);
 		tab_group.add(mirrorOpponentNotes);
 	}

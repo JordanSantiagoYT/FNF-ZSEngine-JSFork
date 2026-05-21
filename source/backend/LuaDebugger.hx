@@ -32,7 +32,7 @@ class LuaDebugger
         {
             var date = Date.now();
             var dateStr = date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate() + "_" + date.getHours() + "-" + date.getMinutes() + "-" + date.getSeconds();
-            logPath = "./Lua-debug-" + dateStr + ".log";
+            logPath = "./debug/Lua/Lua-debug-" + dateStr + ".log";
         }
         return logPath;
     }

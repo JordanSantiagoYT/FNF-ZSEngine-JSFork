@@ -1676,7 +1676,7 @@ class PlayState extends MusicBeatState
 				++parsedNotes;
 
 				var curStepCrochet:Float = 60 / daBpm * 1000 / 4.0;
-				final roundSus:Int = Math.ceil(swagNote.sustainLength / curStepCrochet);
+				final roundSus:Int = Math.round(swagNote.sustainLength / curStepCrochet);
 				if(roundSus > 0)
 				{
 					for (susNote in 0...roundSus)
@@ -2190,7 +2190,7 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 								if(!daNote.mustPress) strumGroup = opponentStrums;
 
 								var strum:StrumNote = strumGroup.members[daNote.noteData];
-								daNote.followStrumNote(strum, fakeCrochet, songSpeed / playbackRate);
+								daNote.followStrumNote(strum, fakeCrochet, songSpeed * playbackRate);
 								if(canBeHit && daNote.isSustainNote && strum.sustainReduce) daNote.clipToStrumNote(strum);
 							}
 
@@ -2661,8 +2661,8 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 				}
 				catch(e:Dynamic)
 				{
-					if (luaDebugger) LuaDebugger.logError('ERROR ("Set Property" Event) - ' + e.message, "ERROR");
-					if (haxeDebugger) HaxeDebugger.logError('ERROR ("Set Property" Event) - ' + e.message, "ERROR");
+					if (luaDebugger) LuaDebugger.log('ERROR ("Set Property" Event) - ' + e.message, "ERROR");
+					if (haxeDebugger) HaxeDebugger.log('ERROR ("Set Property" Event) - ' + e.message, "ERROR");
 
 					var len:Int = e.message.indexOf('\n') + 1;
 					if(len <= 0) len = e.message.length;
@@ -3963,22 +3963,16 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 				PlayState.instance.luaArray.push(luaScript);
 
 				FileSystem.deleteFile(tempFile);
-				#if DEBUG
 				if (zsDebugger) ZSDebugger.log('ZS script loaded: $path');
-				#end
 			} else {
 				for (err in ZSTranspiler.errors) {
 					trace('ZS Error in $path: $err');
-					#if DEBUG
 					if (zsDebugger) ZSDebugger.logError('ZS Error in $path: $err');
-					#end
 				}
 			}
 		} catch(e:Dynamic) {
 			trace('Failed to load ZS script $path: $e');
-			#if DEBUG
 			if (zsDebugger) ZSDebugger.logError('Failed to load ZS script $path: $e');
-			#end
 		}
 	}
 	#end

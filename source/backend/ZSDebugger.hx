@@ -14,7 +14,7 @@ class ZSDebugger {
         var date = Date.now();
         var dateStr = date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDay() + "_" + date.getHours() + "-" + date.getMinutes() + "-" + date.getSeconds();
 
-        logFile = "./ZS-debug-" + dateStr + ".log";
+        logFile = "./debug/ZS/ZS-debug-" + dateStr + ".log";
         transpilerLogFile = "./ZS-transpiler-" + dateStr + ".log";
 
         var header = "=== ZS Debug Log ===\nDate: " + date.toString() + "\n\n";
