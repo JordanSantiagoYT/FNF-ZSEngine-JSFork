@@ -845,7 +845,7 @@ class PlayState extends MusicBeatState
 		}
 		playbackRate = value;
 		FlxG.animationTimeScale = value;
-		Conductor.offset = Reflect.hasField(PlayState.SONG, 'offset') ? (PlayState.SONG.offset / value) : 0;
+		Conductor.offset = Reflect.hasField(PlayState.SONG, 'offset') ? (PlayState.SONG.offset * value) : 0;
 		Conductor.safeZoneOffset = (ClientPrefs.data.safeFrames / 60) * 1000 * value;
 		#if VIDEOS_ALLOWED
 		if(videoCutscene != null && videoCutscene.videoSprite != null) videoCutscene.videoSprite.bitmap.rate = value;
@@ -2190,7 +2190,7 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 								if(!daNote.mustPress) strumGroup = opponentStrums;
 
 								var strum:StrumNote = strumGroup.members[daNote.noteData];
-								daNote.followStrumNote(strum, fakeCrochet, songSpeed * playbackRate);
+								daNote.followStrumNote(strum, fakeCrochet, songSpeed / playbackRate);
 								if(canBeHit && daNote.isSustainNote && strum.sustainReduce) daNote.clipToStrumNote(strum);
 							}
 
@@ -2420,9 +2420,6 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 	}
 
 	public function triggerEvent(eventName:String, value1:String, value2:String, strumTime:Float) {
-		if (luaDebugger) LuaDebugger.logEvent(eventName, value1, value2, strumTime, "INFO");
-		if (haxeDebugger) HaxeDebugger.logEvent(eventName, value1, value2, strumTime, "INFO");
-
 		var flValue1:Null<Float> = Std.parseFloat(value1);
 		var flValue2:Null<Float> = Std.parseFloat(value2);
 		if(Math.isNaN(flValue1)) flValue1 = null;
@@ -3245,9 +3242,6 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 	}
 
 	function noteMiss(daNote:Note):Void { //You didn't hit the key and let it go offscreen, also used by Hurt Notes
-		if (luaDebugger) LuaDebugger.logNoteMiss(daNote.noteData, daNote.strumTime, daNote.noteType, "INFO");
-		if (haxeDebugger) HaxeDebugger.logNoteMiss(daNote.noteData, daNote.strumTime, daNote.noteType, "INFO");
-
 		//Dupe note remove
 		notes.forEachAlive(function(note:Note) {
 			if (daNote != note && daNote.mustPress && daNote.noteData == note.noteData && daNote.isSustainNote == note.isSustainNote && Math.abs(daNote.strumTime - note.strumTime) < 1)
@@ -3429,9 +3423,6 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 
 	public function goodNoteHit(note:Note):Void
 	{
-		if (luaDebugger) LuaDebugger.logNoteHit(note.noteData, note.strumTime, note.noteType, "INFO");
-		if (haxeDebugger) HaxeDebugger.logNoteHit(note.noteData, note.strumTime, note.noteType, "INFO");
-
 		if(note.wasGoodHit) return;
 		if(cpuControlled && note.ignoreNote) return;
 
@@ -3796,9 +3787,6 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
     #end
 
 	public function callOnScripts(funcToCall:String, args:Array<Dynamic> = null, ignoreStops = false, exclusions:Array<String> = null, excludeValues:Array<Dynamic> = null):Dynamic {
-		if (luaDebugger) LuaDebugger.logScriptCall(funcToCall, args, "INFO");
-		if (haxeDebugger) HaxeDebugger.logScriptCall(funcToCall, args, "INFO");
-
 		var returnVal:Dynamic = LuaUtils.Function_Continue;
 		if(args == null) args = [];
 		if(exclusions == null) exclusions = [];
@@ -3828,15 +3816,20 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 			if(exclusions.contains(script.scriptName))
 				continue;
 
-			var myValue:Dynamic = script.call(funcToCall, args);
-			if((myValue == LuaUtils.Function_StopLua || myValue == LuaUtils.Function_StopAll) && !excludeValues.contains(myValue) && !ignoreStops)
-			{
-				returnVal = myValue;
-				break;
-			}
+			try {
+				var myValue:Dynamic = script.call(funcToCall, args);
+				if((myValue == LuaUtils.Function_StopLua || myValue == LuaUtils.Function_StopAll) && !excludeValues.contains(myValue) && !ignoreStops)
+				{
+					returnVal = myValue;
+					break;
+				}
 
-			if(myValue != null && !excludeValues.contains(myValue))
-				returnVal = myValue;
+				if(myValue != null && !excludeValues.contains(myValue))
+					returnVal = myValue;
+			} catch(e:Dynamic) {
+				if (luaDebugger) LuaDebugger.logError('ERROR in Lua script ${script.scriptName} calling $funcToCall: $e', "ERROR");
+				if (haxeDebugger) HaxeDebugger.logError('ERROR in Lua script ${script.scriptName} calling $funcToCall: $e', "ERROR");
+			}
 
 			if(script.closed) arr.push(script);
 		}
@@ -3866,19 +3859,24 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 			if(script == null || !script.exists(funcToCall) || exclusions.contains(script.origin))
 				continue;
 
-			var callValue = script.call(funcToCall, args);
-			if(callValue != null)
-			{
-				var myValue:Dynamic = callValue.returnValue;
-
-				if((myValue == LuaUtils.Function_StopHScript || myValue == LuaUtils.Function_StopAll) && !excludeValues.contains(myValue) && !ignoreStops)
+			try {
+				var callValue = script.call(funcToCall, args);
+				if(callValue != null)
 				{
-					returnVal = myValue;
-					break;
-				}
+					var myValue:Dynamic = callValue.returnValue;
 
-				if(myValue != null && !excludeValues.contains(myValue))
-					returnVal = myValue;
+					if((myValue == LuaUtils.Function_StopHScript || myValue == LuaUtils.Function_StopAll) && !excludeValues.contains(myValue) && !ignoreStops)
+					{
+						returnVal = myValue;
+						break;
+					}
+
+					if(myValue != null && !excludeValues.contains(myValue))
+						returnVal = myValue;
+				}
+			} catch(e:Dynamic) {
+				if (luaDebugger) LuaDebugger.logError('ERROR in HScript ${script.origin} calling $funcToCall: $e', "ERROR");
+				if (haxeDebugger) HaxeDebugger.logError('ERROR in HScript ${script.origin} calling $funcToCall: $e', "ERROR");
 			}
 		}
 		#end

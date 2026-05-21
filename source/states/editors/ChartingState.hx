@@ -3445,11 +3445,19 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		}, 20);
 		var leftButton:PsychUIButton = new PsychUIButton(objX2 + 80, objY, '<', function()
 		{
-			genericEventButton(function(event:EventMetaNote) curEventSelected = FlxMath.wrap(curEventSelected - 1, 0, event.events.length - 1));
+			genericEventButton(function(event:EventMetaNote)
+			{
+				curEventSelected = FlxMath.wrap(curEventSelected - 1, 0, event.events.length - 1);
+				event.updateEventText();
+			});
 		}, 20);
 		var rightButton:PsychUIButton = new PsychUIButton(objX2 + 110, objY, '>', function()
 		{
-			genericEventButton(function(event:EventMetaNote) curEventSelected = FlxMath.wrap(curEventSelected + 1, 0, event.events.length - 1));
+			genericEventButton(function(event:EventMetaNote)
+			{
+				curEventSelected = FlxMath.wrap(curEventSelected + 1, 0, event.events.length - 1);
+				event.updateEventText();
+			});
 		}, 20);
 		removeButton.normalStyle.bgColor = FlxColor.RED;
 		removeButton.normalStyle.textColor = FlxColor.WHITE;
@@ -3608,23 +3616,32 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			softReloadNotes();
 		}, 150);
 
-		var selectAllSustainsButton:PsychUIButton = new PsychUIButton(objX, objY + 40, 'Select All Sustains', function() { 
-			selectedNotes = []; 
-			var foundCount:Int = 0; 
-			var minSustainLength:Float = susLengthStepper.value; 
+		var selectAllSustainsButton:PsychUIButton = new PsychUIButton(objX, objY + 40, 'Select All Sustains', function() {
+			selectedNotes = [];
+			var foundCount:Int = 0;
+			var minSustainLength:Float = susLengthStepper.value;
 
-			if (minSustainLength > 0) {
-				for (note in notes) { 
-					if (note == null || note.isEvent) continue; 
-					selectedNotes.push(note); 
-					foundCount++; 
+			for (sectionIndex in 0...PlayState.SONG.notes.length) {
+				var section = PlayState.SONG.notes[sectionIndex];
+				if (section == null || section.sectionNotes == null) continue;
+				var minTime:Float = cachedSectionTimes[sectionIndex];
+				var maxTime:Float = cachedSectionTimes[sectionIndex + 1];
+
+				for (note in notes) {
+					if (note == null || note.isEvent) continue;
+					if (note.strumTime >= minTime && note.strumTime < maxTime) {
+						if (minSustainLength > 0) {
+							selectedNotes.push(note);
+							foundCount++;
+						}
+					}
 				}
 			}
 
-			if (foundCount > 0) 
-				showOutput('Selected $foundCount sustain notes ($minSustainLength > 0)'); 
-			else 
-				showOutput('No sustain notes found with $minSustainLength > 0'); 
+			if (foundCount > 0)
+				showOutput('Selected $foundCount notes ($minSustainLength > 0)');
+			else
+				showOutput('No notes found with $minSustainLength > 0');
 		}, 120);
 
 		tab_group.add(new FlxText(susLengthStepper.x, susLengthStepper.y - 15, 80, 'Sustain length:'));
@@ -4180,7 +4197,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		tab_group.add(deleteRadius);
 		tab_group.add(new FlxText(objX + 200, objY + 5, 0, 'Delete Radius:'));
 
-		var mirrorPlayerNotes:PsychUIButton = new PsychUIButton(objX + 180, objY + 50, 'Mirror Player Notes', function() {
+		var mirrorPlayerNotes:PsychUIButton = new PsychUIButton(objX + 160, objY + 50, 'Mirror Player Notes', function() {
 			for (note in curRenderedNotes) {
 				if(note == null || note.isEvent) continue;
 
@@ -4199,7 +4216,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 				}
 			}
 			softReloadNotes(true);
-		}, 100);
+		}, 120);
 
 		var mirrorOpponentNotes:PsychUIButton = new PsychUIButton(objX + 160, objY + 80, 'Mirror Opponent Notes', function() {
 			for (note in curRenderedNotes) {
