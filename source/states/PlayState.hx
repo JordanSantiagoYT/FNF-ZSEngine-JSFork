@@ -1676,7 +1676,7 @@ class PlayState extends MusicBeatState
 				++parsedNotes;
 
 				var curStepCrochet:Float = 60 / daBpm * 1000 / 4.0;
-				final roundSus:Int = Math.round(swagNote.sustainLength / curStepCrochet);
+				final roundSus:Int = Math.ceil(swagNote.sustainLength / curStepCrochet);
 				if(roundSus > 0)
 				{
 					for (susNote in 0...roundSus)
@@ -2420,6 +2420,9 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 	}
 
 	public function triggerEvent(eventName:String, value1:String, value2:String, strumTime:Float) {
+		if (luaDebugger) LuaDebugger.logEvent(eventName, value1, value2, strumTime, "INFO");
+		if (haxeDebugger) HaxeDebugger.logEvent(eventName, value1, value2, strumTime, "INFO");
+
 		var flValue1:Null<Float> = Std.parseFloat(value1);
 		var flValue2:Null<Float> = Std.parseFloat(value2);
 		if(Math.isNaN(flValue1)) flValue1 = null;
@@ -2658,6 +2661,9 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 				}
 				catch(e:Dynamic)
 				{
+					if (luaDebugger) LuaDebugger.logError('ERROR ("Set Property" Event) - ' + e.message, "ERROR");
+					if (haxeDebugger) HaxeDebugger.logError('ERROR ("Set Property" Event) - ' + e.message, "ERROR");
+
 					var len:Int = e.message.indexOf('\n') + 1;
 					if(len <= 0) len = e.message.length;
 					#if (LUA_ALLOWED || HSCRIPT_ALLOWED)
@@ -3239,6 +3245,9 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 	}
 
 	function noteMiss(daNote:Note):Void { //You didn't hit the key and let it go offscreen, also used by Hurt Notes
+		if (luaDebugger) LuaDebugger.logNoteMiss(daNote.noteData, daNote.strumTime, daNote.noteType, "INFO");
+		if (haxeDebugger) HaxeDebugger.logNoteMiss(daNote.noteData, daNote.strumTime, daNote.noteType, "INFO");
+
 		//Dupe note remove
 		notes.forEachAlive(function(note:Note) {
 			if (daNote != note && daNote.mustPress && daNote.noteData == note.noteData && daNote.isSustainNote == note.isSustainNote && Math.abs(daNote.strumTime - note.strumTime) < 1)
@@ -3420,6 +3429,9 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 
 	public function goodNoteHit(note:Note):Void
 	{
+		if (luaDebugger) LuaDebugger.logNoteHit(note.noteData, note.strumTime, note.noteType, "INFO");
+		if (haxeDebugger) HaxeDebugger.logNoteHit(note.noteData, note.strumTime, note.noteType, "INFO");
+
 		if(note.wasGoodHit) return;
 		if(cpuControlled && note.ignoreNote) return;
 
@@ -3784,6 +3796,9 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
     #end
 
 	public function callOnScripts(funcToCall:String, args:Array<Dynamic> = null, ignoreStops = false, exclusions:Array<String> = null, excludeValues:Array<Dynamic> = null):Dynamic {
+		if (luaDebugger) LuaDebugger.logScriptCall(funcToCall, args, "INFO");
+		if (haxeDebugger) HaxeDebugger.logScriptCall(funcToCall, args, "INFO");
+
 		var returnVal:Dynamic = LuaUtils.Function_Continue;
 		if(args == null) args = [];
 		if(exclusions == null) exclusions = [];

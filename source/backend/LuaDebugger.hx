@@ -228,4 +228,32 @@ class LuaDebugger
         #end
         log('==============================', "INFO");
     }
+
+    public static function logEvent(eventName:String, value1:String, value2:String, strumTime:Float, ?level:String = "INFO"):Void
+    {
+        log('Event triggered: $eventName (v1: $value1, v2: $value2, time: $strumTime)', level);
+    }
+
+    public static function logNoteHit(noteData:Int, strumTime:Float, noteType:String, ?level:String = "INFO"):Void
+    {
+        log('Note hit: data=$noteData, time=$strumTime, type=$noteType', level);
+    }
+
+    public static function logNoteMiss(noteData:Int, strumTime:Float, noteType:String, ?level:String = "INFO"):Void
+    {
+        log('Note miss: data=$noteData, time=$strumTime, type=$noteType', level);
+    }
+
+    public static function logScriptCall(funcToCall:String, args:Array<Dynamic>, ?level:String = "INFO"):Void
+    {
+        var argsStr = "";
+        if (args != null && args.length > 0)
+        {
+            var strArgs = [];
+            for (arg in args)
+                strArgs.push(Std.string(arg));
+            argsStr = " args: " + strArgs.join(", ");
+        }
+        log('Script call: $funcToCall$argsStr', level);
+    }
 }
