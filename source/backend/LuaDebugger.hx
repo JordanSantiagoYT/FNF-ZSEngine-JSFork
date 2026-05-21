@@ -215,7 +215,8 @@ class LuaDebugger
             log('Lines: ' + lines.length, "INFO");
 
             log('First 10 lines:', "INFO");
-            for (i in 0...Math.min(10, lines.length))
+            var maxLines = Std.int(Math.min(10, lines.length));
+            for (i in 0...maxLines)
             {
                 log('  ${i+1}: ${lines[i]}', "INFO");
             }

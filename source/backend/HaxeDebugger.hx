@@ -105,7 +105,7 @@ class HaxeDebugger
         }
 
         try {
-            var config:IrisConfig = {
+            var config:IrisConfig = cast {
                 name: scriptPath,
                 autoRun: false,
                 autoPreset: true
@@ -127,7 +127,7 @@ class HaxeDebugger
         if (!checkHxFile(scriptPath)) return null;
 
         try {
-            var config:IrisConfig = {
+            var config:IrisConfig = cast {
                 name: scriptPath,
                 autoRun: true,
                 autoPreset: true
@@ -224,7 +224,8 @@ class HaxeDebugger
             log('Lines: ' + lines.length, "INFO");
 
             log('First 15 lines:', "INFO");
-            for (i in 0...Math.min(15, lines.length))
+            var maxLines = Std.int(Math.min(15, lines.length));
+            for (i in 0...maxLines)
             {
                 log('  ${i+1}: ${lines[i]}', "INFO");
             }
