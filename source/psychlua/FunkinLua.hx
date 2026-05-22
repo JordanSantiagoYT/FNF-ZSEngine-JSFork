@@ -1825,9 +1825,6 @@ class FunkinLua {
 			}
 			PlayState.instance.addTextToDebug(text, color);
 		}
-		#if LUA_ALLOWED
-		if (luaDebugger) LuaDebugger.logLua(this.scriptName, message, "LUA");
-		#end
 	}
 
 	public static function getBool(variable:String) {
