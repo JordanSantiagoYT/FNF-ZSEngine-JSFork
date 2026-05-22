@@ -54,7 +54,7 @@ import haxe.CallStack;
 class FunkinLua {
 	public var lua:State = null;
 	public var camTarget:FlxCamera;
-	public static var scriptName:String = '';
+	public var scriptName:String = '';
 	public var modFolder:String = null;
 	public var closed:Bool = false;
 
@@ -1826,7 +1826,7 @@ class FunkinLua {
 			PlayState.instance.addTextToDebug(text, color);
 		}
 		#if LUA_ALLOWED
-		if (luaDebugger) LuaDebugger.logLua(scriptName, message, "LUA");
+		if (luaDebugger) LuaDebugger.logLua(this.scriptName, message, "LUA");
 		#end
 	}
 
