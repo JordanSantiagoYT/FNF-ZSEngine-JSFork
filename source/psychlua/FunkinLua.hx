@@ -54,7 +54,7 @@ import haxe.CallStack;
 class FunkinLua {
 	public var lua:State = null;
 	public var camTarget:FlxCamera;
-	public var scriptName:String = '';
+	public static var scriptName:String = '';
 	public var modFolder:String = null;
 	public var closed:Bool = false;
 
