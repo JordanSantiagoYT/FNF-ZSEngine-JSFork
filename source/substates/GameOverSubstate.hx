@@ -235,9 +235,9 @@ class GameOverSubstate extends MusicBeatSubstate
 				FlxG.camera.fade(FlxColor.BLACK, 2, false, function()
 				{
 					if (PlayState.isStoryMode) {
-						Song.loadFromJson(PlayState.storyPlaylist[0] + getDifficult(), PlayState.storyPlaylist[0], true);
+						Song.loadFromJson(PlayState.storyPlaylist[0] + Difficulty.getFilePath(), PlayState.storyPlaylist[0], true);
 					} else {
-						Song.loadFromJson(PlayState.SONG.song.toLowerCase() + getDifficult(), PlayState.SONG.song.toLowerCase(), true);
+						Song.loadFromJson(PlayState.SONG.song.toLowerCase() + Difficulty.getFilePath(), PlayState.SONG.song.toLowerCase(), true);
 					}
 					MusicBeatState.resetState();
 				});
@@ -250,11 +250,5 @@ class GameOverSubstate extends MusicBeatSubstate
 	{
 		instance = null;
 		super.destroy();
-	}
-
-	function getDifficult():String
-	{
-		if (Difficulty.getString() == 'normal') return '-';
-		return '-' + Difficulty.getString();
 	}
 }

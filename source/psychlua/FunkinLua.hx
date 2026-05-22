@@ -40,7 +40,9 @@ import psychlua.ModchartSprite;
 
 import flixel.input.keyboard.FlxKey;
 import flixel.input.gamepad.FlxGamepadInputID;
-
+#if LUA_ALLOWED
+import backend.LuaDebugger;
+#end
 import haxe.Json;
 
 import shaders.WiggleEffect;
@@ -59,6 +61,7 @@ class FunkinLua {
 	#end
 
 	public var zsScript:Bool = ClientPrefs.data.zsScript;
+	var luaDebugger:Bool = ClientPrefs.data.luaDebugger;
 
 	public var callbacks:Map<String, Dynamic> = new Map<String, Dynamic>();
 	public static var customFunctions:Map<String, Dynamic> = new Map<String, Dynamic>();
@@ -1681,8 +1684,12 @@ class FunkinLua {
 			var type:Int = Lua.type(lua, -1);
 
 			if (type != Lua.LUA_TFUNCTION) {
-				if (type > Lua.LUA_TNIL)
+				if (type > Lua.LUA_TNIL) {
 					luaTrace("ERROR (" + func + "): attempt to call a " + LuaUtils.typeToString(type) + " value", false, false, FlxColor.RED);
+					#if LUA_ALLOWED
+					if (luaDebugger) LuaDebugger.logLua(scriptName, 'Function call error - $func: $errorMsg', "ERROR");
+					#end
+				}
 
 				Lua.pop(lua, 1);
 				return LuaUtils.Function_Continue;
@@ -1695,6 +1702,12 @@ class FunkinLua {
 			if (status != Lua.LUA_OK) {
 				var error:String = getErrorMessage(status);
 				luaTrace("ERROR (" + func + "): " + error, false, false, FlxColor.RED);
+				#if LUA_ALLOWED
+				if (luaDebugger) {
+					LuaDebugger.logLua(scriptName, 'Runtime error in $func: $error', "ERROR");
+					LuaDebugger.logLua(scriptName, 'Args: ' + args, "ERROR");
+				}
+				#end
 				return LuaUtils.Function_Continue;
 			}
 
@@ -1703,11 +1716,23 @@ class FunkinLua {
 			if (result == null) result = LuaUtils.Function_Continue;
 
 			Lua.pop(lua, 1);
+
+			#if LUA_ALLOWED
+			if (LuaDebugger.verbose && luaDebugger)
+				LuaDebugger.watchLuaCalls(scriptName, func, args);
+			#end
+
 			if(closed) stop();
 			return result;
 		}
 		catch (e:Dynamic) {
 			trace(e);
+			#if LUA_ALLOWED
+			if (luaDebugger) {
+				LuaDebugger.logLua(scriptName, 'Exception in $func: $e', "ERROR");
+				LuaDebugger.logError(e, CallStack.exceptionStack());
+			}
+			#end
 		}
 		return LuaUtils.Function_Continue;
 	}
@@ -1797,6 +1822,9 @@ class FunkinLua {
 			}
 			PlayState.instance.addTextToDebug(text, color);
 		}
+		#if LUA_ALLOWED
+		if (luaDebugger) LuaDebugger.logLua(scriptName, message, "LUA");
+		#end
 	}
 
 	public static function getBool(variable:String) {

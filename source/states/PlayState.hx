@@ -546,11 +546,19 @@ class PlayState extends MusicBeatState
 			LuaDebugger.logToFile = true;
 			LuaDebugger.log('=== STARTING SCRIPT LOADING ===', "INFO");
 		}
+		else {
+			LuaDebugger.enabled = false;
+			LuaDebugger.logToFile = false;
+		}
 
 		if (haxeDebugger) {
 			HaxeDebugger.enabled = true;
 			HaxeDebugger.logToFile = true;
 			HaxeDebugger.log('=== STARTING SCRIPT LOADING ===', "INFO");
+		}
+		else {
+			HaxeDebugger.enabled = false;
+			HaxeDebugger.logToFile = false;
 		}
 
 		for (folder in Mods.directoriesWithFile(Paths.getSharedPath(), 'scripts/'))
@@ -558,16 +566,22 @@ class PlayState extends MusicBeatState
 			{
 				#if LUA_ALLOWED
 				if (file.toLowerCase().endsWith('.lua')) {
-					LuaDebugger.logLua(folder + file, 'Loading script', "INFO");
-					LuaDebugger.testLuaScript(folder + file);
-					new FunkinLua(folder + file);
+					if (luaDebugger) {
+						LuaDebugger.logLua(folder + file, 'Loading script', "INFO");
+						LuaDebugger.testLuaScript(folder + file);
+						new FunkinLua(folder + file);
+					}
+					else new FunkinLua(folder + file);
 				}
 				#end
 				#if HSCRIPT_ALLOWED
 				if (file.toLowerCase().endsWith('.hx')) {
-					HaxeDebugger.logScript(folder + file, 'Loading script', "INFO");
-					HaxeDebugger.testHxScript(folder + file);
-					initHScript(folder + file);
+					if (haxeDebugger) {
+						HaxeDebugger.logScript(folder + file, 'Loading script', "INFO");
+						HaxeDebugger.testHxScript(folder + file);
+						initHScript(folder + file);
+					}
+					else initHScript(folder + file);
 				}
 				#end
 				#if ZS_ALLOWED
@@ -589,7 +603,7 @@ class PlayState extends MusicBeatState
 			if(gf != null)
 				gf.visible = false;
 		}
-		
+
 		#if (LUA_ALLOWED || HSCRIPT_ALLOWED)
 		// STAGE SCRIPTS
 		#if LUA_ALLOWED startLuasNamed('stages/' + curStage + '.lua'); #end
@@ -918,9 +932,9 @@ class PlayState extends MusicBeatState
 	function startCharacterScripts(name:String)
 	{
 		if (haxeDebugger)
-			HaxeDebugger.log('Loading character scripts for: $name', "INFO");
+			HaxeDebugger.log('Loading character haxe scripts for: $name', "INFO");
 		if (luaDebugger)
-			LuaDebugger.log('Loading character scripts for: $name', "INFO");
+			LuaDebugger.log('Loading character lua scripts for: $name', "INFO");
 
 		// Lua
 		#if LUA_ALLOWED
@@ -956,10 +970,10 @@ class PlayState extends MusicBeatState
 			}
 			if(doPush) {
 				if (luaDebugger) {
-					LuaDebugger.logLua(luaFile, 'Loading character script', "INFO");
+					LuaDebugger.logLua(luaFile, 'Loading character lua script', "INFO");
+					new FunkinLua(luaFile);
 				}
-
-				new FunkinLua(luaFile);
+				else new FunkinLua(luaFile);
 			}
 		}
 		#end
@@ -990,10 +1004,10 @@ class PlayState extends MusicBeatState
 
 			if(doPush) {
 				if (haxeDebugger) {
-					HaxeDebugger.logScript(scriptFile, 'Loading character script', "INFO");
+					HaxeDebugger.logScript(scriptFile, 'Loading character haxe script', "INFO");
+					initHScript(scriptFile);
 				}
-
-				initHScript(scriptFile);
+				else initHScript(scriptFile);
 			}
 		}
 		#end
