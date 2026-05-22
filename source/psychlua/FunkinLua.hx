@@ -49,6 +49,8 @@ import shaders.WiggleEffect;
 import shaders.ChromaticAberrationEffect;
 import shaders.VCRDistortionEffect;
 
+import haxe.CallStack;
+
 class FunkinLua {
 	public var lua:State = null;
 	public var camTarget:FlxCamera;
@@ -61,7 +63,7 @@ class FunkinLua {
 	#end
 
 	public var zsScript:Bool = ClientPrefs.data.zsScript;
-	var luaDebugger:Bool = ClientPrefs.data.luaDebugger;
+	public static var luaDebugger:Bool = ClientPrefs.data.luaDebugger;
 
 	public var callbacks:Map<String, Dynamic> = new Map<String, Dynamic>();
 	public static var customFunctions:Map<String, Dynamic> = new Map<String, Dynamic>();
@@ -1687,6 +1689,7 @@ class FunkinLua {
 				if (type > Lua.LUA_TNIL) {
 					luaTrace("ERROR (" + func + "): attempt to call a " + LuaUtils.typeToString(type) + " value", false, false, FlxColor.RED);
 					#if LUA_ALLOWED
+					var errorMsg:String = "attempt to call a " + LuaUtils.typeToString(type) + " value";
 					if (luaDebugger) LuaDebugger.logLua(scriptName, 'Function call error - $func: $errorMsg', "ERROR");
 					#end
 				}

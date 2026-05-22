@@ -3840,9 +3840,9 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 
 				if(myValue != null && !excludeValues.contains(myValue))
 					returnVal = myValue;
-			} catch(e:Dynamic) {
-				if (luaDebugger) LuaDebugger.logError('ERROR in Lua script ${script.scriptName} calling $funcToCall: $e', "ERROR");
-				if (haxeDebugger) HaxeDebugger.logError('ERROR in Lua script ${script.scriptName} calling $funcToCall: $e', "ERROR");
+			} catch (e:Dynamic) {
+				if (luaDebugger) LuaDebugger.log('ERROR in Lua script ${script.scriptName} calling $funcToCall: $e', "ERROR");
+				if (haxeDebugger) HaxeDebugger.log('ERROR in Lua script ${script.scriptName} calling $funcToCall: $e', "ERROR");
 			}
 
 			if(script.closed) arr.push(script);
@@ -3889,8 +3889,8 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 						returnVal = myValue;
 				}
 			} catch(e:Dynamic) {
-				if (luaDebugger) LuaDebugger.logError('ERROR in HScript ${script.origin} calling $funcToCall: $e', "ERROR");
-				if (haxeDebugger) HaxeDebugger.logError('ERROR in HScript ${script.origin} calling $funcToCall: $e', "ERROR");
+				if (luaDebugger) LuaDebugger.log('ERROR in HScript ${script.origin} calling $funcToCall: $e', "ERROR");
+				if (haxeDebugger) HaxeDebugger.log('ERROR in HScript ${script.origin} calling $funcToCall: $e', "ERROR");
 			}
 		}
 		#end
