@@ -237,7 +237,7 @@ class LuaDebugger
             Lua.getglobal(luaState, "print");
             Lua.pop(luaState, 1);
 
-            var callback = function(l:llua.StatePointer):Int
+            var callback = function(l:Dynamic):Int
             {
                 var argCount = Lua.gettop(l);
                 var args = [];
