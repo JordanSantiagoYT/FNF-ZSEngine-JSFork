@@ -5,6 +5,7 @@ import sys.io.File;
 import sys.FileSystem;
 import crowplexus.iris.Iris;
 import crowplexus.iris.IrisConfig;
+import psychlua.HScript;
 
 class HaxeDebugger
 {
