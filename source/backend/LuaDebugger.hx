@@ -229,36 +229,39 @@ class LuaDebugger
         log('==============================', "INFO");
     }
 
-    public static function captureLuaPrint(luaState:Dynamic, scriptPath:String):Void
+    public static function captureLuaPrint(luaState:State, scriptPath:String):Void
     {
         #if LUA_ALLOWED
-        Lua.getglobal(luaState, "print");
-        var originalPrint:Dynamic = Lua.tolua(luaState, -1);
-        Lua.pop(luaState, 1);
-
-        Lua.pushstring(luaState, "print");
-        Lua.pushcfunction(luaState, function(l:Dynamic):Int
+        try
         {
-            var argCount = Lua.gettop(l);
-            var args = [];
-            for (i in 1...argCount + 1)
+            Lua.getglobal(luaState, "print");
+            Lua.pop(luaState, 1);
+
+            var callback:llua.LuaCFunction = function(l:State):Int
             {
-                var arg = Lua.tostring(l, i);
-                if (arg == null) arg = "nil";
-                args.push(arg);
-            }
-            var message = args.join("\t");
+                var argCount = Lua.gettop(l);
+                var args = [];
+                for (i in 1...argCount + 1)
+                {
+                    var arg = Lua.tostring(l, i);
+                    if (arg == null) arg = "nil";
+                    args.push(arg);
+                }
+                var message = args.join("\t");
+                logLua(scriptPath, message, "PRINT");
+                return 0;
+            };
 
-            logLua(scriptPath, message, "PRINT");
+            Lua.pushstring(luaState, "print");
+            Lua.pushcfunction(luaState, callback);
+            Lua.settable(luaState, -3);
 
-            Lua.pushvalue(l, -1);
-            for (i in 1...argCount + 1)
-                Lua.pushvalue(l, i);
-            Lua.pcall(l, argCount, 0, 0);
-
-            return 0;
-        });
-        Lua.settable(luaState, -3);
+            logLua(scriptPath, "Print capture installed", "SUCCESS");
+        }
+        catch(e:Dynamic)
+        {
+            logLua(scriptPath, 'Failed to capture print: $e', "ERROR");
+        }
         #end
     }
 }

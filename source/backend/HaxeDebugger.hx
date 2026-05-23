@@ -238,12 +238,23 @@ class HaxeDebugger
         log('======================================', "INFO");
     }
 
-    public static function captureHScriptTrace(iris:Iris, scriptPath:String):Void
+    public static function captureHScriptTrace(script:HScript, scriptPath:String):Void
     {
-        iris.variables.set("trace", function(v:Dynamic) {
-            logScript(scriptPath, Std.string(v), "TRACE");
-            Sys.println(v);
-            return null;
-        });
+        #if HSCRIPT_ALLOWED
+        try
+        {
+            script.interp.variables.set("trace", function(v:Dynamic) {
+                logScript(scriptPath, Std.string(v), "TRACE");
+                Sys.println(v);
+                return null;
+            });
+
+            logScript(scriptPath, "Trace capture installed", "SUCCESS");
+        }
+        catch(e:Dynamic)
+        {
+            logScript(scriptPath, 'Failed to capture trace: $e', "ERROR");
+        }
+        #end
     }
 }
