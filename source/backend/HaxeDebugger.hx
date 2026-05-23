@@ -244,7 +244,7 @@ class HaxeDebugger
         #if HSCRIPT_ALLOWED
         try
         {
-            script.interp.variables.set("trace", function(v:Dynamic) {
+            script.set("trace", function(v:Dynamic) {
                 logScript(scriptPath, Std.string(v), "TRACE");
                 Sys.println(v);
                 return null;

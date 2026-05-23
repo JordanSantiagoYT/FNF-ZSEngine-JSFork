@@ -237,8 +237,7 @@ class LuaDebugger
             Lua.getglobal(luaState, "print");
             Lua.pop(luaState, 1);
 
-            var callback:llua.LuaCFunction = function(l:State):Int
-            {
+            var callback = function(l:State):Int {
                 var argCount = Lua.gettop(l);
                 var args = [];
                 for (i in 1...argCount + 1)
