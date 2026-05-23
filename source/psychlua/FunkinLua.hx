@@ -1642,7 +1642,7 @@ class FunkinLua {
 				Lua_helper.add_callback(lua, name, func);
 		}
 
-		try{
+		try {
 			var isString:Bool = !FileSystem.exists(scriptName);
 			var result:Dynamic = null;
 			if(!isString)
@@ -1661,6 +1661,7 @@ class FunkinLua {
 				lua = null;
 				return;
 			}
+			if (luaDebugger) LuaDebugger.captureLuaPrint(lua, scriptName);
 			if(isString) scriptName = 'unknown';
 		} catch(e:Dynamic) {
 			trace(e);
