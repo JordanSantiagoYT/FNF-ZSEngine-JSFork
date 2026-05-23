@@ -13,8 +13,6 @@ import psychlua.FunkinLua;
 
 import cpp.RawPointer;
 
-typedef LuaCFunction = cpp.Callable<llua.StatePointer -> Int>;
-
 class LuaDebugger
 {
     public static var enabled:Bool = true;
@@ -241,7 +239,7 @@ class LuaDebugger
             Lua.getglobal(luaState, "print");
             Lua.pop(luaState, 1);
 
-            var callback:LuaCFunction = function(l:Dynamic):Int
+            var callback = function(l:Dynamic):Int
             {
                 var argCount = Lua.gettop(l);
                 var args = [];
@@ -257,7 +255,7 @@ class LuaDebugger
             };
 
             Lua.pushstring(luaState, "print");
-            Lua.pushcfunction(luaState, callback);
+            Lua.pushcfunction(luaState, cast callback);
             Lua.settable(luaState, -3);
 
             logLua(scriptPath, "Print capture installed", "SUCCESS");
