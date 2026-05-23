@@ -229,7 +229,7 @@ class LuaDebugger
         log('==============================', "INFO");
     }
 
-    public static function captureLuaPrint(luaState:State, scriptPath:String):Void
+    public static function captureLuaPrint(luaState:Dynamic, scriptPath:String):Void
     {
         #if LUA_ALLOWED
         try
@@ -237,7 +237,8 @@ class LuaDebugger
             Lua.getglobal(luaState, "print");
             Lua.pop(luaState, 1);
 
-            var callback = function(l:State):Int {
+            var callback = function(l:llua.StatePointer):Int
+            {
                 var argCount = Lua.gettop(l);
                 var args = [];
                 for (i in 1...argCount + 1)
