@@ -236,43 +236,27 @@ class LuaDebugger
         #if LUA_ALLOWED
         try
         {
+            var logFile = getLogPath();
+
             var luaCode = '
                 local oldPrint = print
+                local logFile = io.open("' + logFile + '", "a")
                 print = function(...)
                     local args = {...}
                     local msg = table.concat(args, "\\t")
-                    local f = debug.getinfo(2, "S").source
-                    __lua_debug_print(msg, f)
+                    local timestamp = os.date("%Y-%m-%d %H:%M:%S")
+                    if logFile then
+                        logFile:write("[" .. timestamp .. "] [" .. "' + scriptPath + '" .. "] " .. msg .. "\\n")
+                        logFile:flush()
+                    end
                     oldPrint(...)
                 end
             ';
 
-            Lua.pushcfunction(luaState, function(l:Dynamic):Int
-            {
-                var msg = Lua.tostring(l, 1);
-                var source = Lua.tostring(l, 2);
-                if (msg != null && msg.length > 0)
-                {
-                    logLua(scriptPath, '[$source] $msg', "PRINT");
-                }
-                return 0;
-            });
-            Lua.setglobal(luaState, "__lua_debug_print");
-
-            if (LuaL.dostring(luaState, luaCode) != 0)
-            {
-                var err = Lua.tostring(luaState, -1);
-                Lua.pop(luaState, 1);
-                logLua(scriptPath, 'Override failed: $err', "ERROR");
-            }
-            else
-            {
-                logLua(scriptPath, "Print capture installed via dostring", "SUCCESS");
-            }
+            LuaL.dostring(luaState, luaCode);
         }
-        catch(e:Dynamic)
-        {
-            logLua(scriptPath, 'Failed: $e', "ERROR");
+        catch(e:Dynamic) {
+            trace("Error: " + e);
         }
         #end
     }
