@@ -236,33 +236,43 @@ class LuaDebugger
         #if LUA_ALLOWED
         try
         {
-            Lua.getglobal(luaState, "print");
-            Lua.pop(luaState, 1);
+            var luaCode = '
+                local oldPrint = print
+                print = function(...)
+                    local args = {...}
+                    local msg = table.concat(args, "\\t")
+                    local f = debug.getinfo(2, "S").source
+                    __lua_debug_print(msg, f)
+                    oldPrint(...)
+                end
+            ';
 
-            var callback = function(l:Dynamic):Int
+            Lua.pushcfunction(luaState, function(l:Dynamic):Int
             {
-                var argCount = Lua.gettop(l);
-                var args = [];
-                for (i in 1...argCount + 1)
+                var msg = Lua.tostring(l, 1);
+                var source = Lua.tostring(l, 2);
+                if (msg != null && msg.length > 0)
                 {
-                    var arg = Lua.tostring(l, i);
-                    if (arg == null) arg = "nil";
-                    args.push(arg);
+                    logLua(scriptPath, '[$source] $msg', "PRINT");
                 }
-                var message = args.join("\t");
-                logLua(scriptPath, message, "PRINT");
                 return 0;
-            };
+            });
+            Lua.setglobal(luaState, "__lua_debug_print");
 
-            Lua.pushstring(luaState, "print");
-            Lua.pushcfunction(luaState, cast callback);
-            Lua.settable(luaState, -3);
-
-            logLua(scriptPath, "Print capture installed", "SUCCESS");
+            if (LuaL.dostring(luaState, luaCode) != 0)
+            {
+                var err = Lua.tostring(luaState, -1);
+                Lua.pop(luaState, 1);
+                logLua(scriptPath, 'Override failed: $err', "ERROR");
+            }
+            else
+            {
+                logLua(scriptPath, "Print capture installed via dostring", "SUCCESS");
+            }
         }
         catch(e:Dynamic)
         {
-            logLua(scriptPath, 'Failed to capture print: $e', "ERROR");
+            logLua(scriptPath, 'Failed: $e', "ERROR");
         }
         #end
     }
