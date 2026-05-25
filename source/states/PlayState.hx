@@ -983,7 +983,7 @@ class PlayState extends MusicBeatState
 			if(doPush) {
 				if (luaDebugger) {
 					LuaDebugger.logLua(luaFile, 'Loading character lua script', "INFO");
-					LuaDebugger.testLuaScript(folder + file);
+					LuaDebugger.testLuaScript(luaFile);
 					new FunkinLua(luaFile);
 				}
 				else new FunkinLua(luaFile);
@@ -1018,7 +1018,7 @@ class PlayState extends MusicBeatState
 			if(doPush) {
 				if (haxeDebugger) {
 					HaxeDebugger.logScript(scriptFile, 'Loading character haxe script', "INFO");
-					HaxeDebugger.testHxScript(folder + file);
+					HaxeDebugger.testHxScript(scriptFile);
 					initHScript(scriptFile);
 				}
 				else initHScript(scriptFile);
@@ -3800,7 +3800,7 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 		{
 			if (luaDebugger) {
 				LuaDebugger.logLua(luaToLoad, 'Loading script', "INFO");
-				LuaDebugger.testLuaScript(folder + file);
+				LuaDebugger.testLuaScript(luaToLoad);
 			}
 			for (script in luaArray)
 				if(script.scriptName == luaToLoad) return false;
@@ -3827,7 +3827,7 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 		{
 			if (haxeDebugger) {
 				HaxeDebugger.logScript(scriptToLoad, 'Loading script', "INFO");
-				HaxeDebugger.testHxScript(folder + file);
+				HaxeDebugger.testHxScript(scriptToLoad);
 			}
 			if (Iris.instances.exists(scriptToLoad)) return false;
 
