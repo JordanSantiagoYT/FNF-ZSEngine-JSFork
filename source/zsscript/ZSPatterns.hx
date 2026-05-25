@@ -9,7 +9,7 @@ typedef Pattern = {
 
 class ZSPatterns {
     public static var patterns:Array<Pattern> = [
-        // ===== TRIGGER EVENT (must come before generic event) =====
+        // ===== TRIGGER EVENT =====
         {
             pattern: "trigger event: ([^,]+), ([^,]+), (.+)",
             replacement: "triggerEvent($1, $2, $3)",
@@ -25,35 +25,41 @@ class ZSPatterns {
 
         // ===== PROPERTY OPERATIONS =====
         {
-            pattern: "getProperty\\(<([^>]+)>\\)",
-            replacement: 'getProperty("$1")',
-            description: "Get property",
+            pattern: "change <([^>]+)> to (.+)",
+            replacement: 'setProperty("$1", $2)',
+            description: "Set property",
             category: "properties"
         },
         {
-            pattern: "setProperty: <([^>]+)> = (.+)",
-            replacement: 'setProperty("$1", $2)',
-            description: "Set property",
+            pattern: "read <([^>]+)>",
+            replacement: 'getProperty("$1")',
+            description: "Get property",
             category: "properties"
         },
 
         // ===== SHADER OPERATIONS =====
         {
-            pattern: "register shader: <([^>]+)>",
+            pattern: "register shader <([^>]+)>",
             replacement: 'initLuaShader("$1")',
             description: "Register shader",
             category: "shaders"
         },
         {
-            pattern: "set <([^>]+)> to <([^>]+)>",
-            replacement: 'setSpriteShader("$1", "$2")',
+            pattern: "apply shader <([^>]+)> to <([^>]+)>",
+            replacement: 'setSpriteShader("$2", "$1")',
             description: "Apply shader to sprite",
             category: "shaders"
         },
         {
-            pattern: "set Shader\\((Float|Int|Bool)\\): <([^>]+)>\\(<([^>]+)>\\) = (.+)",
+            pattern: "change on shader\\((Float|Int|Bool)\\) <([^>]+)> uniform <([^>]+)> to (.+)",
             replacement: "setShader$1(\"$2\", \"$3\", $4)",
             description: "Set shader uniform",
+            category: "shaders"
+        },
+        {
+            pattern: "read from shader\\((Float|Int|Bool)\\) <([^>]+)> uniform <([^>]+)>",
+            replacement: "getShader$1(\"$2\", \"$3\")",
+            description: "Get shader uniform",
             category: "shaders"
         },
 
@@ -71,31 +77,17 @@ class ZSPatterns {
             category: "variables"
         },
 
-        // ===== EVENTS =====
-        {
-            pattern: "([a-zA-Z]+)<([^>]+)>:",
-            replacement: "function $1($2)",
-            description: "Event with parameters",
-            category: "events"
-        },
-        {
-            pattern: "([a-zA-Z]+):",
-            replacement: "function $1()",
-            description: "Event without parameters",
-            category: "events"
-        },
-
         // ===== GROUP OPERATIONS =====
         {
-            pattern: "setPropertyFromGroup: <([^>]+)>, <([^>]+)>, <([^>]+)> = (.+)",
+            pattern: "change in group <([^>]+)> at <([^>]+)> property <([^>]+)> to (.+)",
             replacement: 'setPropertyFromGroup("$1", $2, "$3", $4)',
-            description: "Set property on group member",
+            description: "Set group property",
             category: "groups"
         },
         {
-            pattern: "getPropertyFromGroup\\(<([^>]+)>, <([^>]+)>, <([^>]+)>\\)",
+            pattern: "read from group <([^>]+)> at <([^>]+)> property <([^>]+)>",
             replacement: 'getPropertyFromGroup("$1", $2, "$3")',
-            description: "Get property from group member",
+            description: "Get group property",
             category: "groups"
         },
         {
@@ -113,16 +105,16 @@ class ZSPatterns {
 
         // ===== CLASS PROPERTY OPERATIONS =====
         {
-            pattern: "getPropertyFromClass\\(<([^>]+)>, <([^>]+)>\\)",
-            replacement: 'getPropertyFromClass("$1", "$2")',
-            description: "Get property from class",
-            category: "properties"
+            pattern: "change in class <([^>]+)> property <([^>]+)> to (.+)",
+            replacement: 'setPropertyFromClass("$1", "$2", $3)',
+            description: "Set class property",
+            category: "classes"
         },
         {
-            pattern: "setPropertyFromClass: <([^>]+)>, <([^>]+)> = (.+)",
-            replacement: 'setPropertyFromClass("$1", "$2", $3)',
-            description: "Set property on class",
-            category: "properties"
+            pattern: "read from class <([^>]+)> property <([^>]+)>",
+            replacement: 'getPropertyFromClass("$1", "$2")',
+            description: "Get class property",
+            category: "classes"
         },
 
         // ===== CONTROL STRUCTURES =====
@@ -357,7 +349,21 @@ class ZSPatterns {
             category: "tables"
         },
 
-        // ===== VARIABLE REFERENCES (must be last) =====
+        // ===== EVENTS =====
+        {
+            pattern: "([a-zA-Z]+)<([^>]+)>:",
+            replacement: "function $1($2)",
+            description: "Event with parameters",
+            category: "events"
+        },
+        {
+            pattern: "([a-zA-Z]+):",
+            replacement: "function $1()",
+            description: "Event without parameters",
+            category: "events"
+        },
+
+        // ===== VARIABLE REFERENCES =====
         {
             pattern: "<([^>]+)>",
             replacement: "$1",

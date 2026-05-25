@@ -117,12 +117,7 @@ class ZSDebugger {
     public static function clearLog():Void {
         if (!enabled) return;
 
-        if (FileSystem.exists(logFile)) {
-            FileSystem.deleteFile(logFile);
-        }
-
-        if (FileSystem.exists(transpilerLogFile)) {
-            FileSystem.deleteFile(transpilerLogFile);
-        }
+        if (FileSystem.exists(".log")) 
+            FileSystem.deleteFile(".log");
     }
 }

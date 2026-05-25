@@ -61,7 +61,8 @@ class ZSTranspiler {
                     errors.push('  → Use curly quotes “ and ” instead');
                     errors.push('  Found: "$trimmedLine"');
                     return null;
-                } else if (codeToCheck.indexOf("'") > -1) {
+                }
+                if (codeToCheck.indexOf("'") > -1) {
                     errors.push('Error at line $currentLine: Straight single quotes \' are not allowed in ZS');
                     errors.push('  → Use curly quotes ‘ and ’ instead');
                     errors.push('  Found: "$trimmedLine"');
@@ -73,27 +74,32 @@ class ZSTranspiler {
                     errors.push('  → Use "≠" instead');
                     errors.push('  Found: "$trimmedLine"');
                     return null;
-                } else if (codeToCheck.indexOf("<=") > -1) {
+                }
+                if (codeToCheck.indexOf("<=") > -1) {
                     errors.push('Error at line $currentLine: Lua operator "<=" is not allowed in ZS');
                     errors.push('  → Use "≤" instead');
                     errors.push('  Found: "$trimmedLine"');
                     return null;
-                } else if (codeToCheck.indexOf(">=") > -1) {
+                }
+                if (codeToCheck.indexOf(">=") > -1) {
                     errors.push('Error at line $currentLine: Lua operator ">=" is not allowed in ZS');
                     errors.push('  → Use "≥" instead');
                     errors.push('  Found: "$trimmedLine"');
                     return null;
-                } else if (codeToCheck.indexOf("-=") > -1) {
+                }
+                if (codeToCheck.indexOf("-=") > -1) {
                     errors.push('Error at line $currentLine: Lua operator "-=" is not allowed in ZS');
                     errors.push('  → Use "−=" instead');
                     errors.push('  Found: "$trimmedLine"');
                     return null;
-                } else if (codeToCheck.indexOf("*=") > -1) {
+                }
+                if (codeToCheck.indexOf("*=") > -1) {
                     errors.push('Error at line $currentLine: Lua operator "*=" is not allowed in ZS');
                     errors.push('  → Use "×=" instead');
                     errors.push('  Found: "$trimmedLine"');
                     return null;
-                } else if (codeToCheck.indexOf("/=") > -1) {
+                }
+                if (codeToCheck.indexOf("/=") > -1) {
                     errors.push('Error at line $currentLine: Lua operator "/=" is not allowed in ZS');
                     errors.push('  → Use "÷=" instead');
                     errors.push('  Found: "$trimmedLine"');
@@ -177,7 +183,8 @@ class ZSTranspiler {
 
             trimmedLine = convertQuotes(trimmedLine);
             trimmedLine = fixMinusSigns(trimmedLine);
-
+            var funcPattern = ~/([a-zA-Z]+)<([^>]+)(?:, <([^>]+)>)*>/g;
+            trimmedLine = funcPattern.replace(trimmedLine, "$1($2)");
             trimmedLine = trimmedLine.split("≠").join("~=");
             trimmedLine = trimmedLine.split("≤").join("<=");
             trimmedLine = trimmedLine.split("≥").join(">=");

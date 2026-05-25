@@ -263,7 +263,9 @@ class LuaDebugger
 
     public static function clearLog():Void
     {
-        if (FileSystem.exists(logPath))
-            FileSystem.deleteFile(logPath);
+        if (!enabled) return;
+
+        if (FileSystem.exists(".log"))
+            FileSystem.deleteFile(".log");
     }
 }

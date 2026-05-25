@@ -109,12 +109,14 @@ class LuaUtils
 			return instance.get(variable);
 		}
 
-		if(instance is MusicBeatState && MusicBeatState.getVariables().exists(variable))
+		// Check variables map first (matching JS-Engine approach)
+		if(PlayState.instance != null && PlayState.instance.variables.exists(variable))
 		{
-			var retVal:Dynamic = MusicBeatState.getVariables().get(variable);
+			var retVal:Dynamic = PlayState.instance.variables.get(variable);
 			if(retVal != null)
 				return retVal;
 		}
+
 		return Reflect.getProperty(instance, variable);
 	}
 

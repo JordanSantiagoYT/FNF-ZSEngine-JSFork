@@ -425,11 +425,6 @@ class PlayState extends MusicBeatState
 		FlxG.cameras.add(camHUD, false);
 		FlxG.cameras.add(camOther, false);
 
-		// Register cameras in variables map for Lua access
-		variables.set('camHUD', camHUD);
-		variables.set('camGame', camGame);
-		variables.set('camOther', camOther);
-
 		persistentUpdate = true;
 		persistentDraw = true;
 
@@ -776,12 +771,24 @@ class PlayState extends MusicBeatState
 			for (file in FileSystem.readDirectory(folder))
 			{
 				#if LUA_ALLOWED
-				if (file.toLowerCase().endsWith('.lua'))
-					new FunkinLua(folder + file);
+				if (file.toLowerCase().endsWith('.lua')) {
+					if (luaDebugger) {
+						LuaDebugger.logLua(folder + file, 'Loading script', "INFO");
+						LuaDebugger.testLuaScript(folder + file);
+						new FunkinLua(folder + file);
+					}
+					else new FunkinLua(folder + file);
+				}
 				#end
 				#if HSCRIPT_ALLOWED
-				if (file.toLowerCase().endsWith('.hx'))
-					initHScript(folder + file);
+				if (file.toLowerCase().endsWith('.hx')) {
+					if (haxeDebugger) {
+						HaxeDebugger.logScript(folder + file, 'Loading script', "INFO");
+						HaxeDebugger.testHxScript(folder + file);
+						initHScript(folder + file);
+					}
+					else initHScript(folder + file);
+				}
 				#end
 				#if ZS_ALLOWED
 				if (file.toLowerCase().endsWith('.zs') && zsScript) 
@@ -976,6 +983,7 @@ class PlayState extends MusicBeatState
 			if(doPush) {
 				if (luaDebugger) {
 					LuaDebugger.logLua(luaFile, 'Loading character lua script', "INFO");
+					LuaDebugger.testLuaScript(folder + file);
 					new FunkinLua(luaFile);
 				}
 				else new FunkinLua(luaFile);
@@ -1010,6 +1018,7 @@ class PlayState extends MusicBeatState
 			if(doPush) {
 				if (haxeDebugger) {
 					HaxeDebugger.logScript(scriptFile, 'Loading character haxe script', "INFO");
+					HaxeDebugger.testHxScript(folder + file);
 					initHScript(scriptFile);
 				}
 				else initHScript(scriptFile);
@@ -3789,7 +3798,10 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 		if(OpenFlAssets.exists(luaToLoad))
 		#end
 		{
-			if (luaDebugger) LuaDebugger.logLua(luaToLoad, 'Loading script', "INFO");
+			if (luaDebugger) {
+				LuaDebugger.logLua(luaToLoad, 'Loading script', "INFO");
+				LuaDebugger.testLuaScript(folder + file);
+			}
 			for (script in luaArray)
 				if(script.scriptName == luaToLoad) return false;
 
@@ -3813,7 +3825,10 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 
 		if(FileSystem.exists(scriptToLoad))
 		{
-			if (haxeDebugger) HaxeDebugger.logScript(scriptToLoad, 'Loading script', "INFO");
+			if (haxeDebugger) {
+				HaxeDebugger.logScript(scriptToLoad, 'Loading script', "INFO");
+				HaxeDebugger.testHxScript(folder + file);
+			}
 			if (Iris.instances.exists(scriptToLoad)) return false;
 
 			initHScript(scriptToLoad);

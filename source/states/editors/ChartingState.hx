@@ -2088,6 +2088,13 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 						break;
 					}
 				}
+
+				var selectedId:Int = eventDropDown.selectedIndex;
+				if(selectedId >= 0 && selectedId < eventsList.length)
+				{
+					eventDescriptionText.text = eventsList[selectedId][1];
+				}
+
 				value1InputText.text = (myEvent.length > 1 && myEvent[1] != null) ? Std.string(myEvent[1]) : '';
 				value2InputText.text = (myEvent.length > 2 && myEvent[2] != null) ? Std.string(myEvent[2]) : '';
 			}
@@ -3616,37 +3623,61 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			softReloadNotes();
 		}, 150);
 
-		var selectAllSustainsButton:PsychUIButton = new PsychUIButton(objX, objY + 120, 'Select All Sustains', function() { 
+		var selectAllSustainsButton:PsychUIButton = new PsychUIButton(objX, objY + 40, 'Select All Sustains', function() { 
 			selectedNotes = []; 
 			var foundCount:Int = 0; 
 
-			for (note in notes) { 
-				if (note == null || note.isEvent) continue; 
+			var selectedNoteData:Array<{section:Int, strumTime:Float, noteData:Int}> = [];
 
-				// Get sustain length from songData[2]
-				if (note.songData != null && note.songData.length > 2)
+			for (sectionIndex in 0...PlayState.SONG.notes.length)
+			{
+				var section = PlayState.SONG.notes[sectionIndex];
+				if (section == null || section.sectionNotes == null) continue;
+
+				for (noteData in section.sectionNotes)
 				{
-					var sustainLength:Float = note.songData[2];
-					if (sustainLength > 0) { 
-						selectedNotes.push(note); 
-						foundCount++; 
+					if (noteData == null || noteData.length < 3) continue;
+					if (noteData[1] < 0) continue;
+
+					var sustainLength:Float = noteData[2];
+					if (sustainLength > 0)
+					{
+						selectedNoteData.push({
+							section: sectionIndex,
+							strumTime: noteData[0],
+							noteData: noteData[1]
+						});
+						foundCount++;
 					}
 				}
-			} 
+			}
+
+			for (note in notes)
+			{
+				if (note == null || note.isEvent) continue;
+
+				for (selected in selectedNoteData)
+				{
+					if (Math.abs(note.strumTime - selected.strumTime) < 0.1)
+					{
+						selectedNotes.push(note);
+						break;
+					}
+				}
+			}
 
 			if (foundCount > 0) 
-				showOutput('Selected $foundCount sustain notes'); 
+				showOutput('Selected $foundCount sustain notes from entire chart (${selectedNotes.length} currently visible)'); 
 			else 
 				showOutput('No sustain notes found in chart'); 
 
-			// Update selection box
 			if (selectedNotes.length > 0)
 			{
 				var firstNote = selectedNotes[0];
 				selectionBox.setPosition(firstNote.x, firstNote.y);
 				selectionBox.visible = true;
 			}
-		});
+		}, 120);
 
 		tab_group.add(new FlxText(susLengthStepper.x, susLengthStepper.y - 15, 80, 'Sustain length:'));
 		tab_group.add(new FlxText(strumTimeStepper.x, strumTimeStepper.y - 15, 100, 'Note Hit time (ms):'));
