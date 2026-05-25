@@ -15,7 +15,7 @@ class ZSDebugger {
         var dateStr = date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDay() + "_" + date.getHours() + "-" + date.getMinutes() + "-" + date.getSeconds();
 
         logFile = "./debug/ZS/ZS-debug-" + dateStr + ".log";
-        transpilerLogFile = "./ZS-transpiler-" + dateStr + ".log";
+        transpilerLogFile = "./debug/ZS/ZS-transpiler-" + dateStr + ".log";
 
         var header = "=== ZS Debug Log ===\nDate: " + date.toString() + "\n\n";
         File.saveContent(logFile, header);
@@ -112,5 +112,17 @@ class ZSDebugger {
             var content = File.getContent(transpilerLogFile);
             File.saveContent(transpilerLogFile, content + footer);
         } catch(e:Dynamic) {}
+    }
+
+    public static function clearLog():Void {
+        if (!enabled) return;
+
+        if (FileSystem.exists(logFile)) {
+            FileSystem.deleteFile(logFile);
+        }
+
+        if (FileSystem.exists(transpilerLogFile)) {
+            FileSystem.deleteFile(transpilerLogFile);
+        }
     }
 }

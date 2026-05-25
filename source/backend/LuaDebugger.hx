@@ -255,35 +255,7 @@ class LuaDebugger
 
     public static function clearLog():Void
     {
-        var path = getLogPath();
-        if (FileSystem.exists(path))
-            FileSystem.deleteFile(path);
-        log('Log cleared: $path', "INFO");
-    }
-
-    public static function printLuaState(scriptPath:String):Void
-    {
-        log('=== LUA STATE: $scriptPath ===', "INFO");
-        log('Checking script status...', "INFO");
-        #if LUA_ALLOWED
-        if (FileSystem.exists(scriptPath))
-        {
-            var content = File.getContent(scriptPath);
-            var lines = content.split("\n");
-            log('Lines: ' + lines.length, "INFO");
-
-            log('First 10 lines:', "INFO");
-            var maxLines = Std.int(Math.min(10, lines.length));
-            for (i in 0...maxLines)
-            {
-                log('  ${i+1}: ${lines[i]}', "INFO");
-            }
-        }
-        else
-        {
-            log('Script not found: $scriptPath', "ERROR");
-        }
-        #end
-        log('==============================', "INFO");
+        if (FileSystem.exists(logPath))
+            FileSystem.deleteFile(logPath);
     }
 }

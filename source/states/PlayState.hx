@@ -3830,7 +3830,7 @@ Average NPS in loading: ${Math.round(parsedNotes / takenNoteTime)}');
 		{
 			newScript = new HScript(null, file);
 			#if HSCRIPT_ALLOWED
-			if (haxeDebugger) HaxeDebugger.captureHScriptTrace(newScript, file);
+			if (haxeDebugger) HaxeDebugger.enableTraceCapture(newScript, file);
 			#end
 			if (newScript.exists('onCreate')) {
 				HaxeDebugger.logScript(file, 'Calling onCreate', "INFO");

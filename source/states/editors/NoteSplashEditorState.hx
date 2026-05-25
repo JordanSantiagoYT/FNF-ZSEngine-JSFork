@@ -30,8 +30,24 @@ class NoteSplashEditorState extends MusicBeatState
     var properUI:PsychUIBox;
     var shaderUI:PsychUIBox;
 
+    var outputTxt:FlxText;
+    var outputAlpha:Float = 0;
+    var camUI:FlxCamera;
+
     override function create()
     {
+		camUI = new FlxCamera();
+		camUI.bgColor.alpha = 0;
+		FlxG.cameras.add(camUI, false);
+
+		outputTxt = new FlxText(25, FlxG.height - 50, FlxG.width - 50, '', 20);
+		outputTxt.borderSize = 2;
+		outputTxt.borderStyle = OUTLINE_FAST;
+		outputTxt.scrollFactor.set();
+        outputTxt.cameras = [camUI];
+        outputTxt.alpha = 0;
+		add(outputTxt);
+
         if (imageSkin == null)
             imageSkin =  NoteSplash.defaultNoteSplash + NoteSplash.getSplashSkinPostfix();
 
@@ -333,7 +349,7 @@ class NoteSplashEditorState extends MusicBeatState
             try {
                 reloadImage();
             } catch (e:Dynamic) {
-                showOutput("No image found");
+                showOutput("No image found", true);
             }
         });
         ui.add(reloadButton);
@@ -495,9 +511,6 @@ class NoteSplashEditorState extends MusicBeatState
     {
         // Empty line
     }
-
-    var outputTxt:FlxText;
-    var outputAlpha:Float = 0;
 
     var holdingArrowsTime:Float = 0;
     var holdingArrowsElapsed:Float = 0;

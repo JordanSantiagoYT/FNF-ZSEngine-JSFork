@@ -3,9 +3,11 @@ package backend;
 import haxe.CallStack;
 import sys.io.File;
 import sys.FileSystem;
-import crowplexus.iris.Iris;
-import crowplexus.iris.IrisConfig;
+
+#if HSCRIPT_ALLOWED
 import psychlua.HScript;
+import crowplexus.iris.Iris;
+#end
 
 class HaxeDebugger
 {
@@ -64,6 +66,39 @@ class HaxeDebugger
         log('[$scriptPath] $message', level);
     }
 
+    #if HSCRIPT_ALLOWED
+    public static function enableTraceCapture(script:HScript, scriptPath:String):Void
+    {
+        try
+        {
+            var logFile = getLogPath();
+
+            script.set("trace", function(v:Dynamic) {
+                var msg = Std.string(v);
+                var timestamp = Date.now().toString();
+
+                if (logToFile)
+                {
+                    try {
+                        var file = sys.io.File.append(logFile, false);
+                        file.writeString('[$timestamp] [$scriptPath] [TRACE] $msg\n');
+                        file.close();
+                    } catch(e:Dynamic) {}
+                }
+
+                Sys.println('[$timestamp] [$scriptPath] [TRACE] $msg');
+                return null;
+            });
+
+            logScript(scriptPath, "Trace capture installed", "SUCCESS");
+        }
+        catch(e:Dynamic)
+        {
+            logScript(scriptPath, 'Failed to capture trace: $e', "ERROR");
+        }
+    }
+    #end
+
     public static function checkHxFile(path:String):Bool
     {
         if (!FileSystem.exists(path))
@@ -78,6 +113,7 @@ class HaxeDebugger
         return true;
     }
 
+    #if HSCRIPT_ALLOWED
     public static function testHxScript(scriptPath:String):Void
     {
         log('Testing Haxe script: $scriptPath', "INFO");
@@ -91,8 +127,8 @@ class HaxeDebugger
         if (content.indexOf("function") == -1)
             issues.push("No functions found");
 
-        if (content.indexOf("trace") == -1 && content.indexOf("log") == -1)
-            issues.push("No trace/log statements");
+        if (content.indexOf("trace") == -1)
+            issues.push("No trace statements");
 
         if (issues.length > 0)
         {
@@ -106,53 +142,17 @@ class HaxeDebugger
         }
 
         try {
-            var config:IrisConfig = cast {
-                name: scriptPath,
-                autoRun: false,
-                autoPreset: true
-            };
-
-            var content = File.getContent(scriptPath);
-            var iris = new Iris(content, config);
-            iris.execute();
-            log('Haxe script initialized successfully: $scriptPath', "SUCCESS");
+            var script = new HScript(null, scriptPath);
+            enableTraceCapture(script, scriptPath);
+            log('Haxe script compiled successfully: $scriptPath', "SUCCESS");
+            script.destroy();
+        } catch(e:IrisError) {
+            log('Haxe script compilation failed: $scriptPath - ${e.message}', "ERROR");
         } catch(e:Dynamic) {
-            log('Haxe script initialization failed: $scriptPath - $e', "ERROR");
+            log('Haxe script compilation failed: $scriptPath - $e', "ERROR");
         }
     }
-
-    public static function executeHxScript(scriptPath:String, ?functionName:String = null, ?args:Array<Dynamic> = null):Dynamic
-    {
-        log('Executing Haxe script: $scriptPath', "INFO");
-
-        if (!checkHxFile(scriptPath)) return null;
-
-        try {
-            var config:IrisConfig = cast {
-                name: scriptPath,
-                autoRun: true,
-                autoPreset: true
-            };
-
-            var content = File.getContent(scriptPath);
-            var iris = new Iris(content, config);
-
-            if (functionName != null)
-            {
-                log('Calling function: $functionName', "SUCCESS");
-                var result = iris.call(functionName, args != null ? args : []);
-                log('Function returned: $result', "INFO");
-                return result;
-            }
-
-            log('Script executed successfully', "SUCCESS");
-            return true;
-
-        } catch(e:Dynamic) {
-            log('Script execution failed: $e', "ERROR");
-            return null;
-        }
-    }
+    #end
 
     public static function scanModsForHx():Void
     {
@@ -165,28 +165,48 @@ class HaxeDebugger
             return;
         }
 
-        var mods = FileSystem.readDirectory(modsPath);
+        var searchPaths = [
+            "mods/",
+            "mods/" + Mods.currentModDirectory + "/scripts/",
+            "mods/" + Mods.currentModDirectory + "/custom_events/",
+            "mods/" + Mods.currentModDirectory + "/custom_notetypes/",
+            "mods/" + Mods.currentModDirectory + "/stages/",
+            "mods/" + Mods.currentModDirectory + "/characters/"
+        ];
+
+        if (PlayState.SONG != null)
+        {
+            var songName = Paths.formatToSongPath(PlayState.SONG.song);
+            searchPaths.push("mods/" + Mods.currentModDirectory + "/data/" + songName + "/");
+        }
+
         var foundScripts:Array<String> = [];
 
-        for (mod in mods)
+        for (basePath in searchPaths)
         {
-            if (mod.indexOf(".") != -1) continue;
+            if (!FileSystem.exists(basePath)) continue;
 
-            var scriptPath = modsPath + mod + "/scripts/";
-            if (FileSystem.exists(scriptPath))
+            function scanDir(dir:String):Void
             {
-                var scripts = FileSystem.readDirectory(scriptPath);
-                for (script in scripts)
+                if (!FileSystem.exists(dir)) return;
+                var files = FileSystem.readDirectory(dir);
+                for (file in files)
                 {
-                    if (script.endsWith(".hx"))
+                    var fullPath = dir + file;
+                    if (FileSystem.isDirectory(fullPath))
+                        scanDir(fullPath + "/");
+                    else if (file.toLowerCase().endsWith(".hx"))
                     {
-                        var fullPath = scriptPath + script;
                         foundScripts.push(fullPath);
                         log('Found Haxe script: $fullPath', "SUCCESS");
+                        #if HSCRIPT_ALLOWED
                         testHxScript(fullPath);
+                        #end
                     }
                 }
             }
+
+            scanDir(basePath);
         }
 
         log('Total Haxe scripts found: ' + foundScripts.length, "INFO");
@@ -208,54 +228,7 @@ class HaxeDebugger
 
     public static function clearLog():Void
     {
-        var path = getLogPath();
-        if (FileSystem.exists(path))
-            FileSystem.deleteFile(path);
-        log('Log cleared: $path', "INFO");
-    }
-
-    public static function printScriptState(scriptPath:String):Void
-    {
-        log('=== HAXE SCRIPT STATE: $scriptPath ===', "INFO");
-
-        if (FileSystem.exists(scriptPath))
-        {
-            var content = File.getContent(scriptPath);
-            var lines = content.split("\n");
-            log('Lines: ' + lines.length, "INFO");
-
-            log('First 15 lines:', "INFO");
-            var maxLines = Std.int(Math.min(15, lines.length));
-            for (i in 0...maxLines)
-            {
-                log('  ${i+1}: ${lines[i]}', "INFO");
-            }
-        }
-        else
-        {
-            log('Script not found: $scriptPath', "ERROR");
-        }
-
-        log('======================================', "INFO");
-    }
-
-    public static function captureHScriptTrace(script:HScript, scriptPath:String):Void
-    {
-        #if HSCRIPT_ALLOWED
-        try
-        {
-            script.set("trace", function(v:Dynamic) {
-                logScript(scriptPath, Std.string(v), "TRACE");
-                Sys.println(v);
-                return null;
-            });
-
-            logScript(scriptPath, "Trace capture installed", "SUCCESS");
-        }
-        catch(e:Dynamic)
-        {
-            logScript(scriptPath, 'Failed to capture trace: $e', "ERROR");
-        }
-        #end
+        if (FileSystem.exists(logPath))
+            FileSystem.deleteFile(logPath);
     }
 }
