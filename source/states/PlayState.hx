@@ -425,6 +425,11 @@ class PlayState extends MusicBeatState
 		FlxG.cameras.add(camHUD, false);
 		FlxG.cameras.add(camOther, false);
 
+		// Register cameras in variables map for Lua access
+		variables.set('camHUD', camHUD);
+		variables.set('camGame', camGame);
+		variables.set('camOther', camOther);
+
 		persistentUpdate = true;
 		persistentDraw = true;
 
@@ -1025,6 +1030,12 @@ class PlayState extends MusicBeatState
 		cam.filters = newCamEffects;
 	}
 
+	function cleanCameraShaderStack(cam:FlxCamera, stack:Array<CameraStackShader>):Void
+	{
+		var newCamEffects:Array<BitmapFilter> = [];
+		cam.filters = newCamEffects;
+	}
+
 	/**
 	 * Stack post-process shaders on a camera (camGame, camHUD, camOther) or set `.shader` on a sprite / Lua object tag.
 	 */
@@ -1061,6 +1072,64 @@ class PlayState extends MusicBeatState
 					}
 					catch (_:Dynamic) {}
 				}
+		}
+	}
+
+	public function removeShaderFromCamera(cam:String, effect:CameraStackShader):Void
+	{
+		if (!ClientPrefs.data.shaders)
+			return;
+
+		switch (cam.toLowerCase())
+		{
+			case 'camhud' | 'hud':
+				camHUDShaders.remove(effect);
+				rebuildCameraShaderStack(camHUD, camHUDShaders);
+			case 'camother' | 'other':
+				camOtherShaders.remove(effect);
+				rebuildCameraShaderStack(camOther, camOtherShaders);
+			case 'camgame' | 'game':
+				camGameShaders.remove(effect);
+				rebuildCameraShaderStack(camGame, camGameShaders);
+			default:
+				if (variables.exists(cam))
+				{
+					var obj:Dynamic = variables.get(cam);
+					if (obj != null)
+						Reflect.setProperty(obj, 'shader', null);
+				}
+				else
+				{
+					try
+					{
+						var obj:Dynamic = Reflect.getProperty(this, cam);
+						if (obj != null)
+							Reflect.setProperty(obj, 'shader', null);
+					}
+					catch (_:Dynamic) {}
+				}
+		}
+	}
+
+	public function clearShaderFromCamera(cam:String, effect:CameraStackShader):Void
+	{
+		if (!ClientPrefs.data.shaders)
+			return;
+
+		switch (cam.toLowerCase())
+		{
+			case 'camhud' | 'hud':
+				camHUDShaders = [];
+				cleanCameraShaderStack(camHUD, camHUDShaders);
+			case 'camother' | 'other':
+				camOtherShaders = [];
+				cleanCameraShaderStack(camOther, camOtherShaders);
+			case 'camgame' | 'game':
+				camGameShaders = [];
+				cleanCameraShaderStack(camGame, camGameShaders);
+			default:
+				camGameShaders = [];
+				cleanCameraShaderStack(camGame, camGameShaders);
 		}
 	}
 	#end

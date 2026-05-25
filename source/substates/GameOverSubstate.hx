@@ -235,9 +235,9 @@ class GameOverSubstate extends MusicBeatSubstate
 				FlxG.camera.fade(FlxColor.BLACK, 2, false, function()
 				{
 					if (PlayState.isStoryMode) {
-						Song.loadFromJson(PlayState.storyPlaylist[0] + Difficulty.getFilePath(), PlayState.storyPlaylist[0], true);
+						Song.loadFromJson(PlayState.storyPlaylist[0] + Difficulty.getFilePath(), PlayState.storyPlaylist[0], false);
 					} else {
-						Song.loadFromJson(PlayState.SONG.song.toLowerCase() + Difficulty.getFilePath(), PlayState.SONG.song.toLowerCase(), true);
+						Song.loadFromJson(PlayState.SONG.song.toLowerCase() + Difficulty.getFilePath(), PlayState.SONG.song.toLowerCase(), false);
 					}
 					MusicBeatState.resetState();
 				});

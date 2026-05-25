@@ -1661,7 +1661,7 @@ class FunkinLua {
 				lua = null;
 				return;
 			}
-			if (luaDebugger) LuaDebugger.captureLuaPrint(lua, scriptName);
+			if (luaDebugger) LuaDebugger.enableDebugMode(this);
 			if(isString) scriptName = 'unknown';
 		} catch(e:Dynamic) {
 			trace(e);

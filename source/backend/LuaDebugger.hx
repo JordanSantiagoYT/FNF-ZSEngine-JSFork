@@ -3,15 +3,10 @@ package backend;
 import haxe.CallStack;
 import sys.io.File;
 import sys.FileSystem;
-import lime.app.Application;
-import openfl.events.UncaughtErrorEvent;
-import openfl.Lib;
 
 #if LUA_ALLOWED
 import psychlua.FunkinLua;
 #end
-
-import cpp.RawPointer;
 
 class LuaDebugger
 {
@@ -72,6 +67,48 @@ class LuaDebugger
         log('[$scriptPath] $message', level);
     }
 
+    #if LUA_ALLOWED
+    public static function enableDebugMode(funk:FunkinLua):Void
+    {
+        try
+        {
+            funk.set("luaDebugMode", true);
+            funk.set("luaDeprecatedWarnings", true);
+
+            var logFile = getLogPath();
+            var scriptPath = funk.scriptName;
+
+            var luaCode = '
+                local oldDebugPrint = debugPrint
+                debugPrint = function(...)
+                    local args = {...}
+                    local msg = table.concat(args, " ")
+                    local timestamp = os.date("%Y-%m-%d %H:%M:%S")
+                    local f = debug.getinfo(2, "S").source or "' + scriptPath + '"
+
+                    -- Write to log file
+                    local logFile = io.open("' + logFile + '", "a")
+                    if logFile then
+                        logFile:write("[" .. timestamp .. "] [" .. f .. "] " .. msg .. "\\n")
+                        logFile:flush()
+                        logFile:close()
+                    end
+
+                    -- Call original debugPrint to keep screen output
+                    oldDebugPrint(...)
+                end
+            ';
+
+            funk.luaL_dostring(luaCode);
+            logLua(scriptPath, "Debug mode enabled and print capture installed", "SUCCESS");
+        }
+        catch(e:Dynamic)
+        {
+            logLua(funk.scriptName, 'Failed to enable debug mode: $e', "ERROR");
+        }
+    }
+    #end
+
     public static function checkLuaFile(path:String):Bool
     {
         if (!FileSystem.exists(path))
@@ -101,13 +138,10 @@ class LuaDebugger
             issues.push("Missing onCreate function");
 
         if (content.indexOf("function onUpdate") == -1 && content.indexOf("function onBeatHit") == -1)
-            issues.push("No event handlers found (onUpdate/onBeatHit missing)");
+            issues.push("No event handlers found");
 
-        if (content.indexOf("print") == -1)
-            issues.push("No print statements (add print() for debugging)");
-
-        if (content.indexOf("trace") == -1)
-            issues.push("No trace statements (add trace() for debugging)");
+        if (content.indexOf("debugPrint") == -1 && content.indexOf("print") == -1)
+            issues.push("No debugPrint/print statements");
 
         if (issues.length > 0)
         {
@@ -121,7 +155,8 @@ class LuaDebugger
         }
 
         try {
-            var lua = new FunkinLua(scriptPath);
+            var funk = new FunkinLua(scriptPath);
+            enableDebugMode(funk);
             log('Lua script compiled successfully: $scriptPath', "SUCCESS");
         } catch(e:Dynamic) {
             log('Lua compilation failed: $scriptPath - $e', "ERROR");
@@ -143,17 +178,36 @@ class LuaDebugger
         var mods = FileSystem.readDirectory(modsPath);
         var foundScripts:Array<String> = [];
 
-        for (mod in mods)
+        var searchPaths = [
+            "mods/",
+            "mods/" + Mods.currentModDirectory + "/scripts/",
+            "mods/" + Mods.currentModDirectory + "/custom_events/",
+            "mods/" + Mods.currentModDirectory + "/custom_notetypes/",
+            "mods/" + Mods.currentModDirectory + "/stages/",
+            "mods/" + Mods.currentModDirectory + "/characters/"
+        ];
+
+        if (PlayState.SONG != null)
         {
-            var scriptPath = modsPath + mod + "/scripts/";
-            if (FileSystem.exists(scriptPath))
+            var songName = Paths.formatToSongPath(PlayState.SONG.song);
+            searchPaths.push("mods/" + Mods.currentModDirectory + "/data/" + songName + "/");
+        }
+
+        for (basePath in searchPaths)
+        {
+            if (!FileSystem.exists(basePath)) continue;
+
+            function scanDir(dir:String):Void
             {
-                var scripts = FileSystem.readDirectory(scriptPath);
-                for (script in scripts)
+                if (!FileSystem.exists(dir)) return;
+                var files = FileSystem.readDirectory(dir);
+                for (file in files)
                 {
-                    if (script.endsWith(".lua"))
+                    var fullPath = dir + file;
+                    if (FileSystem.isDirectory(fullPath))
+                        scanDir(fullPath + "/");
+                    else if (file.toLowerCase().endsWith(".lua"))
                     {
-                        var fullPath = scriptPath + script;
                         foundScripts.push(fullPath);
                         log('Found Lua script: $fullPath', "SUCCESS");
                         #if LUA_ALLOWED
@@ -162,6 +216,8 @@ class LuaDebugger
                     }
                 }
             }
+
+            scanDir(basePath);
         }
 
         log('Total Lua scripts found: ' + foundScripts.length, "INFO");
@@ -229,35 +285,5 @@ class LuaDebugger
         }
         #end
         log('==============================', "INFO");
-    }
-
-    public static function captureLuaPrint(luaState:Dynamic, scriptPath:String):Void
-    {
-        #if LUA_ALLOWED
-        try
-        {
-            var logFile = getLogPath();
-
-            var luaCode = '
-                local oldPrint = print
-                local logFile = io.open("' + logFile + '", "a")
-                print = function(...)
-                    local args = {...}
-                    local msg = table.concat(args, "\\t")
-                    local timestamp = os.date("%Y-%m-%d %H:%M:%S")
-                    if logFile then
-                        logFile:write("[" .. timestamp .. "] [" .. "' + scriptPath + '" .. "] " .. msg .. "\\n")
-                        logFile:flush()
-                    end
-                    oldPrint(...)
-                end
-            ';
-
-            LuaL.dostring(luaState, luaCode);
-        }
-        catch(e:Dynamic) {
-            trace("Error: " + e);
-        }
-        #end
     }
 }
