@@ -7,7 +7,6 @@ import sys.FileSystem;
 #if HSCRIPT_ALLOWED
 import psychlua.HScript;
 import crowplexus.iris.Iris;
-import crowplexus.hscript.Expr.Error as IrisError;
 #end
 
 class HaxeDebugger
@@ -147,8 +146,6 @@ class HaxeDebugger
             enableTraceCapture(script, scriptPath);
             log('Haxe script compiled successfully: $scriptPath', "SUCCESS");
             script.destroy();
-        } catch(e:IrisError) {
-            log('Haxe script compilation failed: $scriptPath - ${e.message}', "ERROR");
         } catch(e:Dynamic) {
             log('Haxe script compilation failed: $scriptPath - $e', "ERROR");
         }
