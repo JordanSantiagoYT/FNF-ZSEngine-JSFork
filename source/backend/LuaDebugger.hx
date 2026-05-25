@@ -75,6 +75,8 @@ class LuaDebugger
             funk.set("luaDebugMode", true);
             funk.set("luaDeprecatedWarnings", true);
 
+            var luaState = funk.lua;
+
             var logFile = getLogPath();
             var scriptPath = funk.scriptName;
 
@@ -86,7 +88,6 @@ class LuaDebugger
                     local timestamp = os.date("%Y-%m-%d %H:%M:%S")
                     local f = debug.getinfo(2, "S").source or "' + scriptPath + '"
 
-                    -- Write to log file
                     local logFile = io.open("' + logFile + '", "a")
                     if logFile then
                         logFile:write("[" .. timestamp .. "] [" .. f .. "] " .. msg .. "\\n")
@@ -94,13 +95,20 @@ class LuaDebugger
                         logFile:close()
                     end
 
-                    -- Call original debugPrint to keep screen output
                     oldDebugPrint(...)
                 end
             ';
 
-            funk.luaL_dostring(luaCode);
-            logLua(scriptPath, "Debug mode enabled and print capture installed", "SUCCESS");
+            if (LuaL.dostring(luaState, luaCode) != 0)
+            {
+                var err = Lua.tostring(luaState, -1);
+                Lua.pop(luaState, 1);
+                logLua(scriptPath, 'Failed to override debugPrint: $err', "ERROR");
+            }
+            else
+            {
+                logLua(scriptPath, "Debug mode enabled and print capture installed", "SUCCESS");
+            }
         }
         catch(e:Dynamic)
         {

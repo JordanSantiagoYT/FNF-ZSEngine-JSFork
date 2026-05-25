@@ -7,6 +7,7 @@ import sys.FileSystem;
 #if HSCRIPT_ALLOWED
 import psychlua.HScript;
 import crowplexus.iris.Iris;
+import crowplexus.hscript.Expr.Error as IrisError;
 #end
 
 class HaxeDebugger
